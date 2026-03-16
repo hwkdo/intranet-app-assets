@@ -1,0 +1,58 @@
+@props([
+    'heading' => '',
+    'subheading' => '',
+    'navItems' => []
+])
+
+@php
+    $defaultNavItems = [
+        ['label' => 'Übersicht', 'href' => route('apps.assets.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen'],
+        ['label' => 'Meine Assets', 'href' => route('apps.assets.meine-assets'), 'icon' => 'user', 'description' => 'Ihre zugewiesenen Assets', 'buttonText' => 'Meine Assets anzeigen'],
+        ['label' => 'Alle Assets', 'href' => route('apps.assets.liste'), 'icon' => 'server-stack', 'description' => 'Alle Assets durchsuchen und verwalten', 'buttonText' => 'Assets anzeigen'],
+        ['label' => 'Mobilgeräte', 'href' => route('apps.assets.mobilgeraete'), 'icon' => 'device-phone-mobile', 'description' => 'Mobilgeräte (is_intune_object) mit IMEI und Intune-Filter', 'buttonText' => 'Mobilgeräte anzeigen'],
+        ['label' => 'Domänengeräte', 'href' => route('apps.assets.domaenengeraete'), 'icon' => 'computer-desktop', 'description' => 'Domänengeräte (is_domain_object) mit Domäne und Last Logon', 'buttonText' => 'Domänengeräte anzeigen'],
+        ['label' => 'Itexia-Geräte', 'href' => route('apps.assets.itexiageraete'), 'icon' => 'qr-code', 'description' => 'Assets mit Itexia-ID und Filter Gefunden/Nicht gefunden in Itexia', 'buttonText' => 'Itexia-Geräte anzeigen'],
+        ['label' => 'Meine Einstellungen', 'href' => route('apps.assets.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen'],
+        ['label' => 'Admin', 'href' => route('apps.assets.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-assets'],
+    ];
+
+    $navItems = !empty($navItems) ? $navItems : $defaultNavItems;
+    $customBgUrl = \Hwkdo\IntranetAppBase\Models\AppBackground::getCustomBackgroundUrl('assets');
+@endphp
+
+@if($customBgUrl)
+    @push('app-styles')
+    <style data-app-bg data-ts="{{ uniqid() }}">
+        :root { --app-bg-image: url('{{ $customBgUrl }}'); }
+    </style>
+    @endpush
+@endif
+
+@if(request()->routeIs('apps.assets.index'))
+    <x-intranet-app-base::app-layout
+        app-identifier="assets"
+        :heading="$heading"
+        :subheading="$subheading"
+        :nav-items="$navItems"
+        :wrap-in-card="false"
+    >
+        <x-intranet-app-base::app-index-auto
+            app-identifier="assets"
+            app-name="Assets"
+            app-description="Verwaltung von IT-Assets und Hardware"
+            :nav-items="$navItems"
+            welcome-title="Willkommen in der Asset-Verwaltung"
+            welcome-description="Hier können Sie alle IT-Assets verwalten, Übergaben und Rückgaben nachverfolgen sowie die vollständige Asset-Historie einsehen."
+        />
+    </x-intranet-app-base::app-layout>
+@else
+    <x-intranet-app-base::app-layout
+        app-identifier="assets"
+        :heading="$heading"
+        :subheading="$subheading"
+        :nav-items="$navItems"
+        :wrap-in-card="true"
+    >
+        {{ $slot }}
+    </x-intranet-app-base::app-layout>
+@endif

@@ -1,0 +1,82 @@
+<?php
+
+use Hwkdo\IntranetAppAssets\Models\Asset;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends Component {
+    public Asset $asset;
+
+    public function mount(Asset $asset): void
+    {
+        $this->asset = $asset->load(['type', 'vendor', 'owner']);
+    }
+
+    public function delete(): void
+    {
+        $name = $this->asset->display_name;
+
+        $this->asset->historyEntries()->create([
+            'event' => \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted,
+            'user_id' => auth()->id(),
+        ]);
+        $this->asset->delete();
+
+        session()->flash('success', "Asset \"{$name}\" wurde gelöscht.");
+        $this->redirect(route('apps.assets.liste'), navigate: true);
+    }
+};
+?>
+<div>
+<x-intranet-app-assets::assets-layout heading="Asset löschen" subheading="Löschung bestätigen">
+    <div class="space-y-6 max-w-lg">
+
+        <flux:callout variant="danger" icon="exclamation-triangle">
+            <flux:callout.heading>Achtung: Dieses Asset hat eine Itexia-ID</flux:callout.heading>
+            <flux:callout.text>
+                Das Asset ist mit dem externen Itexia-System verknüpft (ID: <strong>{{ $asset->itexia_id }}</strong>).
+                Das Löschen wird im Verlauf protokolliert.
+            </flux:callout.text>
+        </flux:callout>
+
+        <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 text-sm">
+            <flux:heading size="sm">Zu löschendes Asset</flux:heading>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
+                <dt class="font-medium text-zinc-500">Name / Modell</dt>
+                <dd class="font-medium">{{ $asset->display_name }}</dd>
+
+                <dt class="font-medium text-zinc-500">Seriennummer</dt>
+                <dd class="font-mono">{{ $asset->serial_number }}</dd>
+
+                <dt class="font-medium text-zinc-500">Typ</dt>
+                <dd>{{ $asset->type?->name ?? '—' }}</dd>
+
+                <dt class="font-medium text-zinc-500">Hersteller</dt>
+                <dd>{{ $asset->vendor?->name ?? '—' }}</dd>
+
+                <dt class="font-medium text-zinc-500">Besitzer</dt>
+                <dd>{{ $asset->owner?->name ?? '—' }}</dd>
+
+                <dt class="font-medium text-zinc-500">Itexia-ID</dt>
+                <dd class="font-mono text-red-600">{{ $asset->itexia_id }}</dd>
+            </dl>
+        </div>
+
+        <div class="flex gap-3">
+            <flux:button
+                wire:click="delete"
+                wire:confirm="Asset wirklich löschen?"
+                variant="danger"
+                icon="trash"
+            >
+                Jetzt löschen
+            </flux:button>
+            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost">
+                Abbrechen
+            </flux:button>
+        </div>
+
+    </div>
+</x-intranet-app-assets::assets-layout>
+</div>

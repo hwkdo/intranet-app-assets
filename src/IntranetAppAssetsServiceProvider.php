@@ -1,0 +1,51 @@
+<?php
+
+namespace Hwkdo\IntranetAppAssets;
+
+use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
+use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
+use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
+use Illuminate\Console\Scheduling\Schedule;
+use Livewire\Livewire;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+
+class IntranetAppAssetsServiceProvider extends PackageServiceProvider
+{
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name('intranet-app-assets')
+            ->hasConfigFile()
+            ->hasViews()
+            ->discoversMigrations()
+            ->hasCommands([
+                SyncLegacyAssetsCommand::class,
+                SetDomainConnectionCommand::class,
+                DomainCheckCommand::class,
+                Commands\IntuneSyncCommand::class,
+                Commands\ItexiaUuidSyncCommand::class,
+            ]);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        Livewire::addNamespace(
+            namespace: 'intranet-app-assets',
+            viewPath: __DIR__.'/../resources/views/livewire',
+            classNamespace: 'Hwkdo\IntranetAppAssets\Livewire',
+            classPath: __DIR__.'/../src/Livewire',
+            classViewPath: __DIR__.'/../resources/views/livewire',
+        );
+
+        $this->app->booted(function () {
+            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        });
+
+        $this->app->resolving(Schedule::class, function () {
+            require __DIR__.'/../routes/console.php';
+        });
+    }
+}

@@ -1,0 +1,104 @@
+<?php
+
+namespace Hwkdo\IntranetAppAssets\Models;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+
+class Asset extends Model
+{
+    protected $table = 'intranet_app_assets_assets';
+
+    protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'is_clarification' => 'boolean',
+            'is_missing' => 'boolean',
+            'domain_last_seen' => 'datetime',
+            'domain_last_checked' => 'datetime',
+            'last_logon' => 'datetime',
+            'last_logon_timestamp' => 'datetime',
+            'itexia_check_at' => 'datetime',
+        ];
+    }
+
+    /** @return BelongsTo<AssetType, $this> */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(AssetType::class, 'asset_type_id');
+    }
+
+    /** @return BelongsTo<AssetVendor, $this> */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(AssetVendor::class, 'asset_vendor_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** @return MorphMany<AssetNote, $this> */
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(AssetNote::class, 'noteable');
+    }
+
+    /** @return HasMany<AssetAttachment, $this> */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(AssetAttachment::class, 'asset_id');
+    }
+
+    /** @return HasMany<Handover, $this> */
+    public function handovers(): HasMany
+    {
+        return $this->hasMany(Handover::class, 'asset_id');
+    }
+
+    /** @return HasMany<AssetHistory, $this> */
+    public function historyEntries(): HasMany
+    {
+        return $this->hasMany(AssetHistory::class, 'asset_id');
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name ?: "{$this->vendor?->name} {$this->model}";
+    }
+
+    /**
+     * Stellt sicher, dass bei gesetztem Besitzer (user_id) ein Handover existiert.
+     * Jede Besitzzuordnung soll einen Handover haben (unbestätigt, bis der Empfänger bestätigt).
+     */
+    public function ensureHandoverForOwner(): void
+    {
+        if ($this->user_id === null) {
+            return;
+        }
+
+        $exists = Handover::query()
+            ->where('asset_id', $this->id)
+            ->where('recipient_user_id', $this->user_id)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        Handover::create([
+            'asset_id' => $this->id,
+            'recipient_user_id' => $this->user_id,
+            'issuer_user_id' => auth()->id(),
+            'confirmed_at' => null,
+            'confirmation_method' => null,
+        ]);
+    }
+}
