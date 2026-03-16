@@ -24,6 +24,7 @@ return [
         'user' => [
             'name' => 'App-Assets-Benutzer',
             'permissions' => ['see-app-assets'],
+            'all_users' => true,
         ],
     ],
 
