@@ -58,6 +58,7 @@ class SyncConfigmgrDataCommand extends Command
             if (count($rows) === 0) {
                 $asset->smbios_guid = null;
                 $asset->configmgr_mac_addresses = null;
+                $asset->configmgr_last_logon_user = null;
                 $asset->save();
                 $updated++;
                 if ($verbose) {
@@ -70,13 +71,15 @@ class SyncConfigmgrDataCommand extends Command
             $first = $rows[0];
             $smbiosGuid = $first->smbios_guid ?? null;
             $macAddresses = array_values(array_unique(array_filter(array_map(fn ($row) => $row->mac_adresse ?? null, $rows))));
+            $lastLogonUser = $first->last_logon_user ?? null;
 
             $asset->smbios_guid = $smbiosGuid;
             $asset->configmgr_mac_addresses = $macAddresses;
+            $asset->configmgr_last_logon_user = $lastLogonUser;
             $asset->save();
             $updated++;
             if ($verbose) {
-                $this->line("  Asset #{$asset->id} ({$computerName}): SMBIOS-GUID gesetzt, ".count($macAddresses).' MAC-Adresse(n).');
+                $this->line("  Asset #{$asset->id} ({$computerName}): SMBIOS-GUID, ".count($macAddresses).' MAC(s), Last-Logon-User gesetzt.');
             }
         }
 

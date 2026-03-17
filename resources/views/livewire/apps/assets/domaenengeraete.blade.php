@@ -51,12 +51,16 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             ->with(['type', 'vendor', 'owner'])
             ->whereHas('type', fn ($q) => $q->where('is_domain_object', true))
             ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('serial_number', 'like', "%{$this->search}%")
-                        ->orWhere('model', 'like', "%{$this->search}%")
-                        ->orWhere('name', 'like', "%{$this->search}%")
-                        ->orWhere('itexia_id', 'like', "%{$this->search}%")
-                        ->orWhere('domain_connection', 'like', "%{$this->search}%");
+                $search = $this->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('serial_number', 'like', "%{$search}%")
+                        ->orWhere('model', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('itexia_id', 'like', "%{$search}%")
+                        ->orWhere('domain_connection', 'like', "%{$search}%")
+                        ->orWhere('smbios_guid', 'like', "%{$search}%")
+                        ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
+                        ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
                 });
             })
             ->orderBy($orderColumn, $orderDir)
@@ -71,7 +75,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                 <div class="flex-1 max-w-sm">
                     <flux:input
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Suchen nach SN, Modell, Name, Domäne…"
+                        placeholder="Suchen nach SN, Modell, Name, Domäne, SMBIOS-GUID, MAC, Last-Logon-User…"
                         icon="magnifying-glass"
                         clearable
                     />

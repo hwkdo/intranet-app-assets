@@ -222,12 +222,38 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <flux:heading size="lg">Stammdaten</flux:heading>
 
                     <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    @if(filled($asset->name))
+                        <dt class="font-semibold">Name</dt>
+                        <dd>{{ $asset->name }}</dd>
+                    @endif
+
                     <dt class="font-semibold">Seriennummer</dt>
                     <dd class="font-mono">{{ $asset->serial_number }}</dd>
 
                     @if(filled($asset->imei))
                         <dt class="font-semibold">IMEI</dt>
                         <dd class="font-mono">{{ $asset->imei }}</dd>
+                    @endif
+
+                    @if(filled($asset->smbios_guid))
+                        <dt class="font-semibold">SMBIOS-GUID</dt>
+                        <dd class="font-mono text-xs">{{ $asset->smbios_guid }}</dd>
+                    @endif
+
+                    @if(filled($asset->configmgr_last_logon_user))
+                        <dt class="font-semibold">Last-Logon-User</dt>
+                        <dd>{{ $asset->configmgr_last_logon_user }}</dd>
+                    @endif
+
+                    @if(is_array($asset->configmgr_mac_addresses) && count($asset->configmgr_mac_addresses) > 0)
+                        <dt class="font-semibold">MAC-Adresse(n)</dt>
+                        <dd class="font-mono text-xs">
+                            <ul class="list-inside list-disc space-y-0.5">
+                                @foreach($asset->configmgr_mac_addresses as $mac)
+                                    <li>{{ $mac }}</li>
+                                @endforeach
+                            </ul>
+                        </dd>
                     @endif
 
                     <dt class="font-semibold">Modell</dt>
