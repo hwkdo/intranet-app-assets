@@ -22,6 +22,27 @@ new class extends Component
     public bool $initialSearchDone = false;
 
     /**
+     * Anzahl weiterer Assets (ohne das aktuelle) mit derselben Bestellnummer (BEN).
+     * Wenn > 0: zweiten Button "Als Rechnungsnr. für alle mit BEN" anzeigen.
+     */
+    #[Computed]
+    public function otherAssetsWithSameOrderNumberCount(): int
+    {
+        if ($this->assetId === null) {
+            return 0;
+        }
+        $asset = Asset::find($this->assetId);
+        if (! $asset || ! filled($asset->order_number)) {
+            return 0;
+        }
+
+        return Asset::query()
+            ->where('order_number', $asset->order_number)
+            ->where('id', '!=', $this->assetId)
+            ->count();
+    }
+
+    /**
      * Vorgeschlagene Suchbegriffe aus dem Asset (Reihenfolge: BEN, Seriennummer, IMEI, MAC).
      *
      * @return array<int, array{label: string, value: string}>
@@ -116,7 +137,10 @@ new class extends Component
         }
     }
 
-    public function setAsInvoiceNumber(string $documentId): void
+    /**
+     * Rechnungsnummer setzen: nur dieses Asset ($applyToAllWithSameBen = false) oder alle mit gleicher BEN (true).
+     */
+    public function setAsInvoiceNumber(string $documentId, bool $applyToAllWithSameBen = false): void
     {
         if ($this->assetId === null) {
             return;
@@ -128,14 +152,27 @@ new class extends Component
 
             return;
         }
-        $asset->invoice_number = $documentId;
-        $asset->save();
-        $asset->historyEntries()->create([
-            'event' => AssetHistory::EventUpdated,
-            'user_id' => auth()->id(),
-        ]);
+        $assetsToUpdate = collect([$asset]);
+        if ($applyToAllWithSameBen && filled($asset->order_number)) {
+            $assetsToUpdate = Asset::query()
+                ->where('order_number', $asset->order_number)
+                ->get();
+        }
+        foreach ($assetsToUpdate as $a) {
+            $a->invoice_number = $documentId;
+            $a->save();
+            $a->historyEntries()->create([
+                'event' => AssetHistory::EventUpdated,
+                'user_id' => auth()->id(),
+            ]);
+        }
         $this->dispatch('invoice-number-set');
-        Flux::toast('Rechnungsnummer wurde übernommen.', variant: 'success');
+        $count = $assetsToUpdate->count();
+        if ($count > 1) {
+            Flux::toast("Rechnungsnummer wurde für {$count} Assets übernommen.", variant: 'success');
+        } else {
+            Flux::toast('Rechnungsnummer wurde übernommen.', variant: 'success');
+        }
     }
 }; ?>
 <div class="space-y-4">
@@ -194,13 +231,24 @@ new class extends Component
                             <span class="text-xs font-mono text-zinc-500">{{ $doc['id'] }}</span>
                         </div>
                         @if($assetId)
-                            <flux:button
-                                wire:click="setAsInvoiceNumber({{ json_encode($doc['id']) }})"
-                                variant="primary"
-                                size="sm"
-                            >
-                                Als Rechnungsnr. übernehmen
-                            </flux:button>
+                            <span class="flex items-center gap-2 shrink-0">
+                                <flux:button
+                                    wire:click="setAsInvoiceNumber({{ json_encode($doc['id']) }}, false)"
+                                    variant="primary"
+                                    size="sm"
+                                >
+                                    Als Rechnungsnr. übernehmen
+                                </flux:button>
+                                @if($this->otherAssetsWithSameOrderNumberCount > 0)
+                                    <flux:button
+                                        wire:click="setAsInvoiceNumber({{ json_encode($doc['id']) }}, true)"
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        Als Rechnungsnr. für alle mit BEN
+                                    </flux:button>
+                                @endif
+                            </span>
                         @endif
                     </li>
                 @endforeach

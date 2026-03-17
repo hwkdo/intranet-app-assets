@@ -24,6 +24,7 @@ class Asset extends Model
             'last_logon' => 'datetime',
             'last_logon_timestamp' => 'datetime',
             'itexia_check_at' => 'datetime',
+            'configmgr_mac_addresses' => 'array',
         ];
     }
 

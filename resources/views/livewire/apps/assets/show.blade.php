@@ -342,6 +342,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                             wire:key="itexia-data-{{ $asset->id }}"
                         />
                     @endif
+                    @if($asset->type?->is_domain_object)
+                        <livewire:intranet-app-assets::apps.assets.configmgr-data
+                            :asset-id="$asset->id"
+                            :computer-name="$asset->name"
+                            lazy
+                            wire:key="configmgr-data-{{ $asset->id }}"
+                        />
+                    @endif
                 </div>
                 </div>
             </flux:card>
