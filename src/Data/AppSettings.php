@@ -11,6 +11,9 @@ class AppSettings extends BaseAppSettings
         #[Description('Aktiviert die Beispiel-Funktionalität')]
         public bool $enableExampleFeature = true,
 
+        #[Description('Assets mit Rechnungsnr. dürfen in Itexia/Seventhings angelegt werden')]
+        public bool $allowCreateInItexiaWithInvoiceNumber = false,
+
         #[Description('Maximale Anzahl von Elementen pro Seite')]
         public int $maxItemsPerPage = 25,
 

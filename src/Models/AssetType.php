@@ -17,6 +17,7 @@ class AssetType extends Model
         return [
             'is_domain_object' => 'boolean',
             'is_intune_object' => 'boolean',
+            'itexia_creation_allowed' => 'boolean',
         ];
     }
 

@@ -178,6 +178,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             'handovers.assetReturn.recipient', 'handovers.assetReturn.notes.author',
         ]);
     }
+
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout
@@ -274,9 +275,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <dt class="font-semibold">Itexia-ID</dt>
                     <dd>
                         @if($asset->itexia_id)
-                            <span class="font-mono">{{ $asset->itexia_id }}</span>                            
+                            <span class="font-mono">{{ $asset->itexia_id }}</span>
                         @else
                             —
+                            @if($asset->type?->itexia_creation_allowed)
+                                <flux:text class="text-xs text-zinc-500">Bitte zuerst Itexia-ID (Barcode) eintragen.</flux:text>
+                            @endif
                         @endif
                     </dd>
 

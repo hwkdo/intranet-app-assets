@@ -1,6 +1,7 @@
 <?php
 
 use Flux\Flux;
+use Hwkdo\IntranetAppAssets\ItexiaCreation;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\SeventhingsMapping;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
@@ -56,6 +57,75 @@ new class extends Component
         }
 
         return str_starts_with($this->itexiaError, 'Kein Itexia-Asset mit Barcode');
+    }
+
+    #[Computed]
+    public function canCreateInItexia(): bool
+    {
+        if ($this->assetId === null) {
+            return false;
+        }
+        $asset = Asset::with('type')->find($this->assetId);
+
+        return $asset !== null && ItexiaCreation::canCreateInItexia($asset);
+    }
+
+    public function createInItexia(): void
+    {
+        $this->authorize('manage-app-assets');
+
+        if ($this->assetId === null) {
+            Flux::toast('Asset nicht gefunden.', variant: 'danger');
+
+            return;
+        }
+        $asset = Asset::with(['type', 'vendor', 'owner'])->find($this->assetId);
+        if ($asset === null || ! ItexiaCreation::canCreateInItexia($asset)) {
+            Flux::toast('Dieses Asset darf derzeit nicht in Itexia angelegt werden.', variant: 'danger');
+
+            return;
+        }
+
+        $seventhingsClass = \Hwkdo\SeventhingsLaravel\SeventhingsLaravel::class;
+        if (! class_exists($seventhingsClass) || ! app()->bound($seventhingsClass)) {
+            Flux::toast('Seventhings ist nicht verfügbar.', variant: 'danger');
+
+            return;
+        }
+
+        $existing = app()->make($seventhingsClass)->findAsset(trim((string) $asset->itexia_id));
+        if ($existing !== null) {
+            $uuid = SeventhingsMappingConfig::getSeventhingsObjectId($existing);
+            if ($uuid !== null && $uuid !== '') {
+                $asset->update(['itexia_uuid' => (string) $uuid]);
+                $this->loaded = null;
+                $this->itexiaError = null;
+                $this->itexiaData = null;
+                $this->loadItexiaData();
+                $this->dispatch('asset-updated');
+                Flux::toast('Asset existiert bereits in Itexia; Verknüpfung wurde gesetzt.', variant: 'success');
+
+                return;
+            }
+        }
+
+        try {
+            $payload = ItexiaCreation::buildCreatePayload($asset);
+            $client = app()->make($seventhingsClass);
+            $uuid = $client->createAsset($payload);
+            $asset->update([
+                'itexia_uuid' => $uuid,
+                'itexia_check_at' => now(),
+            ]);
+            $this->loaded = null;
+            $this->itexiaError = null;
+            $this->itexiaData = null;
+            $this->loadItexiaData();
+            $this->dispatch('asset-updated');
+            Flux::toast('Asset wurde in Itexia/Seventhings angelegt.', variant: 'success');
+        } catch (\Throwable $e) {
+            Flux::toast('Anlage in Itexia fehlgeschlagen: '.$e->getMessage(), variant: 'danger');
+        }
     }
 
     public function openSeventhingsSearchModal(): void
@@ -284,7 +354,19 @@ new class extends Component
                             <flux:callout.text>{{ $itexiaError }}</flux:callout.text>
                             @if($this->isItexiaNotFoundError && $assetId)
                                 @can('manage-app-assets')
-                                    <div class="mt-3">
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        @if($this->canCreateInItexia)
+                                            <flux:button
+                                                wire:click="createInItexia"
+                                                wire:loading.attr="disabled"
+                                                variant="primary"
+                                                size="sm"
+                                                icon="plus"
+                                            >
+                                                <span wire:loading.remove>In Itexia anlegen</span>
+                                                <span wire:loading>Wird angelegt…</span>
+                                            </flux:button>
+                                        @endif
                                         <flux:button wire:click="openSeventhingsSearchModal" variant="outline" size="sm" icon="magnifying-glass">
                                             In Seventhings suchen
                                         </flux:button>

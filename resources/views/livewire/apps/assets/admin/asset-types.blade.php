@@ -16,6 +16,8 @@ new class extends Component {
 
     public bool $is_intune_object = false;
 
+    public bool $itexia_creation_allowed = false;
+
     public bool $showForm = false;
 
     #[Computed]
@@ -38,6 +40,7 @@ new class extends Component {
         $this->name = $type->name;
         $this->is_domain_object = $type->is_domain_object;
         $this->is_intune_object = $type->is_intune_object;
+        $this->itexia_creation_allowed = $type->itexia_creation_allowed;
         $this->showForm = true;
     }
 
@@ -50,6 +53,7 @@ new class extends Component {
                 'name' => $this->name,
                 'is_domain_object' => $this->is_domain_object,
                 'is_intune_object' => $this->is_intune_object,
+                'itexia_creation_allowed' => $this->itexia_creation_allowed,
             ]);
             Flux::toast('Typ wurde aktualisiert.', variant: 'success');
         } else {
@@ -57,6 +61,7 @@ new class extends Component {
                 'name' => $this->name,
                 'is_domain_object' => $this->is_domain_object,
                 'is_intune_object' => $this->is_intune_object,
+                'itexia_creation_allowed' => $this->itexia_creation_allowed,
             ]);
             Flux::toast('Typ wurde erstellt.', variant: 'success');
         }
@@ -88,6 +93,7 @@ new class extends Component {
         $this->name = '';
         $this->is_domain_object = false;
         $this->is_intune_object = false;
+        $this->itexia_creation_allowed = false;
         $this->showForm = false;
         $this->resetValidation();
     }
@@ -116,6 +122,10 @@ new class extends Component {
                     <flux:checkbox wire:model="is_intune_object" label="Intune-Objekt (wird mit Microsoft Intune verwaltet)" />
                 </flux:field>
 
+                <flux:field>
+                    <flux:checkbox wire:model="itexia_creation_allowed" label="Anlage in Itexia/Seventhings erlaubt" />
+                </flux:field>
+
                 <div class="flex gap-3">
                     <flux:button type="submit" variant="primary" size="sm">
                         {{ $editingId ? 'Speichern' : 'Erstellen' }}
@@ -137,6 +147,7 @@ new class extends Component {
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>Domain-Objekt</flux:table.column>
             <flux:table.column>Intune-Objekt</flux:table.column>
+            <flux:table.column>Itexia-Anlage</flux:table.column>
             <flux:table.column>Assets</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
@@ -158,6 +169,13 @@ new class extends Component {
                             <flux:text class="text-zinc-400">Nein</flux:text>
                         @endif
                     </flux:table.cell>
+                    <flux:table.cell>
+                        @if($type->itexia_creation_allowed)
+                            <flux:badge color="green" size="sm" icon="check">Ja</flux:badge>
+                        @else
+                            <flux:text class="text-zinc-400">Nein</flux:text>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell>{{ $type->assets_count ?? $type->assets()->count() }}</flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-1">
@@ -175,7 +193,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5" class="text-center text-zinc-500 py-6">
+                    <flux:table.cell colspan="6" class="text-center text-zinc-500 py-6">
                         Noch keine Typen vorhanden.
                     </flux:table.cell>
                 </flux:table.row>
