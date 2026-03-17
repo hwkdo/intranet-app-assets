@@ -1,14 +1,17 @@
 <?php
 
+use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Component {
+new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Component
+{
     /** Allgemeine Felder (für alle Assets) */
     public string $model = '';
 
@@ -43,7 +46,40 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
     public function addUnit(): void
     {
-        $this->units[] = $this->defaultUnit();
+        $newUnit = $this->defaultUnit();
+        $lastName = $this->getLastUnitName();
+        $suggestedName = $this->incrementNameSuffix($lastName);
+        if ($suggestedName !== null) {
+            $newUnit['name'] = $suggestedName;
+        }
+        $this->units[] = $newUnit;
+    }
+
+    protected function getLastUnitName(): ?string
+    {
+        $last = end($this->units);
+
+        return isset($last['name']) && (string) $last['name'] !== '' ? (string) $last['name'] : null;
+    }
+
+    /**
+     * Erhöht eine am Ende stehende Zahl im Namen (z. B. Device01 -> Device02).
+     */
+    protected function incrementNameSuffix(?string $name): ?string
+    {
+        if ($name === null || $name === '') {
+            return null;
+        }
+        if (preg_match('/^(.*?)(\d+)$/', $name, $m)) {
+            $prefix = $m[1];
+            $numStr = $m[2];
+            $nextNum = (int) $numStr + 1;
+            $length = strlen($numStr);
+
+            return $prefix.str_pad((string) $nextNum, $length, '0', STR_PAD_LEFT);
+        }
+
+        return null;
     }
 
     public function removeUnit(int $index): void
@@ -71,21 +107,21 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
     }
 
     #[Computed]
-    public function assetTypes(): \Illuminate\Database\Eloquent\Collection
+    public function assetTypes(): Collection
     {
         return AssetType::allOrdered();
     }
 
     #[Computed]
-    public function assetVendors(): \Illuminate\Database\Eloquent\Collection
+    public function assetVendors(): Collection
     {
         return AssetVendor::allOrdered();
     }
 
     #[Computed]
-    public function users(): \Illuminate\Database\Eloquent\Collection
+    public function users(): Collection
     {
-        return \App\Models\User::orderBy('nachname')->orderBy('vorname')->get();
+        return User::orderBy('nachname')->orderBy('vorname')->get();
     }
 
     protected function rules(): array
@@ -137,7 +173,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             $asset = Asset::create($attributes);
             $asset->ensureHandoverForOwner();
             $asset->notes()->create([
-                'note' => 'Asset erstellt von ' . auth()->user()->name . '.',
+                'note' => 'Asset erstellt von '.auth()->user()->name.'.',
                 'user_id' => auth()->id(),
             ]);
             $created[] = $asset;
