@@ -73,7 +73,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         ->orWhere('order_number', 'like', $term)
                         ->orWhereHas('type', fn ($t) => $t->where('name', 'like', $term))
                         ->orWhereHas('vendor', fn ($v) => $v->where('name', 'like', $term))
-                        ->orWhereHas('owner', fn ($o) => $o->where('name', 'like', $term));
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
             ->when($this->itexiaFilter === 'found', fn ($q) => $q->whereNotNull('itexia_uuid')->where('itexia_uuid', '!=', ''))

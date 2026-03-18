@@ -45,11 +45,13 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('serial_number', 'like', "%{$this->search}%")
-                        ->orWhere('model', 'like', "%{$this->search}%")
-                        ->orWhere('name', 'like', "%{$this->search}%")
-                        ->orWhere('itexia_id', 'like', "%{$this->search}%")
-                        ->orWhere('imei', 'like', "%{$this->search}%");
+                    $term = '%'.$this->search.'%';
+                    $q->where('serial_number', 'like', $term)
+                        ->orWhere('model', 'like', $term)
+                        ->orWhere('name', 'like', $term)
+                        ->orWhere('itexia_id', 'like', $term)
+                        ->orWhere('imei', 'like', $term)
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
@@ -73,11 +75,13 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('serial_number', 'like', "%{$this->search}%")
-                        ->orWhere('model', 'like', "%{$this->search}%")
-                        ->orWhere('name', 'like', "%{$this->search}%")
-                        ->orWhere('itexia_id', 'like', "%{$this->search}%")
-                        ->orWhere('imei', 'like', "%{$this->search}%");
+                    $term = '%'.$this->search.'%';
+                    $q->where('serial_number', 'like', $term)
+                        ->orWhere('model', 'like', $term)
+                        ->orWhere('name', 'like', $term)
+                        ->orWhere('itexia_id', 'like', $term)
+                        ->orWhere('imei', 'like', $term)
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))

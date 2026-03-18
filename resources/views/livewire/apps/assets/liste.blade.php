@@ -52,10 +52,12 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('serial_number', 'like', "%{$this->search}%")
-                        ->orWhere('model', 'like', "%{$this->search}%")
-                        ->orWhere('name', 'like', "%{$this->search}%")
-                        ->orWhere('itexia_id', 'like', "%{$this->search}%");
+                    $term = '%'.$this->search.'%';
+                    $q->where('serial_number', 'like', $term)
+                        ->orWhere('model', 'like', $term)
+                        ->orWhere('name', 'like', $term)
+                        ->orWhere('itexia_id', 'like', $term)
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
             ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
@@ -86,10 +88,12 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
-                    $q->where('serial_number', 'like', "%{$this->search}%")
-                        ->orWhere('model', 'like', "%{$this->search}%")
-                        ->orWhere('name', 'like', "%{$this->search}%")
-                        ->orWhere('itexia_id', 'like', "%{$this->search}%");
+                    $term = '%'.$this->search.'%';
+                    $q->where('serial_number', 'like', $term)
+                        ->orWhere('model', 'like', $term)
+                        ->orWhere('name', 'like', $term)
+                        ->orWhere('itexia_id', 'like', $term)
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
             ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))

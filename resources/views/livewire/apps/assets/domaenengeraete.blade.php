@@ -65,15 +65,17 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             $this->baseQuery()
                 ->when($this->search, function ($query) {
                     $search = $this->search;
-                    $query->where(function ($q) use ($search) {
-                        $q->where('serial_number', 'like', "%{$search}%")
-                            ->orWhere('model', 'like', "%{$search}%")
-                            ->orWhere('name', 'like', "%{$search}%")
-                            ->orWhere('itexia_id', 'like', "%{$search}%")
-                            ->orWhere('domain_connection', 'like', "%{$search}%")
-                            ->orWhere('smbios_guid', 'like', "%{$search}%")
-                            ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
-                            ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
+                    $term = '%'.$search.'%';
+                    $query->where(function ($q) use ($term) {
+                        $q->where('serial_number', 'like', $term)
+                            ->orWhere('model', 'like', $term)
+                            ->orWhere('name', 'like', $term)
+                            ->orWhere('itexia_id', 'like', $term)
+                            ->orWhere('domain_connection', 'like', $term)
+                            ->orWhere('smbios_guid', 'like', $term)
+                            ->orWhere('configmgr_last_logon_user', 'like', $term)
+                            ->orWhere('configmgr_mac_addresses', 'like', $term)
+                            ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                     });
                 })
         )->paginate(25);
@@ -96,15 +98,17 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             $this->baseQuery()
                 ->when($this->search, function ($query) {
                     $search = $this->search;
-                    $query->where(function ($q) use ($search) {
-                        $q->where('serial_number', 'like', "%{$search}%")
-                            ->orWhere('model', 'like', "%{$search}%")
-                            ->orWhere('name', 'like', "%{$search}%")
-                            ->orWhere('itexia_id', 'like', "%{$search}%")
-                            ->orWhere('domain_connection', 'like', "%{$search}%")
-                            ->orWhere('smbios_guid', 'like', "%{$search}%")
-                            ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
-                            ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
+                    $term = '%'.$search.'%';
+                    $query->where(function ($q) use ($term) {
+                        $q->where('serial_number', 'like', $term)
+                            ->orWhere('model', 'like', $term)
+                            ->orWhere('name', 'like', $term)
+                            ->orWhere('itexia_id', 'like', $term)
+                            ->orWhere('domain_connection', 'like', $term)
+                            ->orWhere('smbios_guid', 'like', $term)
+                            ->orWhere('configmgr_last_logon_user', 'like', $term)
+                            ->orWhere('configmgr_mac_addresses', 'like', $term)
+                            ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                     });
                 })
         );
