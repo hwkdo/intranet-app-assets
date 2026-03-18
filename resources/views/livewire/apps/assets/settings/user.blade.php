@@ -13,4 +13,4 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Meine Einstellungen')]
         </x-intranet-app-assets::assets-layout>
         HTML;
     }
-};
+}; ?>
