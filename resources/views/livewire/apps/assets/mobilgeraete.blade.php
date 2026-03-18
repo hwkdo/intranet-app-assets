@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -7,6 +8,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends Component
 {
@@ -29,12 +31,18 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
         $this->resetPage();
     }
 
-    #[Computed]
-    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
             ->whereHas('type', fn ($q) => $q->where('is_intune_object', true))
+            ->orderBy('model');
+    }
+
+    #[Computed]
+    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('serial_number', 'like', "%{$this->search}%")
@@ -46,8 +54,85 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
             })
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
             ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'))
-            ->orderBy('model')
             ->paginate(25);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery()
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('serial_number', 'like', "%{$this->search}%")
+                        ->orWhere('model', 'like', "%{$this->search}%")
+                        ->orWhere('name', 'like', "%{$this->search}%")
+                        ->orWhere('itexia_id', 'like', "%{$this->search}%")
+                        ->orWhere('imei', 'like', "%{$this->search}%");
+                });
+            })
+            ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
+            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'));
+    }
+
+    /**
+     * @return array<int, array{heading: string, value: callable(Asset): string|int|null}>
+     */
+    public function getExportColumns(): array
+    {
+        return [
+            ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
+            ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
+            ['heading' => 'IMEI', 'value' => fn (Asset $a) => $a->imei ?? '—'],
+            ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
+            ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
+            ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Status', 'value' => function (Asset $a) {
+                $status = [];
+                if ($a->intune_device_id) {
+                    $status[] = 'Intune';
+                } else {
+                    $status[] = 'Nicht-Intune';
+                }
+                if ($a->is_missing) {
+                    $status[] = 'Vermisst';
+                }
+                if ($a->is_clarification) {
+                    $status[] = 'Klärung';
+                }
+                return implode(', ', $status);
+            }],
+        ];
+    }
+
+    public function getExportFilename(string $mode): string
+    {
+        return $mode === 'all' ? 'mobilgeraete-alle.xlsx' : 'mobilgeraete-gefiltert.xlsx';
+    }
+
+    public function exportExcelAll(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryAll(), $this->getExportColumns()),
+            $this->getExportFilename('all')
+        );
+    }
+
+    public function exportExcelFiltered(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryFiltered(), $this->getExportColumns()),
+            $this->getExportFilename('filtered')
+        );
     }
 }; ?>
 <div>
@@ -69,6 +154,15 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                     <flux:select.option value="non-intune">Nur nicht-Intune-Geräte</flux:select.option>
                 </flux:select>
             </div>
+            <flux:dropdown position="bottom" align="end">
+                <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
+                    Excel-Export
+                </flux:button>
+                <flux:menu>
+                    <flux:menu.item wire:click="exportExcelAll" icon="document-duplicate">Alle Daten exportieren</flux:menu.item>
+                    <flux:menu.item wire:click="exportExcelFiltered" icon="funnel">Gefilterte Daten exportieren</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
         </div>
 
         <flux:table>

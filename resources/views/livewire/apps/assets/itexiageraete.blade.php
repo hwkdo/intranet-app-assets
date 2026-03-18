@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Livewire\Attributes\Computed;
@@ -8,6 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends Component {
     use WithPagination;
@@ -46,23 +48,22 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
         $this->resetPage();
     }
 
-    #[Computed]
-    public function assetTypes(): \Illuminate\Database\Eloquent\Collection
+    protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return AssetType::allOrdered();
-    }
-
-    #[Computed]
-    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
-    {
-        $searchTerm = trim($this->search ?? '');
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
             ->whereNotNull('itexia_id')
             ->where('itexia_id', '!=', '')
-            ->when($searchTerm !== '', function ($query) use ($searchTerm) {
+            ->orderBy('model');
+    }
+
+    protected function applyFilters(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        $searchTerm = trim($this->search ?? '');
+        return $query
+            ->when($searchTerm !== '', function ($q) use ($searchTerm) {
                 $term = '%'.$searchTerm.'%';
-                $query->where(function ($q) use ($term) {
+                $q->where(function ($q) use ($term) {
                     $q->where('serial_number', 'like', $term)
                         ->orWhere('model', 'like', $term)
                         ->orWhere('name', 'like', $term)
@@ -90,9 +91,89 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                 $q->whereNotNull('invoice_number')->where('invoice_number', '!=', '')
                     ->orWhereNotNull('order_number')->where('order_number', '!=', '');
             }))
-            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
-            ->orderBy('model')
-            ->paginate(25);
+            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter));
+    }
+
+    #[Computed]
+    public function assetTypes(): \Illuminate\Database\Eloquent\Collection
+    {
+        return AssetType::allOrdered();
+    }
+
+    #[Computed]
+    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return $this->applyFilters($this->baseQuery())->paginate(25);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->applyFilters($this->baseQuery());
+    }
+
+    /**
+     * @return array<int, array{heading: string, value: callable(Asset): string|int|null}>
+     */
+    public function getExportColumns(): array
+    {
+        return [
+            ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name],
+            ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
+            ['heading' => 'Itexia-ID', 'value' => fn (Asset $a) => $a->itexia_id ?? '—'],
+            ['heading' => 'Itexia-UUID', 'value' => fn (Asset $a) => $a->itexia_uuid ?? '—'],
+            ['heading' => 'Rechnungsnr.', 'value' => fn (Asset $a) => $a->invoice_number ?? '—'],
+            ['heading' => 'BEN', 'value' => fn (Asset $a) => $a->order_number ?? '—'],
+            ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
+            ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
+            ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Status', 'value' => function (Asset $a) {
+                $status = [];
+                if ($a->itexia_uuid) {
+                    $status[] = 'Gefunden';
+                } else {
+                    $status[] = 'Nicht gefunden';
+                }
+                if ($a->is_missing) {
+                    $status[] = 'Vermisst';
+                }
+                if ($a->is_clarification) {
+                    $status[] = 'Klärung';
+                }
+                return implode(', ', $status);
+            }],
+        ];
+    }
+
+    public function getExportFilename(string $mode): string
+    {
+        return $mode === 'all' ? 'itexiageraete-alle.xlsx' : 'itexiageraete-gefiltert.xlsx';
+    }
+
+    public function exportExcelAll(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryAll(), $this->getExportColumns()),
+            $this->getExportFilename('all')
+        );
+    }
+
+    public function exportExcelFiltered(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryFiltered(), $this->getExportColumns()),
+            $this->getExportFilename('filtered')
+        );
     }
 }; ?>
 <div>
@@ -125,6 +206,15 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                     <flux:select.option value="with">Mit Rechnung/Bestellung</flux:select.option>
                 </flux:select>
             </div>
+            <flux:dropdown position="bottom" align="end">
+                <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
+                    Excel-Export
+                </flux:button>
+                <flux:menu>
+                    <flux:menu.item wire:click="exportExcelAll" icon="document-duplicate">Alle Daten exportieren</flux:menu.item>
+                    <flux:menu.item wire:click="exportExcelFiltered" icon="funnel">Gefilterte Daten exportieren</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
         </div>
 
         <flux:table>
@@ -149,7 +239,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         </flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->itexia_id ?? '—' }}</flux:table.cell>
-                        <flux:table.cell class="font-mono text-sm max-w-[12rem]">
+                        <flux:table.cell class="font-mono text-sm max-w-[6rem]">
                             @php $uuid = $asset->itexia_uuid ?? '—'; @endphp
                             <flux:tooltip :content="$uuid" position="top">
                                 <span class="block truncate">{{ $uuid }}</span>

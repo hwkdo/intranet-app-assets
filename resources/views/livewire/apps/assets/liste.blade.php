@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Livewire\Attributes\Computed;
@@ -8,6 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Component
 {
@@ -37,11 +39,17 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $this->resetPage();
     }
 
-    #[Computed]
-    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
+            ->orderBy('model');
+    }
+
+    #[Computed]
+    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('serial_number', 'like', "%{$this->search}%")
@@ -53,7 +61,6 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
-            ->orderBy('model')
             ->paginate(25);
     }
 
@@ -61,6 +68,81 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     public function assetTypes(): \Illuminate\Database\Eloquent\Collection
     {
         return AssetType::allOrdered();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery()
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('serial_number', 'like', "%{$this->search}%")
+                        ->orWhere('model', 'like', "%{$this->search}%")
+                        ->orWhere('name', 'like', "%{$this->search}%")
+                        ->orWhere('itexia_id', 'like', "%{$this->search}%");
+                });
+            })
+            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
+            ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
+            ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true));
+    }
+
+    /**
+     * @return array<int, array{heading: string, value: callable(Asset): string|int|null}>
+     */
+    public function getExportColumns(): array
+    {
+        return [
+            ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
+            ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
+            ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
+            ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
+            ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Status', 'value' => function (Asset $a) {
+                $status = [];
+                if ($a->is_missing) {
+                    $status[] = 'Vermisst';
+                }
+                if ($a->is_clarification) {
+                    $status[] = 'Klärung';
+                }
+                if (empty($status)) {
+                    $status[] = 'OK';
+                }
+                return implode(', ', $status);
+            }],
+        ];
+    }
+
+    public function getExportFilename(string $mode): string
+    {
+        return $mode === 'all' ? 'assets-alle.xlsx' : 'assets-gefiltert.xlsx';
+    }
+
+    public function exportExcelAll(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryAll(), $this->getExportColumns()),
+            $this->getExportFilename('all')
+        );
+    }
+
+    public function exportExcelFiltered(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryFiltered(), $this->getExportColumns()),
+            $this->getExportFilename('filtered')
+        );
     }
 }; ?>
 <div>
@@ -88,11 +170,22 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     <flux:select.option value="clarification">In Klärung</flux:select.option>
                 </flux:select>
             </div>
-            @can('manage-app-assets')
-                <flux:button href="{{ route('apps.assets.create') }}" variant="primary" icon="plus">
-                    Neues Asset
-                </flux:button>
-            @endcan
+            <div class="flex items-center gap-2">
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
+                        Excel-Export
+                    </flux:button>
+                    <flux:menu>
+                        <flux:menu.item wire:click="exportExcelAll" icon="document-duplicate">Alle Daten exportieren</flux:menu.item>
+                        <flux:menu.item wire:click="exportExcelFiltered" icon="funnel">Gefilterte Daten exportieren</flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+                @can('manage-app-assets')
+                    <flux:button href="{{ route('apps.assets.create') }}" variant="primary" icon="plus">
+                        Neues Asset
+                    </flux:button>
+                @endcan
+            </div>
         </div>
 
         <flux:table>

@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -7,6 +8,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extends Component
 {
@@ -39,32 +41,124 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
         $this->resetPage();
     }
 
-    #[Computed]
-    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Asset::query()
+            ->with(['type', 'vendor', 'owner'])
+            ->whereHas('type', fn ($q) => $q->where('is_domain_object', true));
+    }
+
+    protected function orderQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         $orderColumn = in_array($this->sortBy, ['domain_last_seen', 'last_logon_timestamp'], true)
             ? $this->sortBy
             : 'model';
         $orderDir = $this->sortDir === 'asc' ? 'asc' : 'desc';
 
-        return Asset::query()
-            ->with(['type', 'vendor', 'owner'])
-            ->whereHas('type', fn ($q) => $q->where('is_domain_object', true))
-            ->when($this->search, function ($query) {
-                $search = $this->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('serial_number', 'like', "%{$search}%")
-                        ->orWhere('model', 'like', "%{$search}%")
-                        ->orWhere('name', 'like', "%{$search}%")
-                        ->orWhere('itexia_id', 'like', "%{$search}%")
-                        ->orWhere('domain_connection', 'like', "%{$search}%")
-                        ->orWhere('smbios_guid', 'like', "%{$search}%")
-                        ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
-                        ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy($orderColumn, $orderDir)
-            ->paginate(25);
+        return $query->orderBy($orderColumn, $orderDir);
+    }
+
+    #[Computed]
+    public function assets(): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        return $this->orderQuery(
+            $this->baseQuery()
+                ->when($this->search, function ($query) {
+                    $search = $this->search;
+                    $query->where(function ($q) use ($search) {
+                        $q->where('serial_number', 'like', "%{$search}%")
+                            ->orWhere('model', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%")
+                            ->orWhere('itexia_id', 'like', "%{$search}%")
+                            ->orWhere('domain_connection', 'like', "%{$search}%")
+                            ->orWhere('smbios_guid', 'like', "%{$search}%")
+                            ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
+                            ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
+                    });
+                })
+        )->paginate(25);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->orderQuery($this->baseQuery());
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->orderQuery(
+            $this->baseQuery()
+                ->when($this->search, function ($query) {
+                    $search = $this->search;
+                    $query->where(function ($q) use ($search) {
+                        $q->where('serial_number', 'like', "%{$search}%")
+                            ->orWhere('model', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%")
+                            ->orWhere('itexia_id', 'like', "%{$search}%")
+                            ->orWhere('domain_connection', 'like', "%{$search}%")
+                            ->orWhere('smbios_guid', 'like', "%{$search}%")
+                            ->orWhere('configmgr_last_logon_user', 'like', "%{$search}%")
+                            ->orWhere('configmgr_mac_addresses', 'like', "%{$search}%");
+                    });
+                })
+        );
+    }
+
+    /**
+     * @return array<int, array{heading: string, value: callable(Asset): string|int|null}>
+     */
+    public function getExportColumns(): array
+    {
+        return [
+            ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
+            ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
+            ['heading' => 'Domäne', 'value' => fn (Asset $a) => $a->domain_connection ?? '—'],
+            ['heading' => 'Last seen', 'value' => fn (Asset $a) => $a->domain_last_seen?->format('d.m.Y H:i') ?? '—'],
+            ['heading' => 'Last Logon', 'value' => fn (Asset $a) => $a->last_logon_timestamp?->format('d.m.Y H:i') ?? '—'],
+            ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
+            ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
+            ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Status', 'value' => function (Asset $a) {
+                $status = [];
+                if ($a->is_missing) {
+                    $status[] = 'Vermisst';
+                }
+                if ($a->is_clarification) {
+                    $status[] = 'Klärung';
+                }
+                if (empty($status)) {
+                    $status[] = 'OK';
+                }
+                return implode(', ', $status);
+            }],
+        ];
+    }
+
+    public function getExportFilename(string $mode): string
+    {
+        return $mode === 'all' ? 'domaenengeraete-alle.xlsx' : 'domaenengeraete-gefiltert.xlsx';
+    }
+
+    public function exportExcelAll(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryAll(), $this->getExportColumns()),
+            $this->getExportFilename('all')
+        );
+    }
+
+    public function exportExcelFiltered(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(
+            new AssetsTableExport($this->getExportQueryFiltered(), $this->getExportColumns()),
+            $this->getExportFilename('filtered')
+        );
     }
 }; ?>
 <div>
@@ -81,6 +175,15 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                     />
                 </div>
             </div>
+            <flux:dropdown position="bottom" align="end">
+                <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
+                    Excel-Export
+                </flux:button>
+                <flux:menu>
+                    <flux:menu.item wire:click="exportExcelAll" icon="document-duplicate">Alle Daten exportieren</flux:menu.item>
+                    <flux:menu.item wire:click="exportExcelFiltered" icon="funnel">Gefilterte Daten exportieren</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
         </div>
 
         <flux:table>
