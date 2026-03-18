@@ -284,6 +284,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @endif
                     </dd>
 
+                    @if(filled($asset->intune_last_check_in))
+                        <dt class="font-semibold">Letzter Check-in</dt>
+                        <dd>{{ $asset->intune_last_check_in->format('d.m.Y H:i') }}</dd>
+                    @endif
+
                     <dt class="font-semibold">Bestellnummer</dt>
                     <dd>{{ $asset->order_number ?? '—' }}</dd>
 

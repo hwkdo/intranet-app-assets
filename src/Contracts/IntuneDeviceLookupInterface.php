@@ -10,9 +10,9 @@ interface IntuneDeviceLookupInterface
     public function findDeviceIdBySerialNumber(string $serialNumber): ?string;
 
     /**
-     * Sucht ein Intune-Gerät anhand der Seriennummer und gibt ID sowie IMEI zurück (für Sync).
+     * Sucht ein Intune-Gerät anhand der Seriennummer und gibt ID, IMEI und Last-Check-in zurück (für Sync).
      *
-     * @return array{id: string, imei: string|null}|null
+     * @return array{id: string, imei: string|null, lastSyncDateTime: string|null}|null
      */
     public function findDeviceBySerialNumber(string $serialNumber): ?array;
 }

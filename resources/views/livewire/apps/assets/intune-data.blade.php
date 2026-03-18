@@ -10,7 +10,7 @@ new class extends Component
     /** Lokale Intune-Geräte-ID aus dem Asset (Anzeige). */
     public ?string $intuneDeviceId = null;
 
-    /** @var array{id: string, deviceName: string|null, userDisplayName: string|null, serialNumber: string|null, imei: string|null, operatingSystem: string|null, osVersion: string|null, model: string|null, phoneNumber: string|null, wiFiMacAddress: string|null, complianceState: string|null}|null */
+    /** @var array{id: string, deviceName: string|null, userDisplayName: string|null, serialNumber: string|null, imei: string|null, operatingSystem: string|null, osVersion: string|null, model: string|null, phoneNumber: string|null, wiFiMacAddress: string|null, complianceState: string|null, lastSyncDateTime: string|null}|null */
     public ?array $intuneData = null;
 
     public ?string $intuneError = null;
@@ -31,6 +31,7 @@ new class extends Component
         'phoneNumber' => 'Telefonnummer',
         'wiFiMacAddress' => 'WiFi-MAC-Adresse',
         'complianceState' => 'Compliance',
+        'lastSyncDateTime' => 'Letzter Check-in',
     ];
 
     public function loadIntuneData(): void
@@ -97,7 +98,13 @@ new class extends Component
                             @foreach(static::$labels as $key => $label)
                                 @if(isset($intuneData[$key]) && (string) $intuneData[$key] !== '')
                                     <dt class="font-semibold">{{ $label }}</dt>
-                                    <dd @if(in_array($key, ['id', 'serialNumber', 'imei', 'wiFiMacAddress', 'phoneNumber'], true)) class="font-mono text-xs" @endif>{{ $intuneData[$key] }}</dd>
+                                    <dd @if(in_array($key, ['id', 'serialNumber', 'imei', 'wiFiMacAddress', 'phoneNumber'], true)) class="font-mono text-xs" @endif>
+                                        @if($key === 'lastSyncDateTime')
+                                            {{ \Carbon\Carbon::parse($intuneData[$key])->format('d.m.Y H:i') }}
+                                        @else
+                                            {{ $intuneData[$key] }}
+                                        @endif
+                                    </dd>
                                 @endif
                             @endforeach
                         </dl>

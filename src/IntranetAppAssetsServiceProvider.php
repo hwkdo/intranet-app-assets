@@ -5,6 +5,8 @@ namespace Hwkdo\IntranetAppAssets;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
+use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
+use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Illuminate\Console\Scheduling\Schedule;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
@@ -32,6 +34,11 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        $msgraphInterface = \Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface::class;
+        if (interface_exists($msgraphInterface) && $this->app->bound($msgraphInterface)) {
+            $this->app->bind(IntuneDeviceLookupInterface::class, MsGraphIntuneDeviceLookup::class);
+        }
 
         Livewire::addNamespace(
             namespace: 'intranet-app-assets',

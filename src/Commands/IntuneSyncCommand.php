@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Commands;
 
+use Carbon\Carbon;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
@@ -13,7 +14,7 @@ class IntuneSyncCommand extends Command
     protected $signature = 'intranet-app-assets:intune-sync
                             {--details : Pro Asset ausgeben, ob in Intune gefunden und ID gesetzt}';
 
-    protected $description = 'Findet Intune-Geräte anhand der Seriennummer und speichert die Intune-Geräte-ID für Assets mit Intune-Typ, die noch keine ID haben.';
+    protected $description = 'Findet Intune-Geräte anhand der Seriennummer und aktualisiert Intune-Geräte-ID, IMEI und Last Check-in für alle Intune-Typ-Assets.';
 
     public function handle(): int
     {
@@ -28,19 +29,17 @@ class IntuneSyncCommand extends Command
 
         $intuneTypeIds = AssetType::where('is_intune_object', true)->pluck('id');
         $assets = Asset::whereIn('asset_type_id', $intuneTypeIds)
-            ->where(function ($query) {
-                $query->whereNull('intune_device_id')
-                    ->orWhere('intune_device_id', '');
-            })
+            ->whereNotNull('serial_number')
+            ->where('serial_number', '!=', '')
             ->get();
 
-        $this->info('Prüfe '.$assets->count().' Assets mit Intune-Typ ohne Geräte-ID…');
+        $this->info('Prüfe '.$assets->count().' Assets mit Intune-Typ (Seriennummer gesetzt)…');
 
         $updated = 0;
         foreach ($assets as $asset) {
-            $serial = $asset->serial_number;
+            $serial = trim($asset->serial_number ?? '');
 
-            if (empty($serial)) {
+            if ($serial === '') {
                 if ($verbose) {
                     $this->line("  Asset #{$asset->id}: Seriennummer leer – übersprungen.");
                 }
@@ -51,24 +50,31 @@ class IntuneSyncCommand extends Command
             $device = $intune->findDeviceBySerialNumber($serial);
 
             if ($device !== null) {
+                $hadNoIntuneId = empty($asset->intune_device_id);
                 $asset->intune_device_id = $device['id'];
-                $asset->imei = $device['imei'];
+                $asset->imei = $device['imei'] ?? $asset->imei;
+                $asset->intune_last_check_in = isset($device['lastSyncDateTime']) && $device['lastSyncDateTime'] !== null && $device['lastSyncDateTime'] !== ''
+                    ? Carbon::parse($device['lastSyncDateTime'])
+                    : null;
                 $asset->save();
-                $asset->historyEntries()->create([
-                    'event' => AssetHistory::EventUpdated,
-                    'user_id' => null,
-                ]);
+                if ($hadNoIntuneId) {
+                    $asset->historyEntries()->create([
+                        'event' => AssetHistory::EventUpdated,
+                        'user_id' => null,
+                    ]);
+                }
                 $updated++;
                 if ($verbose) {
-                    $imeiInfo = $device['imei'] !== null && $device['imei'] !== '' ? ', IMEI gespeichert' : '';
-                    $this->line("  Asset #{$asset->id} (SN: {$serial}): in Intune gefunden → ID gespeichert{$imeiInfo}.");
+                    $imeiInfo = ($device['imei'] ?? null) !== null && ($device['imei'] ?? '') !== '' ? ', IMEI gespeichert' : '';
+                    $checkInInfo = $asset->intune_last_check_in !== null ? ', Last Check-in aktualisiert' : '';
+                    $this->line("  Asset #{$asset->id} (SN: {$serial}): in Intune gefunden → ID gespeichert{$imeiInfo}{$checkInInfo}.");
                 }
             } elseif ($verbose) {
                 $this->line("  Asset #{$asset->id} (SN: {$serial}): nicht in Intune gefunden.");
             }
         }
 
-        $this->info("  → {$updated} Asset(s) mit Intune-Geräte-ID (und ggf. IMEI) aktualisiert.");
+        $this->info("  → {$updated} Asset(s) aktualisiert (Intune-Geräte-ID, ggf. IMEI und Last Check-in).");
 
         return self::SUCCESS;
     }
