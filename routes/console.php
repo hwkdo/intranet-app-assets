@@ -13,3 +13,7 @@ Schedule::command('intranet-app-assets:intune-sync')
 Schedule::command('intranet-app-assets:sync-configmgr-data')
     ->dailyAt('03:22')
     ->when(fn () => config('app.env') === 'production');
+
+Schedule::command('intranet-app-assets:itexia-uuid-sync')
+    ->everyFifteenMinutes()
+    ->when(fn () => config('app.env') === 'production');
