@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 class ItexiaUuidSyncCommand extends Command
 {
     protected $signature = 'intranet-app-assets:itexia-uuid-sync
-                            {--details : Pro Asset ausgeben, ob in Seventhings gefunden und UUID gesetzt}';
+                            {--details : Pro Asset ausgeben, ob in Seventhings gefunden und UUID gesetzt}
+                            {--limit= : Maximal so viele Datensätze prüfen (ohne Angabe: alle)}';
 
     protected $description = 'Findet für alle Assets mit Itexia-ID (Barcode) den zugehörigen Seventhings-Datensatz und speichert die Objekt-UUID (itexia_uuid).';
 
@@ -29,16 +30,24 @@ class ItexiaUuidSyncCommand extends Command
 
         $client = $this->laravel->make($seventhingsClass);
         $verbose = $this->option('details');
+        $limit = $this->option('limit') !== null ? (int) $this->option('limit') : null;
 
-        $assets = Asset::whereNotNull('itexia_id')
+        $query = Asset::whereNotNull('itexia_id')
             ->where('itexia_id', '!=', '')
             ->whereNull('itexia_uuid')
-            ->orderBy('itexia_check_at', 'asc')
-            ->get();
+            ->orderBy('itexia_check_at', 'asc');
 
+        if ($limit !== null && $limit > 0) {
+            $query->limit($limit);
+        }
+
+        $assets = $query->get();
         $total = $assets->count();
-        $this->info('Prüfe '.$total.' Assets mit Itexia-ID…');
-        Log::info('intranet-app-assets:itexia-uuid-sync', ['assets_to_process' => $total]);
+        $this->info('Prüfe '.$total.' Assets mit Itexia-ID'.($limit !== null ? ' (Limit: '.$limit.')' : '').'…');
+        Log::info('intranet-app-assets:itexia-uuid-sync', [
+            'assets_to_process' => $total,
+            'limit' => $limit,
+        ]);
 
         $updated = 0;
         $skippedEmpty = 0;

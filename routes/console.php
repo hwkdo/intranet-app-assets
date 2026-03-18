@@ -14,6 +14,6 @@ Schedule::command('intranet-app-assets:sync-configmgr-data')
     ->dailyAt('03:22')
     ->when(fn () => config('app.env') === 'production');
 
-Schedule::command('intranet-app-assets:itexia-uuid-sync')
+Schedule::command('intranet-app-assets:itexia-uuid-sync --limit=100')
     ->everyFifteenMinutes()
     ->when(fn () => config('app.env') === 'production');
