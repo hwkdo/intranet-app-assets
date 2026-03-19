@@ -2,13 +2,16 @@
 
 use App\Models\User;
 use Flux\Flux;
-use Hwkdo\IntranetAppAssets\ItexiaCreation;
 use Hwkdo\IntranetAppAssets\Data\AppSettings;
+use Hwkdo\IntranetAppAssets\ItexiaCreation;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
+use Hwkdo\SeventhingsLaravel\SeventhingsLaravel;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -228,7 +231,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.name' => 'nullable|string|max:255',
             'units.*.user_id' => 'nullable|exists:users,id',
             'units.*.order_number' => 'nullable|string|max:255',
-            'units.*.invoice_number' => 'nullable|string|max:255',
+            'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.invoice_number_unknown' => 'boolean',
             'units.*.itexia_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
@@ -244,16 +247,36 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
         }
         if ($this->invoiceNumberRequired) {
             foreach (array_keys($this->units) as $i) {
-                $rules["units.{$i}.invoice_number"] = 'required_unless:units.'.$i.'.invoice_number_unknown,true|nullable|string|max:255';
+                $rules["units.{$i}.invoice_number"] = ['required_unless:units.'.$i.'.invoice_number_unknown,true', 'nullable', 'string', 'max:255', new ValidD3InvoiceNumber];
             }
         } else {
-            $rules['units.*.invoice_number'] = 'nullable|string|max:255';
+            $rules['units.*.invoice_number'] = ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber];
         }
         if ($this->itexiaIdRequired) {
             $rules['units.*.itexia_id'] = 'required|string|max:255';
         }
 
         return $rules;
+    }
+
+    public function updatedUnits(): void
+    {
+        $service = app(D3InvoiceValidationService::class);
+        foreach ($this->units as $i => $unit) {
+            $attr = 'units.'.$i.'.invoice_number';
+            if (! $this->showInvoiceNumber || ($unit['invoice_number_unknown'] ?? false)) {
+                $this->clearValidation($attr);
+
+                continue;
+            }
+            $value = $unit['invoice_number'] ?? '';
+            $error = $service->getValidationError(is_string($value) ? $value : '');
+            if ($error !== null) {
+                $this->addError($attr, $error);
+            } else {
+                $this->clearValidation($attr);
+            }
+        }
     }
 
     public function save(): void
@@ -316,7 +339,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             return;
         }
 
-        $seventhingsClass = \Hwkdo\SeventhingsLaravel\SeventhingsLaravel::class;
+        $seventhingsClass = SeventhingsLaravel::class;
         if (! class_exists($seventhingsClass) || ! app()->bound($seventhingsClass)) {
             Flux::toast('Seventhings ist nicht verfügbar – Asset wurde erstellt, Anlage in Itexia unterblieb.', variant: 'warning');
 
@@ -343,7 +366,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'itexia_check_at' => now(),
             ]);
             Flux::toast('Asset wurde erstellt und in Itexia/Seventhings angelegt.', variant: 'success');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Flux::toast('Asset erstellt. Anlage in Itexia fehlgeschlagen: '.$e->getMessage(), variant: 'danger');
         }
     }
@@ -509,13 +532,16 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             @endif
                             @if($this->showInvoiceNumber)
                                 <flux:field>
-                                    <flux:label>Rechnungsnummer @if($this->invoiceNumberRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
                                     @if($this->invoiceNumberRequired)
                                         <flux:checkbox wire:model.live="units.{{ $index }}.invoice_number_unknown" label="Rechnungsnr. noch nicht bekannt" class="mb-2" />
                                     @endif
                                     @if(!($unit['invoice_number_unknown'] ?? false))
-                                        <flux:input wire:model="units.{{ $index }}.invoice_number" placeholder="{{ $this->invoiceNumberRequired ? 'Pflicht' : 'Optional' }}" />
-                                        <flux:error name="units.{{ $index }}.invoice_number" />
+                                        <x-intranet-app-assets::invoice-number-input
+                                            name="units.{{ $index }}.invoice_number"
+                                            wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
+                                            :placeholder="$this->invoiceNumberRequired ? 'Pflicht' : 'Optional'"
+                                            :required="$this->invoiceNumberRequired"
+                                        />
                                     @endif
                                 </flux:field>
                             @endif

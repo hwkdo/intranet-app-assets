@@ -4,6 +4,8 @@ use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -137,7 +139,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units.*.user_id' => 'nullable|exists:users,id',
             'units.*.itexia_id' => 'nullable|string|max:255',
             'units.*.order_number' => 'nullable|string|max:255',
-            'units.*.invoice_number' => 'nullable|string|max:255',
+            'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.domain_connection' => 'nullable|string|in:default,schulung',
             'units.*.intune_device_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
@@ -145,6 +147,21 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
         ];
 
         return $rules;
+    }
+
+    public function updatedUnits(): void
+    {
+        $service = app(D3InvoiceValidationService::class);
+        foreach ($this->units as $i => $unit) {
+            $attr = 'units.'.$i.'.invoice_number';
+            $value = $unit['invoice_number'] ?? '';
+            $error = $service->getValidationError(is_string($value) ? $value : '');
+            if ($error !== null) {
+                $this->addError($attr, $error);
+            } else {
+                $this->clearValidation($attr);
+            }
+        }
     }
 
     public function save(): void
@@ -289,11 +306,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             <flux:error name="units.{{ $index }}.order_number" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label>Rechnungsnummer</flux:label>
-                            <flux:input wire:model="units.{{ $index }}.invoice_number" placeholder="Optional" />
-                            <flux:error name="units.{{ $index }}.invoice_number" />
-                        </flux:field>
+                        <x-intranet-app-assets::invoice-number-input
+                            name="units.{{ $index }}.invoice_number"
+                            wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
+                            placeholder="Optional"
+                        />
 
                         @if($this->showDomainConnectionField)
                             <flux:field>

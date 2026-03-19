@@ -1,15 +1,21 @@
 <?php
 
+use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
-new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class extends Component {
+new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class extends Component
+{
     public Asset $asset;
 
     #[Validate('required|string|max:255')]
@@ -43,6 +49,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     public ?string $invoice_number = null;
 
     public bool $is_clarification = false;
+
     public bool $is_missing = false;
 
     #[Validate('nullable|string|in:default,schulung')]
@@ -87,26 +94,47 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     }
 
     #[Computed]
-    public function assetTypes(): \Illuminate\Database\Eloquent\Collection
+    public function assetTypes(): Collection
     {
         return AssetType::allOrdered();
     }
 
     #[Computed]
-    public function assetVendors(): \Illuminate\Database\Eloquent\Collection
+    public function assetVendors(): Collection
     {
         return AssetVendor::allOrdered();
     }
 
     #[Computed]
-    public function users(): \Illuminate\Database\Eloquent\Collection
+    public function users(): Collection
     {
-        return \App\Models\User::orderBy('nachname')->orderBy('vorname')->get();
+        return User::orderBy('nachname')->orderBy('vorname')->get();
+    }
+
+    public function updatedInvoiceNumber(?string $value): void
+    {
+        $service = app(D3InvoiceValidationService::class);
+        $error = $service->getValidationError($value ?? '');
+        if ($error !== null) {
+            $this->addError('invoice_number', $error);
+        } else {
+            $this->clearValidation('invoice_number');
+        }
     }
 
     public function save(): void
     {
         $validated = $this->validate();
+
+        $invoiceValidator = Validator::make(
+            ['invoice_number' => $validated['invoice_number'] ?? null],
+            ['invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber]]
+        );
+        if ($invoiceValidator->fails()) {
+            $this->addError('invoice_number', $invoiceValidator->errors()->first('invoice_number'));
+
+            return;
+        }
 
         $invoiceFilled = isset($validated['invoice_number']) && trim((string) $validated['invoice_number']) !== '';
         if ($invoiceFilled && $this->asset->invoice_number_pending) {
@@ -219,11 +247,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 Rechnungsnummer noch offen – bitte nachtragen.
             </flux:callout>
             @endif
-            <flux:field>
-                <flux:label>Rechnungsnummer</flux:label>
-                <flux:input wire:model="invoice_number" placeholder="Optional" />
-                <flux:error name="invoice_number" />
-            </flux:field>
+            <x-intranet-app-assets::invoice-number-input name="invoice_number" wire:model.live.debounce.800ms="invoice_number" placeholder="Optional" />
         </div>
 
         <div class="flex gap-4">

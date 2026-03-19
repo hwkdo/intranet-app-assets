@@ -33,4 +33,10 @@ return [
      * angezeigt und verlinkt auf diese URL mit handover_id, asset_id und recipient_id als Query-Parameter.
      */
     'formwerk_handover_url' => env('INTRANET_APP_ASSETS_FORMWERK_HANDOVER_URL', ''),
+
+    /*
+     * Erwarteter Belegtyp-ZB in D3 für gültige Rechnungen (Property 82).
+     * Nur Zahlungsbelege mit diesem Belegtyp werden als valide Rechnungsnummer akzeptiert.
+     */
+    'd3_invoice_belegtyp' => env('INTRANET_APP_ASSETS_D3_INVOICE_BELEGTYP', 'Rechnung'),
 ];
