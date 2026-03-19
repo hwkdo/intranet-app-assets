@@ -33,12 +33,18 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->name('apps.assets.handover.confirm-by-signopad');
 
     // Spezifische manage-Routen VOR dem {asset}-Wildcard
+    Route::livewire('apps/assets/create/wizard', 'intranet-app-assets::apps.assets.create-wizard')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.create.wizard');
     Route::livewire('apps/assets/create', 'intranet-app-assets::apps.assets.create')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.create');
     Route::livewire('apps/assets/admin', 'intranet-app-assets::apps.assets.admin.index')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.index');
+    Route::livewire('apps/assets/fehlende-rechnung', 'intranet-app-assets::apps.assets.fehlende-rechnung-overview')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.fehlende-rechnung');
 
     // Wildcard-Routen zuletzt
     Route::livewire('apps/assets/{asset}', 'intranet-app-assets::apps.assets.show')->name('apps.assets.show');

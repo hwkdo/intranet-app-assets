@@ -17,6 +17,7 @@ class Asset extends Model
     protected function casts(): array
     {
         return [
+            'invoice_number_pending' => 'boolean',
             'is_clarification' => 'boolean',
             'is_missing' => 'boolean',
             'domain_last_seen' => 'datetime',
@@ -24,7 +25,6 @@ class Asset extends Model
             'last_logon' => 'datetime',
             'last_logon_timestamp' => 'datetime',
             'itexia_check_at' => 'datetime',
-            'intune_last_check_in' => 'datetime',
             'configmgr_mac_addresses' => 'array',
         ];
     }
@@ -45,6 +45,24 @@ class Asset extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function scopeInvoiceNumberPending($query)
+    {
+        return $query->where('invoice_number_pending', true)
+            ->where(function ($q) {
+                $q->whereNull('invoice_number')->orWhere('invoice_number', '');
+            });
     }
 
     /** @return MorphMany<AssetNote, $this> */

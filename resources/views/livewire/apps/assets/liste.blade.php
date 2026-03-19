@@ -185,9 +185,15 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:menu>
                 </flux:dropdown>
                 @can('manage-app-assets')
-                    <flux:button href="{{ route('apps.assets.create') }}" variant="primary" icon="plus">
-                        Neues Asset
-                    </flux:button>
+                    <flux:dropdown position="bottom" align="end">
+                        <flux:button variant="primary" icon="plus" icon-trailing="chevron-down">
+                            Neues Asset
+                        </flux:button>
+                        <flux:menu>
+                            <flux:menu.item href="{{ route('apps.assets.create') }}" icon="pencil-square">Direkteingabe</flux:menu.item>
+                            <flux:menu.item href="{{ route('apps.assets.create.wizard') }}" icon="cursor-arrow-rays">Assistent</flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
                 @endcan
             </div>
         </div>

@@ -22,5 +22,11 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Liste der erlaubten Bereiche')]
         public array $allowedAreas = ['public', 'private'],
+
+        #[Description('Wertgrenze in Euro (z. B. 250) für Assistenten-Logik und Itexia-Pflichtfelder')]
+        public int $wertgrenzeItexia = 250,
+
+        #[Description('Bestellnummer (BEN) bei „Aus Bestellung“ auch bei Wert unter der Wertgrenze Pflicht')]
+        public bool $benBenoetigtWennWertKleinerGrenze = true,
     ) {}
 }

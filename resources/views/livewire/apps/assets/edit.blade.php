@@ -108,6 +108,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     {
         $validated = $this->validate();
 
+        $invoiceFilled = isset($validated['invoice_number']) && trim((string) $validated['invoice_number']) !== '';
+        if ($invoiceFilled && $this->asset->invoice_number_pending) {
+            $validated['invoice_number_pending'] = false;
+        }
+
         $this->asset->update($validated);
         $this->asset->ensureHandoverForOwner();
 
@@ -209,6 +214,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 <flux:error name="order_number" />
             </flux:field>
 
+            @if($asset->invoice_number_pending)
+            <flux:callout variant="warning" icon="exclamation-triangle" class="col-span-full">
+                Rechnungsnummer noch offen – bitte nachtragen.
+            </flux:callout>
+            @endif
             <flux:field>
                 <flux:label>Rechnungsnummer</flux:label>
                 <flux:input wire:model="invoice_number" placeholder="Optional" />
