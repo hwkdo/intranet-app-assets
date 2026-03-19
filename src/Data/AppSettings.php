@@ -28,5 +28,8 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Bestellnummer (BEN) bei „Aus Bestellung“ auch bei Wert unter der Wertgrenze Pflicht')]
         public bool $benBenoetigtWennWertKleinerGrenze = true,
+
+        #[Description('Basis-URL für DMS/D3-Links (Rechnung/Bestellung). Leer = Fallback auf d3-rest-laravel (dms-search-url). Nur setzen zum Überschreiben.')]
+        public string $dmsBaseUrl = '',
     ) {}
 }

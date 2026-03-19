@@ -3,6 +3,8 @@
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -104,6 +106,28 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery())->paginate(25);
+    }
+
+    #[Computed]
+    public function dmsBaseUrl(): string
+    {
+        $fromSettings = trim(IntranetAppAssetsSettings::current()?->settings?->dmsBaseUrl ?? '');
+
+        if ($fromSettings !== '') {
+            return $fromSettings;
+        }
+
+        return DmsLinkHelper::baseUrlFromDmsSearchUrl(config('d3-rest-laravel.dms-search-url', ''));
+    }
+
+    public function invoiceNumberLink(?string $number): ?string
+    {
+        return DmsLinkHelper::invoiceUrl($this->dmsBaseUrl, $number);
+    }
+
+    public function orderNumberLink(?string $number): ?string
+    {
+        return DmsLinkHelper::orderNumberUrl($this->dmsBaseUrl, $number);
     }
 
     /**
@@ -245,8 +269,22 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                                 <span class="block truncate">{{ $uuid }}</span>
                             </flux:tooltip>
                         </flux:table.cell>
-                        <flux:table.cell class="text-sm">{{ $asset->invoice_number ?? '—' }}</flux:table.cell>
-                        <flux:table.cell class="text-sm">{{ $asset->order_number ?? '—' }}</flux:table.cell>
+                        <flux:table.cell class="text-sm">
+                            @php $invoiceLink = $this->invoiceNumberLink($asset->invoice_number); @endphp
+                            @if($invoiceLink)
+                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->invoice_number ?? '—' }}</a>
+                            @else
+                                {{ $asset->invoice_number ?? '—' }}
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell class="text-sm">
+                            @php $orderLink = $this->orderNumberLink($asset->order_number); @endphp
+                            @if($orderLink)
+                                <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->order_number ?? '—' }}</a>
+                            @else
+                                {{ $asset->order_number ?? '—' }}
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name }}</flux:table.cell>
                         <flux:table.cell class="max-w-[10rem]">
                             @php $vendorName = $asset->vendor?->name ?? '—'; @endphp

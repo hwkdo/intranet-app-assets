@@ -2,6 +2,8 @@
 
 use Flux\Flux;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -117,6 +119,28 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
     public function handoversSorted(): \Illuminate\Support\Collection
     {
         return $this->asset->handovers->sortByDesc('created_at')->values();
+    }
+
+    #[Computed]
+    public function dmsBaseUrl(): string
+    {
+        $fromSettings = trim(IntranetAppAssetsSettings::current()?->settings?->dmsBaseUrl ?? '');
+
+        if ($fromSettings !== '') {
+            return $fromSettings;
+        }
+
+        return DmsLinkHelper::baseUrlFromDmsSearchUrl(config('d3-rest-laravel.dms-search-url', ''));
+    }
+
+    public function invoiceNumberLink(?string $number): ?string
+    {
+        return DmsLinkHelper::invoiceUrl($this->dmsBaseUrl, $number);
+    }
+
+    public function orderNumberLink(?string $number): ?string
+    {
+        return DmsLinkHelper::orderNumberUrl($this->dmsBaseUrl, $number);
     }
 
     public function delete(): void
@@ -290,12 +314,24 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     @endif
 
                     <dt class="font-semibold">Bestellnummer</dt>
-                    <dd>{{ $asset->order_number ?? '—' }}</dd>
+                    <dd>
+                        @php $orderLink = $this->orderNumberLink($asset->order_number); @endphp
+                        @if($orderLink)
+                            <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->order_number }}</a>
+                        @else
+                            {{ $asset->order_number ?? '—' }}
+                        @endif
+                    </dd>
 
                     <dt class="font-semibold">Rechnungsnummer</dt>
                     <dd class="flex flex-col gap-2">
                         @if(filled($asset->invoice_number))
-                            <span class="font-mono">{{ $asset->invoice_number }}</span>
+                            @php $invoiceLink = $this->invoiceNumberLink($asset->invoice_number); @endphp
+                            @if($invoiceLink)
+                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="font-mono text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->invoice_number }}</a>
+                            @else
+                                <span class="font-mono">{{ $asset->invoice_number }}</span>
+                            @endif
                             @if($this->isInvalidInvoiceNumber($asset->invoice_number))
                                 <flux:callout variant="warning" icon="exclamation-triangle" class="mt-0">
                                     <flux:callout.text>Das Format der Rechnungsnummer ist ungültig. Eine gültige Rechnungsnummer beginnt mit „T“ und enthält danach nur Ziffern (z. B. T12345).</flux:callout.text>
