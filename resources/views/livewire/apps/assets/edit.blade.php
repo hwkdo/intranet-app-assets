@@ -1,21 +1,20 @@
 <?php
 
-use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Illuminate\Support\Facades\Validator;
 
-new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class extends Component
-{
+new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class extends Component {
     public Asset $asset;
 
     #[Validate('required|string|max:255')]
@@ -49,7 +48,6 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     public ?string $invoice_number = null;
 
     public bool $is_clarification = false;
-
     public bool $is_missing = false;
 
     #[Validate('nullable|string|in:default,schulung')]
@@ -94,21 +92,21 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     }
 
     #[Computed]
-    public function assetTypes(): Collection
+    public function assetTypes(): \Illuminate\Database\Eloquent\Collection
     {
         return AssetType::allOrdered();
     }
 
     #[Computed]
-    public function assetVendors(): Collection
+    public function assetVendors(): \Illuminate\Database\Eloquent\Collection
     {
         return AssetVendor::allOrdered();
     }
 
     #[Computed]
-    public function users(): Collection
+    public function users(): \Illuminate\Database\Eloquent\Collection
     {
-        return User::orderBy('nachname')->orderBy('vorname')->get();
+        return \App\Models\User::orderBy('nachname')->orderBy('vorname')->get();
     }
 
     public function updatedInvoiceNumber(?string $value): void
@@ -122,6 +120,17 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         }
     }
 
+    public function updatedOrderNumber(?string $value): void
+    {
+        $service = app(OrderNumberValidationServiceInterface::class);
+        $error = $service->getValidationError($value ?? '');
+        if ($error !== null) {
+            $this->addError('order_number', $error);
+        } else {
+            $this->clearValidation('order_number');
+        }
+    }
+
     public function save(): void
     {
         $validated = $this->validate();
@@ -132,6 +141,16 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         );
         if ($invoiceValidator->fails()) {
             $this->addError('invoice_number', $invoiceValidator->errors()->first('invoice_number'));
+
+            return;
+        }
+
+        $orderNumberValidator = Validator::make(
+            ['order_number' => $validated['order_number'] ?? null],
+            ['order_number' => ['nullable', 'string', 'max:255', new ValidOrderNumber]]
+        );
+        if ($orderNumberValidator->fails()) {
+            $this->addError('order_number', $orderNumberValidator->errors()->first('order_number'));
 
             return;
         }
@@ -236,11 +255,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 <flux:error name="itexia_id" />
             </flux:field>
 
-            <flux:field>
-                <flux:label>Bestellnummer</flux:label>
-                <flux:input wire:model="order_number" placeholder="Optional" />
-                <flux:error name="order_number" />
-            </flux:field>
+            <x-intranet-app-assets::order-number-input name="order_number" wire:model.live.debounce.800ms="order_number" placeholder="Optional" />
 
             @if($asset->invoice_number_pending)
             <flux:callout variant="warning" icon="exclamation-triangle" class="col-span-full">

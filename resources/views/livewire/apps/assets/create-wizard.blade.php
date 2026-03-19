@@ -2,16 +2,17 @@
 
 use App\Models\User;
 use Flux\Flux;
-use Hwkdo\IntranetAppAssets\Data\AppSettings;
 use Hwkdo\IntranetAppAssets\ItexiaCreation;
+use Hwkdo\IntranetAppAssets\Data\AppSettings;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
-use Hwkdo\SeventhingsLaravel\SeventhingsLaravel;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -230,7 +231,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.serial_number' => 'required|string|max:255',
             'units.*.name' => 'nullable|string|max:255',
             'units.*.user_id' => 'nullable|exists:users,id',
-            'units.*.order_number' => 'nullable|string|max:255',
+            'units.*.order_number' => ['nullable', 'string', 'max:255', new ValidOrderNumber],
             'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.invoice_number_unknown' => 'boolean',
             'units.*.itexia_id' => 'nullable|string|max:255',
@@ -243,7 +244,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
         }
 
         if ($this->orderNumberRequired) {
-            $rules['units.*.order_number'] = 'required|string|max:255';
+            $rules['units.*.order_number'] = ['required', 'string', 'max:255', new ValidOrderNumber];
         }
         if ($this->invoiceNumberRequired) {
             foreach (array_keys($this->units) as $i) {
@@ -261,20 +262,30 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
 
     public function updatedUnits(): void
     {
-        $service = app(D3InvoiceValidationService::class);
+        $invoiceService = app(D3InvoiceValidationService::class);
+        $orderNumberService = app(OrderNumberValidationServiceInterface::class);
         foreach ($this->units as $i => $unit) {
             $attr = 'units.'.$i.'.invoice_number';
             if (! $this->showInvoiceNumber || ($unit['invoice_number_unknown'] ?? false)) {
                 $this->clearValidation($attr);
-
-                continue;
-            }
-            $value = $unit['invoice_number'] ?? '';
-            $error = $service->getValidationError(is_string($value) ? $value : '');
-            if ($error !== null) {
-                $this->addError($attr, $error);
             } else {
-                $this->clearValidation($attr);
+                $value = $unit['invoice_number'] ?? '';
+                $error = $invoiceService->getValidationError(is_string($value) ? $value : '');
+                if ($error !== null) {
+                    $this->addError($attr, $error);
+                } else {
+                    $this->clearValidation($attr);
+                }
+            }
+            if ($this->showOrderNumber) {
+                $orderAttr = 'units.'.$i.'.order_number';
+                $orderValue = $unit['order_number'] ?? '';
+                $orderError = $orderNumberService->getValidationError(is_string($orderValue) ? $orderValue : '');
+                if ($orderError !== null) {
+                    $this->addError($orderAttr, $orderError);
+                } else {
+                    $this->clearValidation($orderAttr);
+                }
             }
         }
     }
@@ -339,7 +350,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             return;
         }
 
-        $seventhingsClass = SeventhingsLaravel::class;
+        $seventhingsClass = \Hwkdo\SeventhingsLaravel\SeventhingsLaravel::class;
         if (! class_exists($seventhingsClass) || ! app()->bound($seventhingsClass)) {
             Flux::toast('Seventhings ist nicht verfügbar – Asset wurde erstellt, Anlage in Itexia unterblieb.', variant: 'warning');
 
@@ -366,7 +377,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'itexia_check_at' => now(),
             ]);
             Flux::toast('Asset wurde erstellt und in Itexia/Seventhings angelegt.', variant: 'success');
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             Flux::toast('Asset erstellt. Anlage in Itexia fehlgeschlagen: '.$e->getMessage(), variant: 'danger');
         }
     }
@@ -524,11 +535,12 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                 <flux:error name="units.{{ $index }}.user_id" />
                             </flux:field>
                             @if($this->showOrderNumber)
-                                <flux:field>
-                                    <flux:label>BEN (Bestellnummer) @if($this->orderNumberRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
-                                    <flux:input wire:model="units.{{ $index }}.order_number" placeholder="{{ $this->orderNumberRequired ? 'Pflicht bei Wert ab ' . $this->wertgrenzeItexia . ' €' : 'Optional' }}" />
-                                    <flux:error name="units.{{ $index }}.order_number" />
-                                </flux:field>
+                                <x-intranet-app-assets::order-number-input
+                                    name="units.{{ $index }}.order_number"
+                                    wire:model.live.debounce.800ms="units.{{ $index }}.order_number"
+                                    :placeholder="$this->orderNumberRequired ? 'Pflicht bei Wert ab ' . $this->wertgrenzeItexia . ' €' : 'Optional'"
+                                    :required="$this->orderNumberRequired"
+                                />
                             @endif
                             @if($this->showInvoiceNumber)
                                 <flux:field>

@@ -4,7 +4,9 @@ use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
+use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -138,7 +140,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units.*.location' => 'nullable|string|max:255',
             'units.*.user_id' => 'nullable|exists:users,id',
             'units.*.itexia_id' => 'nullable|string|max:255',
-            'units.*.order_number' => 'nullable|string|max:255',
+            'units.*.order_number' => ['nullable', 'string', 'max:255', new ValidOrderNumber],
             'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.domain_connection' => 'nullable|string|in:default,schulung',
             'units.*.intune_device_id' => 'nullable|string|max:255',
@@ -151,15 +153,24 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
     public function updatedUnits(): void
     {
-        $service = app(D3InvoiceValidationService::class);
+        $invoiceService = app(D3InvoiceValidationService::class);
+        $orderNumberService = app(OrderNumberValidationServiceInterface::class);
         foreach ($this->units as $i => $unit) {
-            $attr = 'units.'.$i.'.invoice_number';
+            $invoiceAttr = 'units.'.$i.'.invoice_number';
             $value = $unit['invoice_number'] ?? '';
-            $error = $service->getValidationError(is_string($value) ? $value : '');
+            $error = $invoiceService->getValidationError(is_string($value) ? $value : '');
             if ($error !== null) {
-                $this->addError($attr, $error);
+                $this->addError($invoiceAttr, $error);
             } else {
-                $this->clearValidation($attr);
+                $this->clearValidation($invoiceAttr);
+            }
+            $orderAttr = 'units.'.$i.'.order_number';
+            $orderValue = $unit['order_number'] ?? '';
+            $orderError = $orderNumberService->getValidationError(is_string($orderValue) ? $orderValue : '');
+            if ($orderError !== null) {
+                $this->addError($orderAttr, $orderError);
+            } else {
+                $this->clearValidation($orderAttr);
             }
         }
     }
@@ -300,11 +311,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             <flux:error name="units.{{ $index }}.itexia_id" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label>Bestellnummer</flux:label>
-                            <flux:input wire:model="units.{{ $index }}.order_number" placeholder="Optional" />
-                            <flux:error name="units.{{ $index }}.order_number" />
-                        </flux:field>
+                        <x-intranet-app-assets::order-number-input
+                            name="units.{{ $index }}.order_number"
+                            wire:model.live.debounce.800ms="units.{{ $index }}.order_number"
+                            placeholder="Optional"
+                        />
 
                         <x-intranet-app-assets::invoice-number-input
                             name="units.{{ $index }}.invoice_number"

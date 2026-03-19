@@ -6,6 +6,8 @@ use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
+use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
+use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Illuminate\Console\Scheduling\Schedule;
 use Livewire\Livewire;
@@ -14,6 +16,18 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class IntranetAppAssetsServiceProvider extends PackageServiceProvider
 {
+    public function register(): void
+    {
+        parent::register();
+
+        if (class_exists(\App\Services\IntranetLegacyService::class)) {
+            $this->app->bind(
+                OrderNumberValidationServiceInterface::class,
+                LegacyOrderNumberValidationService::class
+            );
+        }
+    }
+
     public function configurePackage(Package $package): void
     {
         $package
