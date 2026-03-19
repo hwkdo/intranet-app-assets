@@ -56,6 +56,15 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
         if ($suggestedName !== null) {
             $newUnit['name'] = $suggestedName;
         }
+        if (count($this->units) > 0) {
+            $first = $this->units[0];
+            if (filled($first['order_number'] ?? null)) {
+                $newUnit['order_number'] = trim((string) $first['order_number']);
+            }
+            if (filled($first['invoice_number'] ?? null)) {
+                $newUnit['invoice_number'] = trim((string) $first['invoice_number']);
+            }
+        }
         $this->units[] = $newUnit;
     }
 
