@@ -18,6 +18,7 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/liste', 'intranet-app-assets::apps.assets.liste')->name('apps.assets.liste');
     Route::livewire('apps/assets/mobilgeraete', 'intranet-app-assets::apps.assets.mobilgeraete')->name('apps.assets.mobilgeraete');
     Route::livewire('apps/assets/domaenengeraete', 'intranet-app-assets::apps.assets.domaenengeraete')->name('apps.assets.domaenengeraete');
+    Route::livewire('apps/assets/domain-compare', 'intranet-app-assets::apps.assets.domain-compare')->name('apps.assets.domain-compare');
     Route::livewire('apps/assets/itexiageraete', 'intranet-app-assets::apps.assets.itexiageraete')->name('apps.assets.itexiageraete');
     Route::livewire('apps/assets/settings/user', 'intranet-app-assets::apps.assets.settings.user')->name('apps.assets.settings.user');
 

@@ -31,5 +31,11 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Basis-URL für DMS/D3-Links (Rechnung/Bestellung). Leer = Fallback auf d3-rest-laravel (dms-search-url). Nur setzen zum Überschreiben.')]
         public string $dmsBaseUrl = '',
+
+        #[Description('LDAP-Attribut für die Itexia-ID am Computer-Objekt (z. B. msDS-cloudExtensionAttribute10)')]
+        public string $ldapItexiaIdAttribute = 'msDS-cloudExtensionAttribute10',
+
+        #[Description('OU-DNs pro Connection für die AD-Computer-Suche beim Domain-Abgleich. JSON: {"default":["OU=...,DC=..."],"schulung":[]}')]
+        public array $computerSearchOus = ['default' => [], 'schulung' => []],
     ) {}
 }

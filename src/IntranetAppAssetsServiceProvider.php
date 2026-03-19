@@ -7,6 +7,8 @@ use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
+use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Illuminate\Console\Scheduling\Schedule;
@@ -42,12 +44,15 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\IntuneSyncCommand::class,
                 Commands\ItexiaUuidSyncCommand::class,
                 Commands\SyncConfigmgrDataCommand::class,
+                Commands\SetItexiaIdsCommand::class,
             ]);
     }
 
     public function boot(): void
     {
         parent::boot();
+
+        Asset::observe(AssetObserver::class);
 
         $msgraphInterface = \Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface::class;
         if (interface_exists($msgraphInterface) && $this->app->bound($msgraphInterface)) {

@@ -1,6 +1,7 @@
 <?php
 
 use Flux\Flux;
+use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
@@ -203,6 +204,47 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         ]);
     }
 
+    #[Computed]
+    public function ldapItexiaId(): ?string
+    {
+        if (! $this->asset->type?->is_domain_object || ! $this->asset->domain_last_seen || ! filled($this->asset->name) || ! filled($this->asset->domain_connection)) {
+            return null;
+        }
+        if (! app()->bound(LdapComputerServiceInterface::class)) {
+            return null;
+        }
+        try {
+            return app(LdapComputerServiceInterface::class)->getItexiaId($this->asset->name, $this->asset->domain_connection);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function setItexiaIdInLdap(): void
+    {
+        if (! filled($this->asset->itexia_id) || ! filled($this->asset->name) || ! filled($this->asset->domain_connection)) {
+            Flux::toast('Itexia-ID, Name und Domain-Connection müssen gesetzt sein.', variant: 'error');
+
+            return;
+        }
+        if (! app()->bound(LdapComputerServiceInterface::class)) {
+            Flux::toast('LDAP-Computer-Service ist nicht verfügbar.', variant: 'error');
+
+            return;
+        }
+        try {
+            $ok = app(LdapComputerServiceInterface::class)->setItexiaId($this->asset->name, $this->asset->itexia_id, $this->asset->domain_connection);
+            if ($ok) {
+                Flux::toast('Itexia-ID wurde erfolgreich in AD gesetzt.', variant: 'success');
+                $this->dispatch('asset-updated');
+            } else {
+                Flux::toast('Computer in der Domäne nicht gefunden.', variant: 'error');
+            }
+        } catch (\Throwable $e) {
+            Flux::toast('Fehler: '.$e->getMessage(), variant: 'error');
+        }
+    }
+
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout
@@ -391,6 +433,24 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
 
                             <dt class="font-semibold">Connection</dt>
                             <dd class="font-mono text-xs">{{ $asset->domain_connection ?? 'N/A' }}</dd>
+
+                            @if($asset->domain_last_seen && filled($asset->name) && filled($asset->domain_connection))
+                                <dt class="font-semibold">Itexia-ID (AD)</dt>
+                                <dd class="flex flex-wrap items-center gap-2">
+                                    @if($this->ldapItexiaId !== null)
+                                        <span class="font-mono">{{ $this->ldapItexiaId }}</span>
+                                    @else
+                                        —
+                                        @can('manage-app-assets')
+                                            @if(filled($asset->itexia_id))
+                                                <flux:button wire:click="setItexiaIdInLdap" variant="outline" size="sm" icon="cloud-arrow-up">
+                                                    Itexia-ID in AD setzen
+                                                </flux:button>
+                                            @endif
+                                        @endcan
+                                    @endif
+                                </dd>
+                            @endif
                         </dl>
                     </div>
                 @endif
