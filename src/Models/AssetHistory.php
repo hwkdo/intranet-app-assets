@@ -14,6 +14,14 @@ class AssetHistory extends Model
 
     public const EventUpdated = 'updated';
 
+    public const EventItexiaInventoryMailSent = 'itexia_inventory_mail_sent';
+
+    public const EventItexiaInventoryMailFailed = 'itexia_inventory_mail_failed';
+
+    public const EventItexiaNotFoundOnDelete = 'itexia_not_found_on_delete';
+
+    public const EventItexiaSeventhingsUnavailableOnDelete = 'itexia_seventhings_unavailable_on_delete';
+
     protected $table = 'intranet_app_assets_asset_histories';
 
     protected $guarded = [];

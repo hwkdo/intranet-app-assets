@@ -573,33 +573,77 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                 <flux:timeline>
                     @foreach($this->history as $entry)
                         @if($entry['type'] === 'asset_history')
-                            @php $historyEntry = $entry['model']; @endphp
+                            @php
+                                $historyEntry = $entry['model'];
+                                $histEvent = $historyEntry->event;
+                                $histDeleted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted;
+                                $histUpdated = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventUpdated;
+                                $histRestored = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventRestored;
+                                $histMailSent = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaInventoryMailSent;
+                                $histMailFailed = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaInventoryMailFailed;
+                                $histItexiaMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaNotFoundOnDelete;
+                                $histSeventhingsOff = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaSeventhingsUnavailableOnDelete;
+                                $histIndicatorColor = match ($histEvent) {
+                                    $histDeleted => 'red',
+                                    $histRestored => 'green',
+                                    $histMailSent => 'blue',
+                                    $histMailFailed => 'red',
+                                    $histItexiaMissing => 'amber',
+                                    $histSeventhingsOff => 'zinc',
+                                    default => 'zinc',
+                                };
+                            @endphp
                             <flux:timeline.item>
-                                <flux:timeline.indicator color="{{ $historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted ? 'red' : ($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventUpdated ? 'zinc' : 'green') }}">
-                                    @if($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted)
+                                <flux:timeline.indicator color="{{ $histIndicatorColor }}">
+                                    @if($histEvent === $histDeleted)
                                         <flux:icon.trash variant="micro" />
-                                    @elseif($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventUpdated)
+                                    @elseif($histEvent === $histUpdated)
                                         <flux:icon.wrench variant="micro" />
-                                    @else
+                                    @elseif($histEvent === $histRestored)
                                         <flux:icon.arrow-uturn-left variant="micro" />
+                                    @elseif($histEvent === $histMailSent)
+                                        <flux:icon.envelope variant="micro" />
+                                    @elseif($histEvent === $histMailFailed)
+                                        <flux:icon.exclamation-triangle variant="micro" />
+                                    @elseif($histEvent === $histItexiaMissing)
+                                        <flux:icon.magnifying-glass variant="micro" />
+                                    @elseif($histEvent === $histSeventhingsOff)
+                                        <flux:icon.cloud variant="micro" />
+                                    @else
+                                        <flux:icon.wrench variant="micro" />
                                     @endif
                                 </flux:timeline.indicator>
                                 <flux:timeline.content>
                                     <flux:heading>
-                                        @if($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted)
+                                        @if($histEvent === $histDeleted)
                                             Gelöscht
-                                        @elseif($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventUpdated)
+                                        @elseif($histEvent === $histUpdated)
                                             Asset aktualisiert
-                                        @else
+                                        @elseif($histEvent === $histRestored)
                                             Wiederhergestellt
+                                        @elseif($histEvent === $histMailSent)
+                                            Inventar: E-Mail-Benachrichtigung
+                                        @elseif($histEvent === $histMailFailed)
+                                            Inventar: E-Mail fehlgeschlagen
+                                        @elseif($histEvent === $histItexiaMissing)
+                                            Itexia-ID in Seventhings nicht gefunden
+                                        @elseif($histEvent === $histSeventhingsOff)
+                                            Seventhings-Abgleich nicht möglich
+                                        @else
+                                            Verlaufseintrag
                                         @endif
                                         @if($historyEntry->user)
                                             <flux:text inline> von {{ $historyEntry->user->name }}</flux:text>
                                         @endif
                                         <flux:text inline class="text-zinc-400"> · {{ $historyEntry->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
-                                    @if($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted && filled($historyEntry->reason))
+                                    @if($histEvent === $histDeleted && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histMailSent, $histMailFailed, $histItexiaMissing, $histSeventhingsOff], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @endif
+                                    @if(filled($historyEntry->meta))
+                                        <flux:text class="mt-1 font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ json_encode($historyEntry->meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</flux:text>
                                     @endif
                                 </flux:timeline.content>
                             </flux:timeline.item>

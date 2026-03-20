@@ -2,6 +2,7 @@
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Services\AssetItexiaDeleteInventoryNotifier;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -30,13 +31,31 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
         }
 
         $name = $this->asset->display_name;
+        $deleteReason = trim($this->deleteReason);
+        $assetId = (int) $this->asset->id;
+        $deletedByUserId = auth()->id();
+        $snapshot = [
+            'type_name' => (string) ($this->asset->type?->name ?? ''),
+            'vendor_name' => (string) ($this->asset->vendor?->name ?? ''),
+            'model' => (string) ($this->asset->model ?? ''),
+            'itexia_id' => $this->asset->itexia_id,
+            'itexia_uuid' => $this->asset->itexia_uuid,
+            'display_name' => $this->asset->display_name,
+        ];
 
         $this->asset->historyEntries()->create([
             'event' => AssetHistory::EventDeleted,
-            'user_id' => auth()->id(),
-            'reason' => trim($this->deleteReason),
+            'user_id' => $deletedByUserId,
+            'reason' => $deleteReason,
         ]);
         $this->asset->delete();
+
+        app(AssetItexiaDeleteInventoryNotifier::class)->notifyAfterSoftDelete(
+            $assetId,
+            $deleteReason,
+            $deletedByUserId,
+            $snapshot,
+        );
 
         session()->flash('success', "Asset \"{$name}\" wurde gelöscht.");
         $this->redirect(route('apps.assets.liste'), navigate: true);
