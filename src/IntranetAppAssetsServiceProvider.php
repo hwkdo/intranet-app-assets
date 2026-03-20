@@ -46,6 +46,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\ItexiaImageSyncCommand::class,
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
+                Commands\InvoiceAutoResolveCommand::class,
             ]);
     }
 

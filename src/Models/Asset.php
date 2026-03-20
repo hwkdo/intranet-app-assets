@@ -72,6 +72,22 @@ class Asset extends Model implements HasMedia
             });
     }
 
+    /**
+     * Assets mit BEN, aber ohne Rechnungsnummer (Kandidaten für automatische D3-Suche).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function scopeEligibleForInvoiceAutoResolve($query)
+    {
+        return $query
+            ->whereNotNull('order_number')
+            ->where('order_number', '!=', '')
+            ->where(function ($q) {
+                $q->whereNull('invoice_number')->orWhere('invoice_number', '');
+            });
+    }
+
     /** @return MorphMany<AssetNote, $this> */
     public function notes(): MorphMany
     {

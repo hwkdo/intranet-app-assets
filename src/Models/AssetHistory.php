@@ -22,6 +22,8 @@ class AssetHistory extends Model
 
     public const EventItexiaSeventhingsUnavailableOnDelete = 'itexia_seventhings_unavailable_on_delete';
 
+    public const EventInvoiceAutoResolveExhausted = 'invoice_auto_resolve_exhausted';
+
     protected $table = 'intranet_app_assets_asset_histories';
 
     protected $guarded = [];

@@ -40,5 +40,8 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Kommagetrennte E-Mail-Adressen für Inventar-Hinweise, wenn ein Asset mit Itexia-ID gelöscht und in Seventhings gefunden wurde')]
         public string $empfaengerInventarMails = 'asset@hwk-do.de',
+
+        #[Description('Tage ab Asset-Anlage: automatische D3-Suche nach Rechnung anhand BEN; danach als „fehlende Rechnungsnr.“ markieren (1–365)')]
+        public int $invoiceAutoResolveMaxDays = 14,
     ) {}
 }

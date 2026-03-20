@@ -1,7 +1,7 @@
 <div>
 <x-intranet-app-assets::assets-layout
     heading="Fehlende Rechnung"
-    subheading="Assets mit „Rechnungsnr. noch nicht bekannt“ – bitte Rechnungsnummer nachtragen"
+    subheading="Assets mit „Rechnungsnr. noch nicht bekannt“ (beim Anlegen angegeben oder nach Ablauf der automatischen D3-Suche) – bitte Rechnungsnummer nachtragen"
 >
     <div class="space-y-4">
         <flux:table>

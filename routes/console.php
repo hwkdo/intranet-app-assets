@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('intranet-app-assets:invoice-auto-resolve')
+    ->dailyAt('03:32')
+    ->when(fn () => config('app.env') === 'production');
+
 Schedule::command('intranet-app-assets:domain-check')
     ->dailyAt('03:02')
     ->when(fn () => config('app.env') === 'production');
