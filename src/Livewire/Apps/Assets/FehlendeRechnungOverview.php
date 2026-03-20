@@ -29,7 +29,7 @@ class FehlendeRechnungOverview extends Component
     {
         return Asset::query()
             ->invoiceNumberPending()
-            ->with(['type', 'vendor', 'owner', 'createdBy'])
+            ->with(['vendor', 'createdBy'])
             ->orderBy('created_at')
             ->paginate(25);
     }

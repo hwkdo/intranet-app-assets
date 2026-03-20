@@ -8,8 +8,8 @@
             <flux:table.columns>
                 <flux:table.column>Modell / Name</flux:table.column>
                 <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
+                <flux:table.column>Rechnungsnr.</flux:table.column>
+                <flux:table.column>BEN</flux:table.column>
                 <flux:table.column>Angelegt von</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
@@ -20,12 +20,12 @@
                             <div class="font-medium">{{ $asset->display_name }}</div>
                         </flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
-                        <flux:table.cell>{{ $asset->type?->name ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>{{ $asset->vendor?->name ?? '—' }}</flux:table.cell>
+                        <flux:table.cell class="font-mono text-sm">{{ filled($asset->invoice_number) ? $asset->invoice_number : '—' }}</flux:table.cell>
+                        <flux:table.cell class="font-mono text-sm">{{ filled($asset->order_number) ? $asset->order_number : '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->createdBy?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
-                            <flux:button href="{{ route('apps.assets.edit', $asset) }}" variant="ghost" size="sm" icon="pencil">
-                                Bearbeiten
+                            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye">
+                                Anzeigen
                             </flux:button>
                         </flux:table.cell>
                     </flux:table.row>
