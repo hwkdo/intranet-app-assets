@@ -18,6 +18,13 @@ class AssetHistory extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'meta' => 'array',
+        ];
+    }
+
     /** @return BelongsTo<Asset, $this> */
     public function asset(): BelongsTo
     {

@@ -1,12 +1,17 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends Component {
     public Asset $asset;
+
+    #[Validate('required|string|min:3|max:2000')]
+    public string $deleteReason = '';
 
     public function mount(Asset $asset): void
     {
@@ -15,11 +20,21 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
 
     public function delete(): void
     {
+        $this->validate();
+
+        if ($this->asset->trashed()) {
+            session()->flash('error', 'Dieses Asset wurde bereits gelöscht.');
+            $this->redirect(route('apps.assets.deleted'), navigate: true);
+
+            return;
+        }
+
         $name = $this->asset->display_name;
 
         $this->asset->historyEntries()->create([
-            'event' => \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted,
+            'event' => AssetHistory::EventDeleted,
             'user_id' => auth()->id(),
+            'reason' => trim($this->deleteReason),
         ]);
         $this->asset->delete();
 
@@ -32,13 +47,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
 <x-intranet-app-assets::assets-layout heading="Asset löschen" subheading="Löschung bestätigen">
     <div class="space-y-6 max-w-lg">
 
-        <flux:callout variant="danger" icon="exclamation-triangle">
-            <flux:callout.heading>Achtung: Dieses Asset hat eine Itexia-ID</flux:callout.heading>
-            <flux:callout.text>
-                Das Asset ist mit dem externen Itexia-System verknüpft (ID: <strong>{{ $asset->itexia_id }}</strong>).
-                Das Löschen wird im Verlauf protokolliert.
-            </flux:callout.text>
-        </flux:callout>
+        @if(filled($asset->itexia_id))
+            <flux:callout variant="danger" icon="exclamation-triangle">
+                <flux:callout.heading>Achtung: Dieses Asset hat eine Itexia-ID</flux:callout.heading>
+                <flux:callout.text>
+                    Das Asset ist mit dem externen Itexia-System verknüpft (ID: <strong>{{ $asset->itexia_id }}</strong>).
+                    Das Löschen wird im Verlauf protokolliert.
+                </flux:callout.text>
+            </flux:callout>
+        @endif
 
         <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 text-sm">
             <flux:heading size="sm">Zu löschendes Asset</flux:heading>
@@ -61,6 +78,18 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
                 <dt class="font-medium text-zinc-500">Itexia-ID</dt>
                 <dd class="font-mono text-red-600">{{ $asset->itexia_id }}</dd>
             </dl>
+        </div>
+
+        <div class="space-y-2">
+            <flux:field>
+                <flux:label>Grund für die Löschung</flux:label>
+                <flux:textarea
+                    wire:model="deleteReason"
+                    rows="4"
+                    placeholder="Bitte den Löschgrund dokumentieren..."
+                />
+                <flux:error name="deleteReason" />
+            </flux:field>
         </div>
 
         <div class="flex gap-3">

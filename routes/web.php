@@ -5,7 +5,7 @@ use Hwkdo\IntranetAppAssets\Models\Handover;
 use Illuminate\Support\Facades\Route;
 
 Route::bind('asset', function (string $value): Asset {
-    return Asset::findOrFail($value);
+    return Asset::withTrashed()->findOrFail($value);
 });
 
 Route::bind('handover', function (string $value): Handover {
@@ -46,6 +46,9 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/fehlende-rechnung', 'intranet-app-assets::apps.assets.fehlende-rechnung-overview')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.fehlende-rechnung');
+    Route::livewire('apps/assets/deleted', 'intranet-app-assets::apps.assets.deleted')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.deleted');
 
     // Wildcard-Routen zuletzt
     Route::livewire('apps/assets/{asset}', 'intranet-app-assets::apps.assets.show')->name('apps.assets.show');

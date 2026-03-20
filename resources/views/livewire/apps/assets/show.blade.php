@@ -161,23 +161,6 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         return $this->assetImageUrl;
     }
 
-    public function delete(): void
-    {
-        if ($this->asset->itexia_id) {
-            abort(403, 'Assets mit Itexia-ID müssen über die gesicherte Löschseite entfernt werden.');
-        }
-
-        $name = $this->asset->display_name;
-        $this->asset->historyEntries()->create([
-            'event' => \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted,
-            'user_id' => auth()->id(),
-        ]);
-        $this->asset->delete();
-
-        session()->flash('success', "Asset \"{$name}\" wurde gelöscht.");
-        $this->redirect(route('apps.assets.liste'), navigate: true);
-    }
-
     public function addNote(): void
     {
         $this->validate(['newNote' => 'required|string|min:3']);
@@ -277,18 +260,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     Bearbeiten
                 </flux:button>
 
-                @if($asset->itexia_id)
+                @if(! $asset->trashed())
                     <flux:button href="{{ route('apps.assets.delete', $asset) }}" variant="danger" icon="trash" size="sm">
-                        Löschen
-                    </flux:button>
-                @else
-                    <flux:button
-                        wire:click="delete"
-                        wire:confirm="Asset '{{ $asset->display_name }}' wirklich löschen?"
-                        variant="danger"
-                        icon="trash"
-                        size="sm"
-                    >
                         Löschen
                     </flux:button>
                 @endif
@@ -625,6 +598,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         @endif
                                         <flux:text inline class="text-zinc-400"> · {{ $historyEntry->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
+                                    @if($historyEntry->event === \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventDeleted && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @endif
                                 </flux:timeline.content>
                             </flux:timeline.item>
 

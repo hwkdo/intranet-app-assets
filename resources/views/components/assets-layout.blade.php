@@ -14,6 +14,7 @@
         ['label' => 'Domain-Abgleich', 'href' => route('apps.assets.domain-compare'), 'icon' => 'arrows-right-left', 'description' => 'Vergleich: Assets vs. Computer in AD (Verwaltung/Schulung)', 'buttonText' => 'Domain-Abgleich anzeigen'],
         ['label' => 'Itexia-Geräte', 'href' => route('apps.assets.itexiageraete'), 'icon' => 'qr-code', 'description' => 'Assets mit Itexia-ID und Filter Gefunden/Nicht gefunden in Itexia', 'buttonText' => 'Itexia-Geräte anzeigen'],
         ['label' => 'Fehlende Rechnung', 'href' => route('apps.assets.fehlende-rechnung'), 'icon' => 'document-text', 'description' => 'Assets mit fehlender Rechnungsnummer (noch nicht bekannt)', 'buttonText' => 'Fehlende Rechnung anzeigen', 'permission' => 'manage-app-assets'],
+        ['label' => 'Gelöschte Assets', 'href' => route('apps.assets.deleted'), 'icon' => 'archive-box', 'description' => 'Soft-gelöschte Assets einsehen und verwalten', 'buttonText' => 'Gelöschte Assets anzeigen', 'permission' => 'manage-app-assets'],
         ['label' => 'Meine Einstellungen', 'href' => route('apps.assets.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen'],
         ['label' => 'Admin', 'href' => route('apps.assets.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-assets'],
     ];

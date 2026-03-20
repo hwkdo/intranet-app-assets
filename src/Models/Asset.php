@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Asset extends Model implements HasMedia
 {
     use InteractsWithMedia;
+    use SoftDeletes;
 
     protected $table = 'intranet_app_assets_assets';
 
@@ -97,6 +99,34 @@ class Asset extends Model implements HasMedia
     public function getDisplayNameAttribute(): string
     {
         return $this->name ?: "{$this->vendor?->name} {$this->model}";
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $asset): void {
+            if (! $asset->isForceDeleting()) {
+                return;
+            }
+
+            $asset->notes()->delete();
+
+            $asset->attachments()->each(function (AssetAttachment $attachment): void {
+                $attachment->notes()->delete();
+                $attachment->delete();
+            });
+
+            $asset->handovers()->each(function (Handover $handover): void {
+                $handover->notes()->delete();
+
+                $return = $handover->assetReturn;
+                if ($return !== null) {
+                    $return->notes()->delete();
+                    $return->delete();
+                }
+
+                $handover->delete();
+            });
+        });
     }
 
     public function registerMediaCollections(): void
