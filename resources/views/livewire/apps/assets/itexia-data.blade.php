@@ -98,6 +98,7 @@ new class extends Component
             $uuid = SeventhingsMappingConfig::getSeventhingsObjectId($existing);
             if ($uuid !== null && $uuid !== '') {
                 $asset->update(['itexia_uuid' => (string) $uuid]);
+                ItexiaCreation::syncLocalImageToItexia($asset, app()->make($seventhingsClass), (string) $uuid);
                 $this->loaded = null;
                 $this->itexiaError = null;
                 $this->itexiaData = null;
@@ -117,6 +118,7 @@ new class extends Component
                 'itexia_uuid' => $uuid,
                 'itexia_check_at' => now(),
             ]);
+            ItexiaCreation::syncLocalImageToItexia($asset, $client, $uuid);
             $this->loaded = null;
             $this->itexiaError = null;
             $this->itexiaData = null;

@@ -5,18 +5,37 @@ namespace Hwkdo\IntranetAppAssets\Commands;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ItexiaUuidSyncCommand extends Command
 {
     protected $signature = 'intranet-app-assets:itexia-uuid-sync
                             {--details : Pro Asset ausgeben, ob in Seventhings gefunden und UUID gesetzt}
-                            {--limit= : Maximal so viele Datensätze prüfen (ohne Angabe: alle)}';
+                            {--limit= : Maximal so viele Datensätze prüfen (ohne Angabe: alle)}
+                            {--asset-id= : Nur dieses Asset (ID) synchronisieren}';
 
-    protected $description = 'Findet für alle Assets mit Itexia-ID (Barcode) den zugehörigen Seventhings-Datensatz und speichert die Objekt-UUID (itexia_uuid).';
+    protected $description = 'Findet für Assets mit Itexia-ID die zugehörige Seventhings-UUID und speichert sie in itexia_uuid.';
 
     public function handle(): int
+    {
+        $lock = Cache::lock('intranet-app-assets:itexia-api-lock', 3600);
+        if (! $lock->get()) {
+            $this->warn('Itexia-API wird bereits von einem anderen Sync-Command genutzt. Dieser Lauf wird übersprungen.');
+
+            return self::SUCCESS;
+        }
+
+        try {
+            return $this->runSync();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runSync(): int
     {
         Log::info('intranet-app-assets:itexia-uuid-sync gestartet');
 
@@ -31,11 +50,17 @@ class ItexiaUuidSyncCommand extends Command
         $client = $this->laravel->make($seventhingsClass);
         $verbose = $this->option('details');
         $limit = $this->option('limit') !== null ? (int) $this->option('limit') : null;
+        $assetId = $this->option('asset-id') !== null ? (int) $this->option('asset-id') : null;
 
-        $query = Asset::whereNotNull('itexia_id')
+        $query = Asset::query()
+            ->whereNotNull('itexia_id')
             ->where('itexia_id', '!=', '')
             ->whereNull('itexia_uuid')
             ->orderBy('itexia_check_at', 'asc');
+
+        if ($assetId !== null && $assetId > 0) {
+            $query->whereKey($assetId);
+        }
 
         if ($limit !== null && $limit > 0) {
             $query->limit($limit);
@@ -43,10 +68,16 @@ class ItexiaUuidSyncCommand extends Command
 
         $assets = $query->get();
         $total = $assets->count();
-        $this->info('Prüfe '.$total.' Assets mit Itexia-ID'.($limit !== null ? ' (Limit: '.$limit.')' : '').'…');
+        $this->info(
+            'Prüfe '.$total.' Assets mit fehlender itexia_uuid'
+            .($assetId !== null && $assetId > 0 ? ' (Asset-ID: '.$assetId.')' : '')
+            .($limit !== null ? ' (Limit: '.$limit.')' : '')
+            .'…'
+        );
         Log::info('intranet-app-assets:itexia-uuid-sync', [
             'assets_to_process' => $total,
             'limit' => $limit,
+            'asset_id' => $assetId,
         ]);
 
         $updated = 0;
@@ -71,7 +102,7 @@ class ItexiaUuidSyncCommand extends Command
 
             try {
                 $itexiaAsset = $client->findAsset($barcode);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 if ($this->isRateLimitException($e)) {
                     $this->error('Rate Limit (429/420 Too Many Requests) erreicht. Abbruch.');
                     Log::warning('intranet-app-assets:itexia-uuid-sync abgebrochen: Rate Limit', [
@@ -112,37 +143,38 @@ class ItexiaUuidSyncCommand extends Command
             }
 
             $uuid = SeventhingsMappingConfig::getSeventhingsObjectId($itexiaAsset);
-            if ($uuid === null || $uuid === '') {
-                $skippedNoUuid++;
-                if ($verbose) {
-                    $this->line("  Asset #{$asset->id} (Barcode: {$barcode}): Datensatz gefunden, aber keine UUID ermittelbar.");
-                }
-                Log::warning('ItexiaUuidSync Datensatz ohne UUID', [
-                    'asset_id' => $asset->id,
-                    'barcode' => $barcode,
-                ]);
-                $asset->itexia_check_at = now();
-                $asset->save();
 
-                continue;
+            if ($asset->itexia_uuid === null || $asset->itexia_uuid === '') {
+                if ($uuid === null || $uuid === '') {
+                    $skippedNoUuid++;
+                    if ($verbose) {
+                        $this->line("  Asset #{$asset->id} (Barcode: {$barcode}): Datensatz gefunden, aber keine UUID ermittelbar.");
+                    }
+                    Log::warning('ItexiaUuidSync Datensatz ohne UUID', [
+                        'asset_id' => $asset->id,
+                        'barcode' => $barcode,
+                    ]);
+                } else {
+                    $asset->itexia_uuid = (string) $uuid;
+                    $asset->save();
+                    $asset->historyEntries()->create([
+                        'event' => AssetHistory::EventUpdated,
+                        'user_id' => null,
+                    ]);
+                    $updated++;
+                    if ($verbose) {
+                        $this->line("  Asset #{$asset->id} (Barcode: {$barcode}): UUID gespeichert.");
+                    }
+                    Log::info('ItexiaUuidSync Asset itexia_uuid gesetzt', [
+                        'asset_id' => $asset->id,
+                        'barcode' => $barcode,
+                        'itexia_uuid' => $uuid,
+                    ]);
+                }
             }
 
-            $asset->itexia_uuid = (string) $uuid;
             $asset->itexia_check_at = now();
             $asset->save();
-            $asset->historyEntries()->create([
-                'event' => AssetHistory::EventUpdated,
-                'user_id' => null,
-            ]);
-            $updated++;
-            if ($verbose) {
-                $this->line("  Asset #{$asset->id} (Barcode: {$barcode}): UUID gespeichert.");
-            }
-            Log::info('ItexiaUuidSync Asset itexia_uuid gesetzt', [
-                'asset_id' => $asset->id,
-                'barcode' => $barcode,
-                'itexia_uuid' => $uuid,
-            ]);
         }
 
         $summary = [
@@ -163,7 +195,7 @@ class ItexiaUuidSyncCommand extends Command
         return self::SUCCESS;
     }
 
-    private function isRateLimitException(\Throwable $e): bool
+    private function isRateLimitException(Throwable $e): bool
     {
         $message = strtolower($e->getMessage());
         if (str_contains($message, 'too many requests')

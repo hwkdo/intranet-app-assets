@@ -12,9 +12,12 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Validator;
 
 new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class extends Component {
+    use WithFileUploads;
+
     public Asset $asset;
 
     #[Validate('required|string|max:255')]
@@ -55,6 +58,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
     #[Validate('nullable|string|max:255')]
     public ?string $intune_device_id = null;
+
+    #[Validate('nullable|image|max:10240')]
+    public $image = null;
 
     public function mount(Asset $asset): void
     {
@@ -134,6 +140,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     public function save(): void
     {
         $validated = $this->validate();
+        unset($validated['image']);
 
         $invoiceValidator = Validator::make(
             ['invoice_number' => $validated['invoice_number'] ?? null],
@@ -161,6 +168,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         }
 
         $this->asset->update($validated);
+
+        if ($this->image !== null) {
+            $this->asset->addMedia($this->image->getRealPath())
+                ->usingFileName($this->image->getClientOriginalName())
+                ->toMediaCollection('image');
+        }
+
         $this->asset->ensureHandoverForOwner();
 
         session()->flash('success', 'Asset wurde erfolgreich gespeichert.');
@@ -263,6 +277,18 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
             </flux:callout>
             @endif
             <x-intranet-app-assets::invoice-number-input name="invoice_number" wire:model.live.debounce.800ms="invoice_number" placeholder="Optional" />
+
+            <flux:field class="col-span-full">
+                <flux:label>Bild</flux:label>
+                @if($asset->getFirstMedia('image'))
+                    <a href="{{ $asset->getFirstMedia('image')->getFullUrl() }}" target="_blank" rel="noopener noreferrer" class="inline-block mb-2">
+                        <img src="{{ $asset->getFirstMedia('thumbnail')?->getFullUrl() ?? $asset->getFirstMedia('image')->getFullUrl() }}" alt="Aktuelles Asset-Bild" class="h-28 w-28 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700" />
+                    </a>
+                @endif
+                <input type="file" wire:model="image" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
+                <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional: Neues Bild hochladen, um das aktuelle zu ersetzen (max. 10 MB).</flux:text>
+                <flux:error name="image" />
+            </flux:field>
         </div>
 
         <div class="flex gap-4">

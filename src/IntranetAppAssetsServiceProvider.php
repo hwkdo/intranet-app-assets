@@ -43,6 +43,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 DomainCheckCommand::class,
                 Commands\IntuneSyncCommand::class,
                 Commands\ItexiaUuidSyncCommand::class,
+                Commands\ItexiaImageSyncCommand::class,
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
             ]);

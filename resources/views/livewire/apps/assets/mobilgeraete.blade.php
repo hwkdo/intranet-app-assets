@@ -2,6 +2,7 @@
 
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -21,13 +22,9 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
     #[Url]
     public string $intuneFilter = 'all';
 
-    /** @var 'intune_last_check_in'|'' */
-    #[Url]
-    public string $sortBy = '';
-
-    /** @var 'asc'|'desc' */
-    #[Url]
-    public string $sortDir = 'desc';
+    /** @var list<int|string> */
+    #[Url(as: 'types')]
+    public array $typeIds = [];
 
     public function updatedSearch(): void
     {
@@ -39,67 +36,46 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
         $this->resetPage();
     }
 
-    public function sortByColumn(string $column): void
+    public function updatedTypeIds(): void
     {
-        if ($this->sortBy === $column) {
-            $this->sortDir = $this->sortDir === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortBy = $column;
-            $this->sortDir = 'desc';
-        }
         $this->resetPage();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function validatedMobilTypeIdsForQuery(): array
+    {
+        $allowed = AssetType::query()
+            ->where('is_intune_object', true)
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->all();
+        $selected = array_values(array_unique(array_filter(array_map('intval', $this->typeIds))));
+
+        return array_values(array_intersect($selected, $allowed));
     }
 
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
-            ->whereHas('type', fn ($q) => $q->where('is_intune_object', true));
+            ->whereHas('type', fn ($q) => $q->where('is_intune_object', true))
+            ->orderBy('model');
     }
 
-    protected function orderQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    #[Computed]
+    public function intuneAssetTypes(): \Illuminate\Database\Eloquent\Collection
     {
-        $orderColumn = $this->sortBy === 'intune_last_check_in' ? 'intune_last_check_in' : 'model';
-        $orderDir = $this->sortDir === 'asc' ? 'asc' : 'desc';
-
-        return $query->orderBy($orderColumn, $orderDir);
+        return AssetType::query()->where('is_intune_object', true)->orderBy('name')->get();
     }
 
     #[Computed]
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return $this->orderQuery(
-            $this->baseQuery()
-                ->when($this->search, function ($query) {
-                    $query->where(function ($q) {
-                        $term = '%'.$this->search.'%';
-                        $q->where('serial_number', 'like', $term)
-                            ->orWhere('model', 'like', $term)
-                            ->orWhere('name', 'like', $term)
-                            ->orWhere('itexia_id', 'like', $term)
-                            ->orWhere('imei', 'like', $term)
-                            ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
-                    });
-                })
-                ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
-                ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'))
-        )->paginate(25);
-    }
+        $mobilTypeIds = $this->validatedMobilTypeIdsForQuery();
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Builder<Asset>
-     */
-    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
-    {
-        return $this->orderQuery($this->baseQuery());
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Builder<Asset>
-     */
-    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
-    {
-        return $this->orderQuery($this->baseQuery()
+        return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $term = '%'.$this->search.'%';
@@ -111,8 +87,42 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                         ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
+            ->when($mobilTypeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $mobilTypeIds))
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
-            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id')));
+            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'))
+            ->paginate(25);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->baseQuery();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
+    {
+        $mobilTypeIds = $this->validatedMobilTypeIdsForQuery();
+
+        return $this->baseQuery()
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $term = '%'.$this->search.'%';
+                    $q->where('serial_number', 'like', $term)
+                        ->orWhere('model', 'like', $term)
+                        ->orWhere('name', 'like', $term)
+                        ->orWhere('itexia_id', 'like', $term)
+                        ->orWhere('imei', 'like', $term)
+                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
+                });
+            })
+            ->when($mobilTypeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $mobilTypeIds))
+            ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
+            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'));
     }
 
     /**
@@ -124,7 +134,6 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
             ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
             ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
             ['heading' => 'IMEI', 'value' => fn (Asset $a) => $a->imei ?? '—'],
-            ['heading' => 'Letzter Check-in', 'value' => fn (Asset $a) => $a->intune_last_check_in?->format('d.m.Y H:i') ?? '—'],
             ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
             ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
             ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
@@ -180,7 +189,20 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                         clearable
                     />
                 </div>
-                <flux:select wire:model.live="intuneFilter" placeholder="Intune-Filter" class="w-52">
+                <flux:pillbox
+                    wire:model.live="typeIds"
+                    multiple
+                    searchable
+                    search:placeholder="Typ suchen…"
+                    placeholder="Typen filtern…"
+                    size="sm"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                >
+                    @foreach($this->intuneAssetTypes as $type)
+                        <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
+                    @endforeach
+                </flux:pillbox>
+                <flux:select wire:model.live="intuneFilter" placeholder="Intune-Filter" class="w-52 shrink-0">
                     <flux:select.option value="all">Alle Mobilgeräte</flux:select.option>
                     <flux:select.option value="intune">Nur Intune-Geräte</flux:select.option>
                     <flux:select.option value="non-intune">Nur nicht-Intune-Geräte</flux:select.option>
@@ -205,14 +227,6 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                 <flux:table.column>Typ</flux:table.column>
                 <flux:table.column>Hersteller</flux:table.column>
                 <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('intune_last_check_in')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
-                        Letzter Check-in
-                        @if($this->sortBy === 'intune_last_check_in')
-                            <flux:icon icon="{{ $this->sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                        @endif
-                    </button>
-                </flux:table.column>
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
@@ -230,7 +244,6 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                         <flux:table.cell>{{ $asset->type?->name }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->vendor?->name }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>{{ $asset->intune_last_check_in?->format('d.m.Y H:i') ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->intune_device_id)
@@ -252,7 +265,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="9" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="8" class="text-center text-zinc-500 py-8">
                             Keine Mobilgeräte gefunden.
                         </flux:table.cell>
                     </flux:table.row>

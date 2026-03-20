@@ -144,6 +144,23 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         return DmsLinkHelper::orderNumberUrl($this->dmsBaseUrl, $number);
     }
 
+    #[Computed]
+    public function assetImageUrl(): ?string
+    {
+        return $this->asset->getFirstMedia('image')?->getFullUrl();
+    }
+
+    #[Computed]
+    public function assetThumbnailUrl(): ?string
+    {
+        $thumb = $this->asset->getFirstMedia('thumbnail');
+        if ($thumb !== null) {
+            return $thumb->getFullUrl();
+        }
+
+        return $this->assetImageUrl;
+    }
+
     public function delete(): void
     {
         if ($this->asset->itexia_id) {
@@ -341,7 +358,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <dt class="font-semibold">Itexia-ID</dt>
                     <dd>
                         @if($asset->itexia_id)
-                            <span class="font-mono">{{ $asset->itexia_id }}</span>
+                            <div class="flex flex-col gap-1">
+                                <span class="font-mono">{{ $asset->itexia_id }}</span>
+                                @if(filled($asset->itexia_uuid))
+                                    <span class="text-xs">
+                                        UUID:
+                                        <span class="font-mono">{{ $asset->itexia_uuid }}</span>
+                                    </span>
+                                @endif
+                            </div>
                         @else
                             —
                             @if($asset->type?->itexia_creation_allowed)
@@ -412,6 +437,25 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @endif
                         @if(!$asset->is_missing && !$asset->is_clarification)
                             <flux:badge color="green" size="lg" icon="check-circle">Aktiv</flux:badge>
+                        @endif
+                    </div>
+
+                    <div class="space-y-2">
+                        @if($this->assetThumbnailUrl)
+                            <div class="text-sm font-semibold">Bild</div>
+                            <a
+                                href="{{ $this->assetImageUrl }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-block overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 transition hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
+                            >
+                                <img
+                                    src="{{ $this->assetThumbnailUrl }}"
+                                    alt="Asset-Bild {{ $asset->display_name }}"
+                                    class="h-40 w-40 object-cover"
+                                    loading="lazy"
+                                >
+                            </a>
                         @endif
                     </div>
 

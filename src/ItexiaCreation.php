@@ -4,7 +4,6 @@ namespace Hwkdo\IntranetAppAssets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
-use Hwkdo\SeventhingsLaravel\SeventhingsLaravel;
 
 class ItexiaCreation
 {
@@ -72,6 +71,32 @@ class ItexiaCreation
     }
 
     /**
+     * Überträgt ein vorhandenes lokales Asset-Bild in Itexia (Feld "picture"), falls vorhanden.
+     * Falls kein lokales Bild existiert, wird nichts getan.
+     */
+    public static function syncLocalImageToItexia(Asset $asset, object $client, string $objectUuid): void
+    {
+        $media = $asset->getFirstMedia('image');
+        if ($media === null) {
+            return;
+        }
+
+        $contents = file_get_contents($media->getPath());
+        if (! is_string($contents) || $contents === '') {
+            return;
+        }
+
+        $fileUuid = $client->uploadFile($contents, $media->file_name);
+        try {
+            $client->addFileToObject($objectUuid, 'picture', $fileUuid);
+        } catch (\Throwable) {
+            // Fallback: einige Instanzen akzeptieren add-file nicht im erwarteten Schema.
+            // Dann Attachment-Feld direkt per PATCH setzen.
+            $client->updateAsset($objectUuid, ['picture' => [$fileUuid]]);
+        }
+    }
+
+    /**
      * Sucht anhand Standort des Assets oder Raum des Besitzers einen Itexia-Raum und liefert dessen ID.
      */
     public static function resolveActualRoomId(Asset $asset): ?int
@@ -86,7 +111,7 @@ class ItexiaCreation
             return null;
         }
 
-        $seventhingsClass = SeventhingsLaravel::class;
+        $seventhingsClass = \Hwkdo\SeventhingsLaravel\SeventhingsLaravel::class;
         if (! class_exists($seventhingsClass) || ! app()->bound($seventhingsClass)) {
             return null;
         }

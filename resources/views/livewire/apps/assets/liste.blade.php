@@ -18,8 +18,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     #[Url(as: 'q')]
     public string $search = '';
 
-    #[Url]
-    public string $typeFilter = '';
+    /** @var list<int|string> */
+    #[Url(as: 'types')]
+    public array $typeIds = [];
 
     #[Url]
     public string $statusFilter = '';
@@ -29,7 +30,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $this->resetPage();
     }
 
-    public function updatedTypeFilter(): void
+    public function updatedTypeIds(): void
     {
         $this->resetPage();
     }
@@ -37,6 +38,17 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     public function updatedStatusFilter(): void
     {
         $this->resetPage();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function validatedTypeIdsForQuery(): array
+    {
+        $allowed = AssetType::query()->pluck('id')->map(fn (int|string $id): int => (int) $id)->all();
+        $selected = array_values(array_unique(array_filter(array_map('intval', $this->typeIds))));
+
+        return array_values(array_intersect($selected, $allowed));
     }
 
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
@@ -49,6 +61,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     #[Computed]
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
+        $typeIds = $this->validatedTypeIdsForQuery();
+
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -60,7 +74,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
-            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
+            ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
             ->paginate(25);
@@ -85,6 +99,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
      */
     public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
     {
+        $typeIds = $this->validatedTypeIdsForQuery();
+
         return $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
@@ -96,7 +112,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
-            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter))
+            ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true));
     }
@@ -153,8 +169,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
 <x-intranet-app-assets::assets-layout heading="Alle Assets" subheading="Übersicht aller verwalteten Assets">
     <div class="space-y-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex flex-1 gap-3">
-                <div class="flex-1 max-w-sm">
+            <div class="flex flex-1 flex-wrap items-center gap-3">
+                <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
                         wire:model.live.debounce.300ms="search"
                         placeholder="Suchen nach SN, Modell, Name, Itexia-ID…"
@@ -162,13 +178,20 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         clearable
                     />
                 </div>
-                <flux:select wire:model.live="typeFilter" placeholder="Alle Typen" class="w-44">
-                    <flux:select.option value="">Alle Typen</flux:select.option>
+                <flux:pillbox
+                    wire:model.live="typeIds"
+                    multiple
+                    searchable
+                    search:placeholder="Typ suchen…"
+                    placeholder="Typen filtern…"
+                    size="sm"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                >
                     @foreach($this->assetTypes as $type)
-                        <flux:select.option value="{{ $type->id }}">{{ $type->name }}</flux:select.option>
+                        <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
                     @endforeach
-                </flux:select>
-                <flux:select wire:model.live="statusFilter" placeholder="Alle Status" class="w-44">
+                </flux:pillbox>
+                <flux:select wire:model.live="statusFilter" placeholder="Alle Status" class="w-44 shrink-0">
                     <flux:select.option value="">Alle Status</flux:select.option>
                     <flux:select.option value="missing">Vermisst</flux:select.option>
                     <flux:select.option value="clarification">In Klärung</flux:select.option>

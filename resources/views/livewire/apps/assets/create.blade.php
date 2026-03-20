@@ -13,9 +13,12 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Component
 {
+    use WithFileUploads;
+
     /** Allgemeine Felder (für alle Assets) */
     public string $model = '';
 
@@ -26,9 +29,13 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
     /** Einheiten: pro Eintrag ein Asset mit spezifischen Feldern */
     public array $units = [];
 
+    /** Optionale Bild-Uploads je Einheit (indexbasiert). */
+    public array $unit_images = [];
+
     public function mount(): void
     {
         $this->units = [$this->defaultUnit()];
+        $this->unit_images = [null];
     }
 
     protected function defaultUnit(): array
@@ -66,6 +73,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             }
         }
         $this->units[] = $newUnit;
+        $this->unit_images[] = null;
     }
 
     protected function getLastUnitName(): ?string
@@ -101,6 +109,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             return;
         }
         array_splice($this->units, $index, 1);
+        array_splice($this->unit_images, $index, 1);
     }
 
     #[Computed]
@@ -155,6 +164,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units.*.intune_device_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
+            'unit_images' => 'array',
+            'unit_images.*' => 'nullable|image|max:10240',
         ];
 
         return $rules;
@@ -189,7 +200,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
         $validated = $this->validate();
 
         $created = [];
-        foreach ($validated['units'] as $unit) {
+        foreach ($validated['units'] as $index => $unit) {
             $attributes = [
                 'model' => $validated['model'],
                 'asset_type_id' => $validated['asset_type_id'],
@@ -208,6 +219,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             ];
 
             $asset = Asset::create($attributes);
+            if (isset($this->unit_images[$index]) && $this->unit_images[$index] !== null) {
+                $asset->addMedia($this->unit_images[$index]->getRealPath())
+                    ->usingFileName($this->unit_images[$index]->getClientOriginalName())
+                    ->toMediaCollection('image');
+            }
             $asset->ensureHandoverForOwner();
             $asset->notes()->create([
                 'note' => 'Asset erstellt von '.auth()->user()->name.'.',
@@ -301,6 +317,13 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             <flux:label>Standort</flux:label>
                             <flux:input wire:model="units.{{ $index }}.location" placeholder="z.B. Büro 2.13" />
                             <flux:error name="units.{{ $index }}.location" />
+                        </flux:field>
+
+                        <flux:field class="sm:col-span-2">
+                            <flux:label>Bild</flux:label>
+                            <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
+                            <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
+                            <flux:error name="unit_images.{{ $index }}" />
                         </flux:field>
 
                         <flux:field>

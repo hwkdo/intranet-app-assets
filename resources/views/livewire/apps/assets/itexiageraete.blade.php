@@ -27,8 +27,9 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     #[Url]
     public string $invoiceOrderFilter = 'all';
 
-    #[Url]
-    public string $typeFilter = '';
+    /** @var list<int|string> */
+    #[Url(as: 'types')]
+    public array $typeIds = [];
 
     public function updatedSearch(): void
     {
@@ -45,9 +46,20 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
         $this->resetPage();
     }
 
-    public function updatedTypeFilter(): void
+    public function updatedTypeIds(): void
     {
         $this->resetPage();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function validatedTypeIdsForQuery(): array
+    {
+        $allowed = AssetType::query()->pluck('id')->map(fn (int|string $id): int => (int) $id)->all();
+        $selected = array_values(array_unique(array_filter(array_map('intval', $this->typeIds))));
+
+        return array_values(array_intersect($selected, $allowed));
     }
 
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
@@ -62,6 +74,8 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     protected function applyFilters(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         $searchTerm = trim($this->search ?? '');
+        $typeIds = $this->validatedTypeIdsForQuery();
+
         return $query
             ->when($searchTerm !== '', function ($q) use ($searchTerm) {
                 $term = '%'.$searchTerm.'%';
@@ -93,7 +107,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                 $q->whereNotNull('invoice_number')->where('invoice_number', '!=', '')
                     ->orWhereNotNull('order_number')->where('order_number', '!=', '');
             }))
-            ->when($this->typeFilter, fn ($q) => $q->where('asset_type_id', $this->typeFilter));
+            ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds));
     }
 
     #[Computed]
@@ -213,12 +227,19 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         clearable
                     />
                 </div>
-                <flux:select wire:model.live="typeFilter" placeholder="Alle Typen" class="w-44 shrink-0">
-                    <flux:select.option value="">Alle Typen</flux:select.option>
+                <flux:pillbox
+                    wire:model.live="typeIds"
+                    multiple
+                    searchable
+                    search:placeholder="Typ suchen…"
+                    placeholder="Typen filtern…"
+                    size="sm"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                >
                     @foreach($this->assetTypes as $type)
-                        <flux:select.option value="{{ $type->id }}">{{ $type->name }}</flux:select.option>
+                        <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
                     @endforeach
-                </flux:select>
+                </flux:pillbox>
                 <flux:select wire:model.live="itexiaFilter" placeholder="Itexia-Filter" class="w-52 shrink-0">
                     <flux:select.option value="all">Alle Itexia-Geräte</flux:select.option>
                     <flux:select.option value="found">Gefunden in Itexia</flux:select.option>

@@ -18,9 +18,12 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] class extends Component
 {
+    use WithFileUploads;
+
     public int $step = 1;
 
     /** bestellung | beschaffung | mobilfunkvertrag */
@@ -38,9 +41,13 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
     /** Einheiten: pro Eintrag ein Asset mit spezifischen Feldern (wie Direkteingabe) */
     public array $units = [];
 
+    /** Optionale Bild-Uploads je Einheit (indexbasiert). */
+    public array $unit_images = [];
+
     public function mount(): void
     {
         $this->units = [$this->defaultUnit()];
+        $this->unit_images = [null];
     }
 
     protected function defaultUnit(): array
@@ -78,6 +85,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             $newUnit['invoice_number_unknown'] = (bool) ($first['invoice_number_unknown'] ?? false);
         }
         $this->units[] = $newUnit;
+        $this->unit_images[] = null;
     }
 
     protected function getLastUnitName(): ?string
@@ -113,6 +121,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             return;
         }
         array_splice($this->units, $index, 1);
+        array_splice($this->unit_images, $index, 1);
     }
 
     public function selectVariant(string $variant): void
@@ -247,6 +256,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.itexia_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
+            'unit_images' => 'array',
+            'unit_images.*' => 'nullable|image|max:10240',
         ];
 
         foreach (array_keys($this->units) as $i) {
@@ -306,7 +317,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
 
         $created = [];
         $creatorId = auth()->id();
-        foreach ($validated['units'] as $unit) {
+        foreach ($validated['units'] as $index => $unit) {
             $invoiceNumberUnknown = (bool) ($unit['invoice_number_unknown'] ?? false);
             $invoiceNumber = $this->showInvoiceNumber && ! $invoiceNumberUnknown
                 ? (isset($unit['invoice_number']) && trim((string) $unit['invoice_number']) !== '' ? trim((string) $unit['invoice_number']) : null)
@@ -330,6 +341,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             ];
 
             $asset = Asset::create($attributes);
+            if (isset($this->unit_images[$index]) && $this->unit_images[$index] !== null) {
+                $asset->addMedia($this->unit_images[$index]->getRealPath())
+                    ->usingFileName($this->unit_images[$index]->getClientOriginalName())
+                    ->toMediaCollection('image');
+            }
             $asset->ensureHandoverForOwner();
             $asset->notes()->create([
                 'note' => 'Asset erstellt von '.auth()->user()->name.' (Assistent).',
@@ -373,6 +389,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             $uuid = SeventhingsMappingConfig::getSeventhingsObjectId($existing);
             if ($uuid !== null && $uuid !== '') {
                 $asset->update(['itexia_uuid' => (string) $uuid, 'itexia_check_at' => now()]);
+                ItexiaCreation::syncLocalImageToItexia($asset, $client, (string) $uuid);
                 Flux::toast('Asset erstellt. Existierte bereits in Itexia; Verknüpfung wurde gesetzt.', variant: 'success');
             }
 
@@ -386,6 +403,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'itexia_uuid' => $uuid,
                 'itexia_check_at' => now(),
             ]);
+            ItexiaCreation::syncLocalImageToItexia($asset, $client, $uuid);
             Flux::toast('Asset wurde erstellt und in Itexia/Seventhings angelegt.', variant: 'success');
         } catch (\Throwable $e) {
             Flux::toast('Asset erstellt. Anlage in Itexia fehlgeschlagen: '.$e->getMessage(), variant: 'danger');
@@ -533,6 +551,12 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                 <flux:label>Standort <flux:badge size="sm" color="red">Pflicht wenn kein Besitzer</flux:badge></flux:label>
                                 <flux:input wire:model="units.{{ $index }}.location" placeholder="z.B. Büro 2.13" />
                                 <flux:error name="units.{{ $index }}.location" />
+                            </flux:field>
+                            <flux:field class="sm:col-span-2">
+                                <flux:label>Bild</flux:label>
+                                <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
+                                <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
+                                <flux:error name="unit_images.{{ $index }}" />
                             </flux:field>
                             <flux:field>
                                 <flux:label>Besitzer</flux:label>
