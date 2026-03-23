@@ -114,6 +114,30 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
     }
 
     /**
+     * Asset-IDs, für die der aktuelle Nutzer mindestens eine bereits bestätigte Übergabe hat.
+     * „Klärung anfordern“ soll nur dann angeboten werden (nicht bei offener Übergabe — dort: ablehnen).
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    #[Computed]
+    public function assetIdsWithConfirmedRecipientHandover(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return Handover::query()
+            ->where('recipient_user_id', auth()->id())
+            ->whereNotNull('confirmed_at')
+            ->whereIn('asset_id', $assetIds)
+            ->pluck('asset_id')
+            ->map(static fn (int|string $id): int => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /**
      * @param  array<int|string>  $ids
      * @return list<int>
      */
@@ -347,7 +371,11 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                             ></flux:button>
                                         </flux:tooltip>
                                     @endif
-                                    @if(! $asset->is_clarification)
+                                    @if(
+                                        ! $asset->is_clarification
+                                        && ! $pendingHandover
+                                        && $this->assetIdsWithConfirmedRecipientHandover->contains((int) $asset->id)
+                                    )
                                         <flux:tooltip content="Klärung anfordern — wenn der Bestand nicht stimmt (wird protokolliert)" position="top">
                                             <flux:button
                                                 href="{{ route('apps.assets.clarification.request', $asset) }}"

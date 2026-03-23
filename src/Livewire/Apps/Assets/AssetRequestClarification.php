@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Models\Handover;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -33,6 +34,25 @@ class AssetRequestClarification extends Component
         if ($asset->is_clarification) {
             session()->flash('message', 'Für dieses Asset läuft bereits eine Klärung.');
             $this->redirect(route('apps.assets.meine-assets'), navigate: true);
+
+            return;
+        }
+
+        $hasOpenHandover = Handover::query()
+            ->where('asset_id', $asset->id)
+            ->where('recipient_user_id', auth()->id())
+            ->whereNull('confirmed_at')
+            ->whereNull('rejected_at')
+            ->exists();
+
+        if ($hasOpenHandover) {
+            session()->flash(
+                'error',
+                'Solange Ihre Übergabe noch offen ist, nutzen Sie bitte „Übergabe ablehnen“, um eine Klärung auszulösen. „Klärung anfordern“ steht nach Bestätigung der Übergabe zur Verfügung.'
+            );
+            $this->redirect(route('apps.assets.meine-assets'), navigate: true);
+
+            return;
         }
     }
 
