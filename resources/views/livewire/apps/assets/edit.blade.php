@@ -139,8 +139,42 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
     public function save(): void
     {
-        $validated = $this->validate();
-        unset($validated['image']);
+        $baseRules = [
+            'serial_number' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'asset_type_id' => 'required|exists:intranet_app_assets_asset_types,id',
+            'asset_vendor_id' => 'required|exists:intranet_app_assets_asset_vendors,id',
+            'name' => 'nullable|string|max:255',
+            'itexia_id' => 'nullable|string|max:255',
+            'order_number' => 'nullable|string|max:255',
+            'invoice_number' => 'nullable|string|max:255',
+            'domain_connection' => 'nullable|string|in:default,schulung',
+            'intune_device_id' => 'nullable|string|max:255',
+        ];
+
+        if ($this->asset->user_id === null) {
+            $baseRules['user_id'] = 'nullable|exists:users,id';
+            $baseRules['location'] = 'nullable|string|max:255';
+        }
+
+        $data = [
+            'serial_number' => $this->serial_number,
+            'model' => $this->model,
+            'asset_type_id' => $this->asset_type_id,
+            'asset_vendor_id' => $this->asset_vendor_id,
+            'name' => $this->name,
+            'itexia_id' => $this->itexia_id,
+            'order_number' => $this->order_number,
+            'invoice_number' => $this->invoice_number,
+            'domain_connection' => $this->domain_connection,
+            'intune_device_id' => $this->intune_device_id,
+        ];
+        if ($this->asset->user_id === null) {
+            $data['user_id'] = $this->user_id;
+            $data['location'] = $this->location;
+        }
+
+        $validated = Validator::make($data, $baseRules)->validate();
 
         $invoiceValidator = Validator::make(
             ['invoice_number' => $validated['invoice_number'] ?? null],
@@ -163,11 +197,25 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         }
 
         $invoiceFilled = isset($validated['invoice_number']) && trim((string) $validated['invoice_number']) !== '';
+        $extra = [];
         if ($invoiceFilled && $this->asset->invoice_number_pending) {
-            $validated['invoice_number_pending'] = false;
+            $extra['invoice_number_pending'] = false;
         }
 
-        $this->asset->update($validated);
+        if ($this->asset->user_id !== null) {
+            $validated['user_id'] = $this->asset->user_id;
+            $validated['location'] = $this->asset->location;
+            $validated['is_missing'] = $this->asset->is_missing;
+            $validated['is_clarification'] = $this->asset->is_clarification;
+        } else {
+            $validated['user_id'] = isset($validated['user_id']) && $validated['user_id'] !== '' && $validated['user_id'] !== null
+                ? (int) $validated['user_id']
+                : null;
+            $validated['is_missing'] = $this->asset->is_missing;
+            $validated['is_clarification'] = $this->asset->is_clarification;
+        }
+
+        $this->asset->update(array_merge($validated, $extra));
 
         if ($this->image !== null) {
             $this->asset->addMedia($this->image->getRealPath())
@@ -175,6 +223,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 ->toMediaCollection('image');
         }
 
+        $this->asset->refresh();
         $this->asset->ensureHandoverForOwner();
 
         session()->flash('success', 'Asset wurde erfolgreich gespeichert.');
@@ -246,22 +295,37 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 <flux:error name="name" />
             </flux:field>
 
-            <flux:field>
-                <flux:label>Standort</flux:label>
-                <flux:input wire:model="location" placeholder="z.B. Büro 2.13" />
-                <flux:error name="location" />
-            </flux:field>
+            @if($asset->user_id === null)
+                <flux:field>
+                    <flux:label>Standort</flux:label>
+                    <flux:input wire:model="location" placeholder="z.B. Büro 2.13 oder Lager" />
+                    <flux:error name="location" />
+                </flux:field>
 
-            <flux:field>
-                <flux:label>Besitzer</flux:label>
-                <flux:select variant="listbox" searchable clearable wire:model="user_id" placeholder="Kein Besitzer">
-                    <flux:select.option value="">Kein Besitzer</flux:select.option>
-                    @foreach($this->users as $user)
-                        <flux:select.option value="{{ $user->id }}">{{ $user->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:error name="user_id" />
-            </flux:field>
+                <flux:field>
+                    <flux:label>Besitzer (Erstzuweisung)</flux:label>
+                    <flux:select variant="listbox" searchable clearable wire:model="user_id" placeholder="Kein Besitzer">
+                        <flux:select.option value="">Kein Besitzer</flux:select.option>
+                        @foreach($this->users as $user)
+                            <flux:select.option value="{{ $user->id }}">{{ $user->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:error name="user_id" />
+                    <flux:text class="text-xs text-zinc-500">Ohne Besitzer bleibt das Asset im Pool; mit Auswahl wird eine Übergabe erzeugt.</flux:text>
+                </flux:field>
+            @else
+                <flux:field class="sm:col-span-2">
+                    <flux:label>Zuordnung (nur über Klärung / Übergaben änderbar)</flux:label>
+                    <flux:callout variant="subtle" icon="information-circle" class="mt-1">
+                        <flux:callout.text>
+                            <strong>Besitzer:</strong> {{ $asset->owner?->name ?? '—' }}
+                            · <strong>Standort:</strong> {{ filled($asset->location) ? $asset->location : '—' }}
+                            · <strong>Vermisst:</strong> {{ $asset->is_missing ? 'Ja' : 'Nein' }}
+                            · <strong>In Klärung:</strong> {{ $asset->is_clarification ? 'Ja' : 'Nein' }}
+                        </flux:callout.text>
+                    </flux:callout>
+                </flux:field>
+            @endif
 
             <flux:field>
                 <flux:label>Itexia-ID</flux:label>
@@ -289,11 +353,6 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional: Neues Bild hochladen, um das aktuelle zu ersetzen (max. 10 MB).</flux:text>
                 <flux:error name="image" />
             </flux:field>
-        </div>
-
-        <div class="flex gap-4">
-            <flux:checkbox wire:model="is_clarification" label="In Klärung" />
-            <flux:checkbox wire:model="is_missing" label="Vermisst" />
         </div>
 
         <div class="flex gap-3">

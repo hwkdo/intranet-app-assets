@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets;
 
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
+use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
@@ -47,6 +48,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
+                BackfillOwnerHandoversCommand::class,
             ]);
     }
 

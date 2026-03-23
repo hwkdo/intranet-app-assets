@@ -24,6 +24,40 @@ class AssetHistory extends Model
 
     public const EventInvoiceAutoResolveExhausted = 'invoice_auto_resolve_exhausted';
 
+    public const EventHandoverRejectedByRecipient = 'handover_rejected_by_recipient';
+
+    public const EventHandoverRejectionAdminAcknowledged = 'handover_rejection_admin_acknowledged';
+
+    public const EventHandoverRejectionAdminResolvedNewOwner = 'handover_rejection_resolved_new_owner';
+
+    public const EventHandoverRejectionAdminResolvedLocation = 'handover_rejection_resolved_location';
+
+    public const EventHandoverRejectionAdminResolvedMissing = 'handover_rejection_resolved_missing';
+
+    public const EventOwnerRequestedClarification = 'owner_requested_clarification';
+
+    public const EventClarificationAdminResolvedCleared = 'clarification_admin_resolved_cleared';
+
+    public const EventClarificationAdminResolvedNewOwner = 'clarification_admin_resolved_new_owner';
+
+    public const EventClarificationAdminResolvedLocation = 'clarification_admin_resolved_location';
+
+    public const EventClarificationAdminResolvedMissing = 'clarification_admin_resolved_missing';
+
+    public const EventReturnInitiatedByHolder = 'return_initiated_by_holder';
+
+    public const EventReturnCompletedByAdmin = 'return_completed_by_admin';
+
+    public const EventHandoverConfirmedStatusCleared = 'handover_confirmed_status_cleared';
+
+    public const EventPendingHandoverAdminAcknowledged = 'pending_handover_admin_acknowledged';
+
+    public const EventPendingHandoverAdminResolvedNewOwner = 'pending_handover_admin_resolved_new_owner';
+
+    public const EventPendingHandoverAdminResolvedLocation = 'pending_handover_admin_resolved_location';
+
+    public const EventPendingHandoverAdminResolvedMissing = 'pending_handover_admin_resolved_missing';
+
     protected $table = 'intranet_app_assets_asset_histories';
 
     protected $guarded = [];

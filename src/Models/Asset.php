@@ -166,12 +166,14 @@ class Asset extends Model implements HasMedia
             return;
         }
 
-        $exists = Handover::query()
+        $openExists = Handover::query()
             ->where('asset_id', $this->id)
             ->where('recipient_user_id', $this->user_id)
+            ->whereNull('confirmed_at')
+            ->whereNull('rejected_at')
             ->exists();
 
-        if ($exists) {
+        if ($openExists) {
             return;
         }
 

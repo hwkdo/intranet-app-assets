@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -21,12 +22,16 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe per Signopad bestäti
             session()->flash('message', 'Diese Übergabe wurde bereits bestätigt.');
             $this->redirect(route('apps.assets.meine-assets'), navigate: true);
         }
+        if ($handover->isRejected()) {
+            session()->flash('message', 'Diese Übergabe wurde abgelehnt.');
+            $this->redirect(route('apps.assets.meine-assets'), navigate: true);
+        }
     }
 
     #[On('signature-confirmed')]
     public function onSignatureConfirmed(string $img_src, string $base64, array $checkboxes): void
     {
-        if ($this->handover->recipient_user_id !== auth()->id() || $this->handover->isConfirmed()) {
+        if ($this->handover->recipient_user_id !== auth()->id() || $this->handover->isConfirmed() || $this->handover->isRejected()) {
             return;
         }
         $this->handover->update([
@@ -34,6 +39,34 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe per Signopad bestäti
             'confirmed_at' => now(),
             'confirmation_method' => 'signopad',
         ]);
+        $asset = $this->handover->asset;
+        if ($asset !== null) {
+            $clearedFlags = [];
+            if ($asset->is_clarification) {
+                $clearedFlags[] = 'is_clarification';
+            }
+            if ($asset->is_missing) {
+                $clearedFlags[] = 'is_missing';
+            }
+
+            $asset->update([
+                'is_clarification' => false,
+                'is_missing' => false,
+            ]);
+
+            if ($clearedFlags !== []) {
+                $asset->historyEntries()->create([
+                    'event' => AssetHistory::EventHandoverConfirmedStatusCleared,
+                    'user_id' => auth()->id(),
+                    'reason' => 'Bei Bestätigung der Übergabe wurden Status-Flags zurückgesetzt.',
+                    'meta' => [
+                        'handover_id' => $this->handover->id,
+                        'confirmation_method' => 'signopad',
+                        'cleared_flags' => $clearedFlags,
+                    ],
+                ]);
+            }
+        }
         session()->flash('message', 'Übergabe wurde per Signopad bestätigt.');
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }

@@ -3,6 +3,7 @@
 use Flux\Flux;
 use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Illuminate\Support\Collection;
@@ -245,6 +246,24 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         }
     }
 
+    #[Computed]
+    public function returnInitiatableHandover(): ?Handover
+    {
+        if ($this->asset->user_id === null) {
+            return null;
+        }
+
+        return Handover::query()
+            ->where('asset_id', $this->asset->id)
+            ->where('recipient_user_id', $this->asset->user_id)
+            ->whereNotNull('confirmed_at')
+            ->whereNull('rejected_at')
+            ->whereDoesntHave('assetReturns')
+            ->latest('confirmed_at')
+            ->latest('id')
+            ->first();
+    }
+
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout
@@ -255,6 +274,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
 
         {{-- Aktionsleiste --}}
         <div class="flex items-center gap-3">
+            @php
+                $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
+                $canInitiateReturnFromShow = (($asset->user_id !== null && (int) $asset->user_id === (int) auth()->id()) || $isAdmin);
+                $returnHandover = $canInitiateReturnFromShow ? $this->returnInitiatableHandover : null;
+            @endphp
             @can('manage-app-assets')
                 <flux:button href="{{ route('apps.assets.edit', $asset) }}" variant="primary" icon="pencil" size="sm">
                     Bearbeiten
@@ -266,6 +290,17 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     </flux:button>
                 @endif
             @endcan
+
+            @if($returnHandover)
+                <flux:button
+                    href="{{ route('apps.assets.handover.return.initiate', $returnHandover) }}"
+                    variant="primary"
+                    icon="arrow-uturn-left"
+                    size="sm"
+                >
+                    Rückgabe einleiten
+                </flux:button>
+            @endif
 
             <flux:button href="{{ route('apps.assets.liste') }}" variant="ghost" icon="arrow-left" size="sm">
                 Zurück zur Liste
@@ -583,6 +618,19 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histMailFailed = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaInventoryMailFailed;
                                 $histItexiaMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaNotFoundOnDelete;
                                 $histSeventhingsOff = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventItexiaSeventhingsUnavailableOnDelete;
+                                $histHandoverRejected = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectedByRecipient;
+                                $histRejectionAck = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminAcknowledged;
+                                $histRejectionNewOwner = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminResolvedNewOwner;
+                                $histRejectionLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminResolvedLocation;
+                                $histRejectionMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminResolvedMissing;
+                                $histOwnerClarification = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventOwnerRequestedClarification;
+                                $histClarClear = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedCleared;
+                                $histClarNewOwner = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedNewOwner;
+                                $histClarLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedLocation;
+                                $histClarMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedMissing;
+                                $histReturnInitiated = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnInitiatedByHolder;
+                                $histReturnCompleted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnCompletedByAdmin;
+                                $histHandoverConfirmCleared = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedStatusCleared;
                                 $histIndicatorColor = match ($histEvent) {
                                     $histDeleted => 'red',
                                     $histRestored => 'green',
@@ -590,6 +638,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histMailFailed => 'red',
                                     $histItexiaMissing => 'amber',
                                     $histSeventhingsOff => 'zinc',
+                                    $histHandoverRejected => 'red',
+                                    $histRejectionAck => 'blue',
+                                    $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing => 'green',
+                                    $histOwnerClarification => 'amber',
+                                    $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing => 'green',
+                                    $histReturnInitiated => 'amber',
+                                    $histReturnCompleted => 'green',
+                                    $histHandoverConfirmCleared => 'green',
                                     default => 'zinc',
                                 };
                             @endphp
@@ -609,6 +665,22 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:icon.magnifying-glass variant="micro" />
                                     @elseif($histEvent === $histSeventhingsOff)
                                         <flux:icon.cloud variant="micro" />
+                                    @elseif($histEvent === $histHandoverRejected)
+                                        <flux:icon.x-circle variant="micro" />
+                                    @elseif($histEvent === $histRejectionAck)
+                                        <flux:icon.shield-check variant="micro" />
+                                    @elseif(in_array($histEvent, [$histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing], true))
+                                        <flux:icon.arrow-path variant="micro" />
+                                    @elseif($histEvent === $histOwnerClarification)
+                                        <flux:icon.question-mark-circle variant="micro" />
+                                    @elseif(in_array($histEvent, [$histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true))
+                                        <flux:icon.arrow-path variant="micro" />
+                                    @elseif($histEvent === $histReturnInitiated)
+                                        <flux:icon.arrow-uturn-left variant="micro" />
+                                    @elseif($histEvent === $histReturnCompleted)
+                                        <flux:icon.arrow-path variant="micro" />
+                                    @elseif($histEvent === $histHandoverConfirmCleared)
+                                        <flux:icon.check-circle variant="micro" />
                                     @else
                                         <flux:icon.wrench variant="micro" />
                                     @endif
@@ -629,6 +701,32 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             Itexia-ID in Seventhings nicht gefunden
                                         @elseif($histEvent === $histSeventhingsOff)
                                             Seventhings-Abgleich nicht möglich
+                                        @elseif($histEvent === $histHandoverRejected)
+                                            Übergabe vom Empfänger abgelehnt
+                                        @elseif($histEvent === $histRejectionAck)
+                                            Abgelehnte Übergabe: Admin-Bestätigung (nicht beim Benutzer)
+                                        @elseif($histEvent === $histRejectionNewOwner)
+                                            Abgelehnte Übergabe: Neuer Besitzer zugewiesen
+                                        @elseif($histEvent === $histRejectionLocation)
+                                            Abgelehnte Übergabe: Besitzer entfernt, Standort gesetzt
+                                        @elseif($histEvent === $histRejectionMissing)
+                                            Abgelehnte Übergabe: Als vermisst markiert
+                                        @elseif($histEvent === $histOwnerClarification)
+                                            Klärung vom Besitzer angefordert
+                                        @elseif($histEvent === $histClarClear)
+                                            Klärung: ohne Änderung abgeschlossen
+                                        @elseif($histEvent === $histClarNewOwner)
+                                            Klärung: Neuer Besitzer zugewiesen
+                                        @elseif($histEvent === $histClarLocation)
+                                            Klärung: Besitzer entfernt, Standort gesetzt
+                                        @elseif($histEvent === $histClarMissing)
+                                            Klärung: Als vermisst markiert
+                                        @elseif($histEvent === $histReturnInitiated)
+                                            Rückgabe eingeleitet
+                                        @elseif($histEvent === $histReturnCompleted)
+                                            Rückgabe abgeschlossen (Admin)
+                                        @elseif($histEvent === $histHandoverConfirmCleared)
+                                            Übergabe bestätigt: Status bereinigt
                                         @else
                                             Verlaufseintrag
                                         @endif
@@ -640,6 +738,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     @if($histEvent === $histDeleted && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif(in_array($histEvent, [$histMailSent, $histMailFailed, $histItexiaMissing, $histSeventhingsOff], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histHandoverRejected, $histRejectionAck, $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histOwnerClarification, $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histReturnInitiated, $histReturnCompleted], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif($histEvent === $histHandoverConfirmCleared && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @endif
                                     @if(filled($historyEntry->meta))

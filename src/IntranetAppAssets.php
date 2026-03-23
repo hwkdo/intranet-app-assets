@@ -4,6 +4,8 @@ namespace Hwkdo\IntranetAppAssets;
 
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
+use Hwkdo\IntranetAppAssets\Tasks\AssetsInClarificationAdminTaskProvider;
+use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
 use Illuminate\Support\Collection;
@@ -55,6 +57,8 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface
         return [
             OffeneUebergabenTaskProvider::class,
             FehlendeRechnungsnrTaskProvider::class,
+            AssetsInClarificationAdminTaskProvider::class,
+            PendingAssetReturnsAdminTaskProvider::class,
         ];
     }
 }

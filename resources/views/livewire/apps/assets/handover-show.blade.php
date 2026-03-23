@@ -11,7 +11,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
 
     public function mount(Handover $handover): void
     {
-        $this->handover = $handover->load('asset.type', 'asset.vendor', 'recipient', 'issuer');
+        $this->handover = $handover->load('asset.type', 'asset.vendor', 'recipient', 'issuer', 'assetReturns');
     }
 
     public function confirmationMethodLabel(): ?string
@@ -34,7 +34,9 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
             <flux:card>
                 <flux:heading size="lg" class="mb-4">Status</flux:heading>
                 <div class="flex flex-wrap items-center gap-2">
-                    @if($handover->isConfirmed())
+                    @if($handover->isRejected())
+                        <flux:badge color="red" size="lg" icon="x-circle">Abgelehnt</flux:badge>
+                    @elseif($handover->isConfirmed())
                         <flux:badge color="green" size="lg" icon="check-circle">Bestätigt</flux:badge>
                         @if($this->confirmationMethodLabel())
                             <flux:badge color="zinc" size="lg">{{ $this->confirmationMethodLabel() }}</flux:badge>
@@ -45,33 +47,64 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                 </div>
             </flux:card>
 
+            @php
+                $pendingReturn = $handover->assetReturns->first(fn ($r) => $r->completed_at === null);
+                $hasCompletedReturn = $handover->assetReturns->contains(fn ($r) => $r->completed_at !== null);
+                $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
+                $canInitiateReturnAsHolder = $handover->isConfirmed()
+                    && ! $handover->isRejected()
+                    && $handover->recipient_user_id === auth()->id()
+                    && $handover->asset
+                    && (int) $handover->asset->user_id === (int) auth()->id()
+                    && $pendingReturn === null
+                    && ! $hasCompletedReturn;
+                $canInitiateReturnAsAdmin = $isAdmin
+                    && $handover->isConfirmed()
+                    && ! $handover->isRejected()
+                    && $pendingReturn === null
+                    && ! $hasCompletedReturn;
+                $canInitiateReturn = $canInitiateReturnAsHolder || $canInitiateReturnAsAdmin;
+            @endphp
+
+            @if($pendingReturn)
+                <flux:callout variant="warning" icon="clock">
+                    <flux:callout.heading>Rückgabe eingeleitet</flux:callout.heading>
+                    <flux:callout.text>
+                        Die IT bearbeitet den Vorgang. Sie werden informiert, sobald der physische Empfang bestätigt und das Asset neu zugeordnet ist.
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
+
             <flux:card>
-                <flux:heading size="lg" class="mb-4">Details</flux:heading>
+                <flux:heading size="lg" class="mb-4 dark:text-white">Details</flux:heading>
                 <dl class="grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-400">Asset</dt>
-                    <dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Asset</dt>
+                    <dd class="text-zinc-900 dark:text-white">
                         @if($handover->asset)
                             <a href="{{ route('apps.assets.show', $handover->asset) }}" class="text-[var(--color-accent)] hover:underline">
                                 {{ $handover->asset->display_name }}
                             </a>
-                            <span class="text-zinc-500"> · {{ $handover->asset->serial_number }}</span>
+                            <span class="text-zinc-500 dark:text-zinc-300"> · {{ $handover->asset->serial_number }}</span>
                         @else
                             —
                         @endif
                     </dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-400">Empfänger</dt>
-                    <dd>{{ $handover->recipient?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Empfänger</dt>
+                    <dd class="text-zinc-900 dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-400">Ausgestellt von</dt>
-                    <dd>{{ $handover->issuer?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Ausgestellt von</dt>
+                    <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-400">Erstellt am</dt>
-                    <dd>{{ $handover->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Erstellt am</dt>
+                    <dd class="text-zinc-900 dark:text-white">{{ $handover->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
 
-                    @if($handover->isConfirmed())
-                        <dt class="font-semibold text-zinc-500 dark:text-zinc-400">Bestätigt am</dt>
-                        <dd>{{ $handover->confirmed_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    @if($handover->isRejected())
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Abgelehnt am</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->rejected_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    @elseif($handover->isConfirmed())
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Bestätigt am</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmed_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                     @endif
                 </dl>
             </flux:card>
@@ -94,9 +127,17 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
             @endif
 
             <div class="flex flex-wrap gap-2">
-                @if(!$handover->isConfirmed() && $handover->recipient_user_id === auth()->id())
+                @if(!$handover->isConfirmed() && !$handover->isRejected() && $handover->recipient_user_id === auth()->id())
                     <flux:button href="{{ route('apps.assets.handover.confirm', $handover) }}" variant="primary" icon="check-circle">
                         Übergabe bestätigen
+                    </flux:button>
+                    <flux:button href="{{ route('apps.assets.handover.reject', $handover) }}" variant="danger" icon="x-circle">
+                        Übergabe ablehnen
+                    </flux:button>
+                @endif
+                @if($canInitiateReturn)
+                    <flux:button href="{{ route('apps.assets.handover.return.initiate', $handover) }}" variant="primary" icon="arrow-uturn-left">
+                        Rückgabe einleiten
                     </flux:button>
                 @endif
                 @if($handover->asset)

@@ -1,0 +1,170 @@
+<?php
+
+namespace Hwkdo\IntranetAppAssets\Services;
+
+use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Models\Handover;
+use Illuminate\Support\Facades\DB;
+
+class AssetClarificationAdminResolutionService
+{
+    public const PENDING_RESOLUTION_SESSION_KEY = 'intranet_app_assets.clarification_resolve_pending';
+
+    public const ResolutionClearOnly = 'clear_only';
+
+    public const ResolutionNewOwner = 'new_owner';
+
+    public const ResolutionSetLocation = 'set_location';
+
+    public const ResolutionMarkMissing = 'mark_missing';
+
+    /**
+     * @param  array{resolution: string, new_owner_user_id?: int|null, location?: string|null}  $data
+     */
+    public function resolve(
+        Asset $asset,
+        int $adminUserId,
+        string $resolution,
+        ?int $newOwnerUserId,
+        ?string $location,
+        ?string $note = null,
+    ): void {
+        if (! $asset->is_clarification) {
+            throw new \InvalidArgumentException('Dieses Asset ist nicht in Klärung.');
+        }
+
+        $note = $note !== null ? trim($note) : '';
+
+        DB::transaction(function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
+            $baseMeta = [
+                'resolution' => $resolution,
+                'former_user_id' => $asset->user_id,
+                'bulk_note' => $note !== '' ? $note : null,
+            ];
+
+            match ($resolution) {
+                self::ResolutionClearOnly => $this->applyClearOnly($asset, $adminUserId, $baseMeta, $note),
+                self::ResolutionNewOwner => $this->applyNewOwner($asset, $adminUserId, $newOwnerUserId, $baseMeta, $note),
+                self::ResolutionSetLocation => $this->applySetLocation($asset, $adminUserId, $location, $baseMeta, $note),
+                self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $adminUserId, $baseMeta, $note),
+                default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
+            };
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $baseMeta
+     */
+    private function applyClearOnly(Asset $asset, int $adminUserId, array $baseMeta, string $note): void
+    {
+        $asset->update([
+            'is_clarification' => false,
+        ]);
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventClarificationAdminResolvedCleared,
+            'user_id' => $adminUserId,
+            'reason' => $note !== '' ? $note : 'Klärung: Keine Änderung am Asset, Flag wurde entfernt.',
+            'meta' => $baseMeta,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $baseMeta
+     */
+    private function applyNewOwner(Asset $asset, int $adminUserId, ?int $newOwnerUserId, array $baseMeta, string $note): void
+    {
+        if ($newOwnerUserId === null || $newOwnerUserId < 1) {
+            throw new \InvalidArgumentException('Neuer Besitzer erforderlich.');
+        }
+
+        $this->deleteAllHandoversForAsset($asset);
+
+        $asset->update([
+            'user_id' => $newOwnerUserId,
+            'is_clarification' => false,
+            'is_missing' => false,
+        ]);
+        $asset->refresh();
+        $asset->ensureHandoverForOwner();
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventClarificationAdminResolvedNewOwner,
+            'user_id' => $adminUserId,
+            'reason' => $note !== '' ? $note : 'Klärung: Neuer Besitzer zugewiesen.',
+            'meta' => array_merge($baseMeta, [
+                'new_owner_user_id' => $newOwnerUserId,
+            ]),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $baseMeta
+     */
+    private function applySetLocation(Asset $asset, int $adminUserId, ?string $location, array $baseMeta, string $note): void
+    {
+        $location = $location !== null ? trim($location) : '';
+        if ($location === '') {
+            throw new \InvalidArgumentException('Standort erforderlich.');
+        }
+
+        $this->deleteAllHandoversForAsset($asset);
+
+        $asset->update([
+            'user_id' => null,
+            'location' => $location,
+            'is_clarification' => false,
+            'is_missing' => false,
+        ]);
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventClarificationAdminResolvedLocation,
+            'user_id' => $adminUserId,
+            'reason' => $note !== '' ? $note : 'Klärung: Besitzer entfernt, Standort gesetzt.',
+            'meta' => array_merge($baseMeta, [
+                'location' => $location,
+            ]),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $baseMeta
+     */
+    private function applyMarkMissing(Asset $asset, int $adminUserId, array $baseMeta, string $note): void
+    {
+        $this->deleteAllHandoversForAsset($asset);
+
+        $asset->update([
+            'user_id' => null,
+            'is_clarification' => false,
+            'is_missing' => true,
+        ]);
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventClarificationAdminResolvedMissing,
+            'user_id' => $adminUserId,
+            'reason' => $note !== '' ? $note : 'Klärung: Als vermisst markiert, Besitzer entfernt.',
+            'meta' => $baseMeta,
+        ]);
+    }
+
+    private function deleteAllHandoversForAsset(Asset $asset): void
+    {
+        $asset->handovers()->get()->each(function (Handover $handover): void {
+            $this->deleteHandoverWithRelations($handover);
+        });
+    }
+
+    private function deleteHandoverWithRelations(Handover $handover): void
+    {
+        $return = $handover->assetReturn;
+        if ($return !== null) {
+            $return->notes()->delete();
+            $return->delete();
+        }
+
+        $handover->notes()->delete();
+        $handover->delete();
+    }
+}

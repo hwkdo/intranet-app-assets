@@ -13,6 +13,19 @@ class AssetReturn extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'received_confirmed_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->completed_at !== null;
+    }
+
     /** @return BelongsTo<Handover, $this> */
     public function handover(): BelongsTo
     {
@@ -23,6 +36,13 @@ class AssetReturn extends Model
     public function recipient(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recipient_user_id');
+    }
+
+    /** User who initiated the return (current holder). */
+    /** @return BelongsTo<User, $this> */
+    public function initiatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'initiated_by_user_id');
     }
 
     /** @return MorphMany<AssetNote, $this> */

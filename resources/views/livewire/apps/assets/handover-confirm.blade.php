@@ -1,5 +1,7 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -13,8 +15,6 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
 
     public function mount(Handover $handover): void
     {
-        $this->handover = $handover->load('asset.type', 'asset.vendor', 'recipient', 'issuer');
-
         if ($handover->recipient_user_id !== auth()->id()) {
             abort(403);
         }
@@ -22,6 +22,22 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
             session()->flash('message', 'Diese Übergabe wurde bereits bestätigt.');
             $this->redirect(route('apps.assets.meine-assets'), navigate: true);
         }
+        if ($handover->isRejected()) {
+            session()->flash('message', 'Diese Übergabe wurde abgelehnt.');
+            $this->redirect(route('apps.assets.meine-assets'), navigate: true);
+        }
+
+        $handover->load('recipient', 'issuer');
+        $asset = null;
+        if ($handover->asset_id !== null) {
+            $asset = Asset::query()
+                ->withTrashed()
+                ->with(['type', 'vendor'])
+                ->find($handover->asset_id);
+        }
+        $handover->setRelation('asset', $asset);
+
+        $this->handover = $handover;
     }
 
     public function getFormwerkHandoverUrl(): ?string
@@ -40,7 +56,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
 
     public function confirmByTouchscreen(string $signatureBase64): void
     {
-        if ($this->handover->recipient_user_id !== auth()->id() || $this->handover->isConfirmed()) {
+        if ($this->handover->recipient_user_id !== auth()->id() || $this->handover->isConfirmed() || $this->handover->isRejected()) {
             abort(403);
         }
         $this->handover->update([
@@ -48,6 +64,34 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
             'confirmed_at' => now(),
             'confirmation_method' => 'touchscreen',
         ]);
+        $asset = $this->handover->asset;
+        if ($asset !== null) {
+            $clearedFlags = [];
+            if ($asset->is_clarification) {
+                $clearedFlags[] = 'is_clarification';
+            }
+            if ($asset->is_missing) {
+                $clearedFlags[] = 'is_missing';
+            }
+
+            $asset->update([
+                'is_clarification' => false,
+                'is_missing' => false,
+            ]);
+
+            if ($clearedFlags !== []) {
+                $asset->historyEntries()->create([
+                    'event' => AssetHistory::EventHandoverConfirmedStatusCleared,
+                    'user_id' => auth()->id(),
+                    'reason' => 'Bei Bestätigung der Übergabe wurden Status-Flags zurückgesetzt.',
+                    'meta' => [
+                        'handover_id' => $this->handover->id,
+                        'confirmation_method' => 'touchscreen',
+                        'cleared_flags' => $clearedFlags,
+                    ],
+                ]);
+            }
+        }
         session()->flash('message', 'Übergabe wurde per Touchscreen-Unterschrift bestätigt.');
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }
@@ -55,10 +99,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
 <div>
     <x-intranet-app-assets::assets-layout heading="Übergabe bestätigen" subheading="{{ $handover->asset?->display_name ?? 'Asset' }}">
         <div class="space-y-6">
-            <flux:card>
-                <flux:heading size="lg" class="mb-2 dark:text-white">{{ $handover->asset?->display_name }}</flux:heading>
-                <flux:text class="text-zinc-500 dark:text-white">Seriennummer: {{ $handover->asset?->serial_number }} · {{ $handover->asset?->type?->name }}</flux:text>
-            </flux:card>
+            <x-intranet-app-assets::handover-asset-summary :handover="$handover" />
 
             <flux:heading size="md" class="dark:text-white">Bestätigungsart wählen</flux:heading>
 

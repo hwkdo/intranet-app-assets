@@ -251,6 +251,7 @@ class SyncLegacyAssetsCommand extends Command
         }
 
         $this->line("  → {$synced} Übergaben synchronisiert.");
+        $this->ensureOwnerHandoversFromAssets($legacyAssets);
 
         if ($this->dryRun) {
             return;
@@ -283,8 +284,13 @@ class SyncLegacyAssetsCommand extends Command
             );
             if (isset($legacyReturn['created_at'])) {
                 $assetReturn->created_at = $legacyReturn['created_at'];
-                $assetReturn->save();
             }
+            if ($recipientId !== null) {
+                $ts = $assetReturn->created_at ?? now();
+                $assetReturn->received_confirmed_at = $ts;
+                $assetReturn->completed_at = $ts;
+            }
+            $assetReturn->save();
             $returnIdMap[$legacyReturnId] = $assetReturn->id;
             $returnsSynced++;
         }
@@ -292,6 +298,77 @@ class SyncLegacyAssetsCommand extends Command
         $this->line("  → {$returnsSynced} Rückgaben synchronisiert.");
 
         $this->syncHandoverNotes($legacyService, $handoverIdMap, $returnIdMap, $legacyReturns);
+    }
+
+    /**
+     * Stellt sicher, dass für jedes importierte Asset mit Besitzer (user_id) mindestens
+     * eine passende Übergabe existiert. Falls eine passende Übergabe vorhanden ist,
+     * wird sie beim Import als bestätigt markiert.
+     *
+     * @param  array<int, array<string, mixed>>  $legacyAssets
+     */
+    private function ensureOwnerHandoversFromAssets(array $legacyAssets): void
+    {
+        $assetIdMap = $this->buildLegacyIdToAssetIdMap($legacyAssets);
+
+        $created = 0;
+        $confirmed = 0;
+
+        foreach ($legacyAssets as $legacy) {
+            $legacyAssetId = $legacy['id'] ?? null;
+            if ($legacyAssetId === null) {
+                continue;
+            }
+
+            $assetId = $assetIdMap[$legacyAssetId] ?? null;
+            if ($assetId === null) {
+                continue;
+            }
+
+            $ownerUserId = $this->resolveUserId($legacy['user_id'] ?? null);
+            if ($ownerUserId === null) {
+                continue;
+            }
+
+            $matchingHandover = Handover::query()
+                ->where('asset_id', $assetId)
+                ->where('recipient_user_id', $ownerUserId)
+                ->whereNull('rejected_at')
+                ->orderByDesc('legacy_id')
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($matchingHandover === null) {
+                $created++;
+                if (! $this->dryRun) {
+                    Handover::create([
+                        'asset_id' => $assetId,
+                        'recipient_user_id' => $ownerUserId,
+                        'issuer_user_id' => null,
+                        'confirmed_at' => null,
+                        'confirmation_method' => null,
+                    ]);
+                }
+
+                continue;
+            }
+
+            if ($matchingHandover->confirmed_at !== null) {
+                continue;
+            }
+
+            $confirmed++;
+            if (! $this->dryRun) {
+                $matchingHandover->update([
+                    'confirmed_at' => $this->parseNullableDatetime($legacy['updated_at'] ?? null)
+                        ?? $this->parseNullableDatetime($legacy['created_at'] ?? null)
+                        ?? now()->format('Y-m-d H:i:s'),
+                    'confirmation_method' => $matchingHandover->confirmation_method ?: 'legacy-import',
+                ]);
+            }
+        }
+
+        $this->line("  → {$created} Übergaben für Besitzer ergänzt, {$confirmed} passende Übergaben als bestätigt markiert.");
     }
 
     /**

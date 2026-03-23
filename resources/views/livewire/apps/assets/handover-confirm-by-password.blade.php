@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -16,11 +17,44 @@ new #[Layout('components.layouts.app')] class extends Component
             $this->redirect(route('apps.assets.meine-assets'), navigate: true);
             return;
         }
+        if ($handover->isRejected()) {
+            session()->flash('message', 'Diese Übergabe wurde abgelehnt.');
+            $this->redirect(route('apps.assets.meine-assets'), navigate: true);
+            return;
+        }
 
         $handover->update([
             'confirmed_at' => now(),
             'confirmation_method' => 'password',
         ]);
+        $asset = $handover->asset;
+        if ($asset !== null) {
+            $clearedFlags = [];
+            if ($asset->is_clarification) {
+                $clearedFlags[] = 'is_clarification';
+            }
+            if ($asset->is_missing) {
+                $clearedFlags[] = 'is_missing';
+            }
+
+            $asset->update([
+                'is_clarification' => false,
+                'is_missing' => false,
+            ]);
+
+            if ($clearedFlags !== []) {
+                $asset->historyEntries()->create([
+                    'event' => AssetHistory::EventHandoverConfirmedStatusCleared,
+                    'user_id' => auth()->id(),
+                    'reason' => 'Bei Bestätigung der Übergabe wurden Status-Flags zurückgesetzt.',
+                    'meta' => [
+                        'handover_id' => $handover->id,
+                        'confirmation_method' => 'password',
+                        'cleared_flags' => $clearedFlags,
+                    ],
+                ]);
+            }
+        }
         session()->flash('message', 'Übergabe wurde per Passwort bestätigt.');
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }

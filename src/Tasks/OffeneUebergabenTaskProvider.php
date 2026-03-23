@@ -21,9 +21,11 @@ class OffeneUebergabenTaskProvider implements TaskProviderInterface
         $userId = $user->getAuthIdentifier();
 
         return Handover::query()
-            ->with('asset.type', 'asset.vendor')
+            ->with(['asset.type', 'asset.vendor'])
+            ->whereHas('asset')
             ->where('recipient_user_id', $userId)
             ->whereNull('confirmed_at')
+            ->whereNull('rejected_at')
             ->orderBy('created_at')
             ->get()
             ->map(fn (Handover $handover) => new TaskItem(
@@ -32,7 +34,7 @@ class OffeneUebergabenTaskProvider implements TaskProviderInterface
                 appIdentifier: IntranetAppAssets::identifier(),
                 appName: IntranetAppAssets::app_name(),
                 appIcon: IntranetAppAssets::app_icon(),
-                description: $handover->asset?->display_name.' · '.($handover->asset?->serial_number ?? ''),
+                description: self::taskDescription($handover),
                 badge: 'Offen',
                 priority: 5,
             ));
@@ -41,5 +43,18 @@ class OffeneUebergabenTaskProvider implements TaskProviderInterface
     public function getLabel(): string
     {
         return 'Offene Asset-Übergaben';
+    }
+
+    private static function taskDescription(Handover $handover): string
+    {
+        $asset = $handover->asset;
+        if ($asset === null) {
+            return 'Asset nicht gefunden · Übergabe #'.$handover->id;
+        }
+
+        $name = $asset->display_name;
+        $serial = filled($asset->serial_number) ? $asset->serial_number : '—';
+
+        return $name.' · SN '.$serial;
     }
 }
