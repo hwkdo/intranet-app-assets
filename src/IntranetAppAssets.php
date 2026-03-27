@@ -3,14 +3,16 @@
 namespace Hwkdo\IntranetAppAssets;
 
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
+use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
 use Hwkdo\IntranetAppAssets\Tasks\AssetsInClarificationAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
 use Illuminate\Support\Collection;
 
-class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface
+class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface
 {
     public static function app_name(): string
     {
@@ -59,6 +61,13 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface
             FehlendeRechnungsnrTaskProvider::class,
             AssetsInClarificationAdminTaskProvider::class,
             PendingAssetReturnsAdminTaskProvider::class,
+        ];
+    }
+
+    public static function dashboardWidgetProviders(): array
+    {
+        return [
+            AssetsDashboardWidgetProvider::class,
         ];
     }
 }

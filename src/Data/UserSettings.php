@@ -17,5 +17,12 @@ class UserSettings extends BaseUserSettings
 
         #[Description('Benachrichtigungen aktiviert')]
         public bool $notificationsEnabled = true,
+
+        #[Description('Persönliches Dashboard-Layout (Widgets, Positionen, Größen)')]
+        public array $dashboard = [
+            'version' => 1,
+            'enabledWidgets' => [],
+            'layout' => [],
+        ],
     ) {}
 }
