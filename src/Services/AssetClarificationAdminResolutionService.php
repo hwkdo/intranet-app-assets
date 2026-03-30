@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Services;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Illuminate\Support\Facades\DB;
 
 class AssetClarificationAdminResolutionService
@@ -36,20 +37,22 @@ class AssetClarificationAdminResolutionService
 
         $note = $note !== null ? trim($note) : '';
 
-        DB::transaction(function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
-            $baseMeta = [
-                'resolution' => $resolution,
-                'former_user_id' => $asset->user_id,
-                'bulk_note' => $note !== '' ? $note : null,
-            ];
+        AssetAuditContext::runWith('assets.clarification.resolve', function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
+            DB::transaction(function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
+                $baseMeta = [
+                    'resolution' => $resolution,
+                    'former_user_id' => $asset->user_id,
+                    'bulk_note' => $note !== '' ? $note : null,
+                ];
 
-            match ($resolution) {
-                self::ResolutionClearOnly => $this->applyClearOnly($asset, $adminUserId, $baseMeta, $note),
-                self::ResolutionNewOwner => $this->applyNewOwner($asset, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                self::ResolutionSetLocation => $this->applySetLocation($asset, $adminUserId, $location, $baseMeta, $note),
-                self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $adminUserId, $baseMeta, $note),
-                default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
-            };
+                match ($resolution) {
+                    self::ResolutionClearOnly => $this->applyClearOnly($asset, $adminUserId, $baseMeta, $note),
+                    self::ResolutionNewOwner => $this->applyNewOwner($asset, $adminUserId, $newOwnerUserId, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $adminUserId, $baseMeta, $note),
+                    default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
+                };
+            });
         });
     }
 

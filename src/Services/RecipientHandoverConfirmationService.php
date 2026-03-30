@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Services;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 
 class RecipientHandoverConfirmationService
 {
@@ -46,19 +47,21 @@ class RecipientHandoverConfirmationService
             }
         }
 
-        $attributes = [
-            'confirmed_at' => now(),
-            'confirmation_method' => $confirmationMethod,
-        ];
-        if ($confirmationMethod === self::METHOD_TOUCHSCREEN || $confirmationMethod === self::METHOD_SIGNOPAD) {
-            $attributes['signature'] = $signatureBase64;
-        }
-        $handover->update($attributes);
+        AssetAuditContext::runWith('assets.handover.confirm', function () use ($handover, $recipientUserId, $confirmationMethod, $signatureBase64): void {
+            $attributes = [
+                'confirmed_at' => now(),
+                'confirmation_method' => $confirmationMethod,
+            ];
+            if ($confirmationMethod === self::METHOD_TOUCHSCREEN || $confirmationMethod === self::METHOD_SIGNOPAD) {
+                $attributes['signature'] = $signatureBase64;
+            }
+            $handover->update($attributes);
 
-        $asset = $handover->asset;
-        if ($asset instanceof Asset) {
-            $this->clearAssetFlagsAfterConfirm($asset, $handover, $recipientUserId, $confirmationMethod);
-        }
+            $asset = $handover->asset;
+            if ($asset instanceof Asset) {
+                $this->clearAssetFlagsAfterConfirm($asset, $handover, $recipientUserId, $confirmationMethod);
+            }
+        });
     }
 
     /**
@@ -81,28 +84,30 @@ class RecipientHandoverConfirmationService
             throw new \InvalidArgumentException('Begründung erforderlich.');
         }
 
-        $handover->notes()->create([
-            'note' => 'Übergabe abgelehnt — Begründung des Empfängers:'."\n\n".$reason,
-            'user_id' => $recipientUserId,
-        ]);
-
-        $handover->update([
-            'rejected_at' => now(),
-            'rejected_by_user_id' => $recipientUserId,
-        ]);
-
-        $asset = $handover->asset;
-        if ($asset instanceof Asset) {
-            $asset->historyEntries()->create([
-                'event' => AssetHistory::EventHandoverRejectedByRecipient,
+        AssetAuditContext::runWith('assets.handover.reject', function () use ($handover, $recipientUserId, $reason): void {
+            $handover->notes()->create([
+                'note' => 'Übergabe abgelehnt — Begründung des Empfängers:'."\n\n".$reason,
                 'user_id' => $recipientUserId,
-                'reason' => $reason,
-                'meta' => [
-                    'handover_id' => $handover->id,
-                    'recipient_user_id' => $handover->recipient_user_id,
-                ],
             ]);
-        }
+
+            $handover->update([
+                'rejected_at' => now(),
+                'rejected_by_user_id' => $recipientUserId,
+            ]);
+
+            $asset = $handover->asset;
+            if ($asset instanceof Asset) {
+                $asset->historyEntries()->create([
+                    'event' => AssetHistory::EventHandoverRejectedByRecipient,
+                    'user_id' => $recipientUserId,
+                    'reason' => $reason,
+                    'meta' => [
+                        'handover_id' => $handover->id,
+                        'recipient_user_id' => $handover->recipient_user_id,
+                    ],
+                ]);
+            }
+        });
     }
 
     private function clearAssetFlagsAfterConfirm(

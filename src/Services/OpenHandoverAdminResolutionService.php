@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Services;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Illuminate\Support\Facades\DB;
 
 class OpenHandoverAdminResolutionService
@@ -39,32 +40,34 @@ class OpenHandoverAdminResolutionService
 
         $note = $note !== null ? trim($note) : '';
 
-        DB::transaction(function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note): void {
-            $baseMeta = [
-                'handover_id' => $handover->id,
-                'former_recipient_user_id' => $recipientId,
-                'former_recipient_name' => $recipientName,
-                'resolution' => $resolution,
-                'bulk_note' => $note !== '' ? $note : null,
-            ];
-
-            $asset->historyEntries()->create([
-                'event' => AssetHistory::EventPendingHandoverAdminAcknowledged,
-                'user_id' => $adminUserId,
-                'reason' => 'Admin übernimmt offene Übergabe zur Auflösung.',
-                'meta' => [
+        AssetAuditContext::runWith('assets.open_handover.resolve', function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note): void {
+            DB::transaction(function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note): void {
+                $baseMeta = [
                     'handover_id' => $handover->id,
-                    'recipient_user_id' => $recipientId,
-                    'recipient_name' => $recipientName,
-                ],
-            ]);
+                    'former_recipient_user_id' => $recipientId,
+                    'former_recipient_name' => $recipientName,
+                    'resolution' => $resolution,
+                    'bulk_note' => $note !== '' ? $note : null,
+                ];
 
-            match ($resolution) {
-                self::ResolutionNewOwner => $this->applyNewOwner($asset, $handover, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                self::ResolutionSetLocation => $this->applySetLocation($asset, $handover, $adminUserId, $location, $baseMeta, $note),
-                self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $handover, $adminUserId, $baseMeta, $note),
-                default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
-            };
+                $asset->historyEntries()->create([
+                    'event' => AssetHistory::EventPendingHandoverAdminAcknowledged,
+                    'user_id' => $adminUserId,
+                    'reason' => 'Admin übernimmt offene Übergabe zur Auflösung.',
+                    'meta' => [
+                        'handover_id' => $handover->id,
+                        'recipient_user_id' => $recipientId,
+                        'recipient_name' => $recipientName,
+                    ],
+                ]);
+
+                match ($resolution) {
+                    self::ResolutionNewOwner => $this->applyNewOwner($asset, $handover, $adminUserId, $newOwnerUserId, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $handover, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $handover, $adminUserId, $baseMeta, $note),
+                    default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
+                };
+            });
         });
     }
 

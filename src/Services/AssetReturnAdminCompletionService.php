@@ -6,6 +6,7 @@ use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Illuminate\Support\Facades\DB;
 
 class AssetReturnAdminCompletionService
@@ -46,30 +47,32 @@ class AssetReturnAdminCompletionService
 
         $note = $note !== null ? trim($note) : '';
 
-        DB::transaction(function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
-            $this->deleteAllHandoversForAsset($asset);
+        AssetAuditContext::runWith('assets.return.complete', function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
+            DB::transaction(function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
+                $this->deleteAllHandoversForAsset($asset);
 
-            $assetReturn = AssetReturn::query()->findOrFail($returnId);
+                $assetReturn = AssetReturn::query()->findOrFail($returnId);
 
-            $now = now();
-            $assetReturn->update([
-                'recipient_user_id' => $adminUserId,
-                'received_confirmed_at' => $assetReturn->received_confirmed_at ?? $now,
-                'completed_at' => $now,
-            ]);
+                $now = now();
+                $assetReturn->update([
+                    'recipient_user_id' => $adminUserId,
+                    'received_confirmed_at' => $assetReturn->received_confirmed_at ?? $now,
+                    'completed_at' => $now,
+                ]);
 
-            $baseMeta = [
-                'asset_return_id' => $returnId,
-                'former_holder_user_id' => $formerHolderUserId,
-                'resolution' => $resolution,
-                'bulk_note' => $note !== '' ? $note : null,
-            ];
+                $baseMeta = [
+                    'asset_return_id' => $returnId,
+                    'former_holder_user_id' => $formerHolderUserId,
+                    'resolution' => $resolution,
+                    'bulk_note' => $note !== '' ? $note : null,
+                ];
 
-            match ($resolution) {
-                self::ResolutionNewOwner => $this->applyNewOwner($asset, $assetReturn, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note),
-                default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
-            };
+                match ($resolution) {
+                    self::ResolutionNewOwner => $this->applyNewOwner($asset, $assetReturn, $adminUserId, $newOwnerUserId, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note),
+                    default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
+                };
+            });
         });
     }
 

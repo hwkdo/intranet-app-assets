@@ -4,13 +4,77 @@ namespace Hwkdo\IntranetAppAssets\Observers;
 
 use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditDiffBuilder;
 use Illuminate\Support\Facades\Log;
 
 class AssetObserver
 {
+    /** @var list<string> */
+    private const AUDITED_FIELDS = [
+        'serial_number',
+        'model',
+        'asset_type_id',
+        'asset_vendor_id',
+        'user_id',
+        'name',
+        'location',
+        'is_clarification',
+        'is_missing',
+        'itexia_id',
+        'itexia_uuid',
+        'itexia_check_at',
+        'order_number',
+        'invoice_number',
+        'invoice_number_pending',
+        'domain_connection',
+        'domain_last_seen',
+        'domain_last_checked',
+        'last_logon',
+        'last_logon_timestamp',
+        'intune_device_id',
+        'intune_last_check_in',
+        'imei',
+        'configmgr_last_logon_user',
+        'configmgr_last_logon_timestamp',
+        'configmgr_serial_number',
+        'configmgr_last_sync_at',
+        'configmgr_mac_addresses',
+        'smbios_guid',
+    ];
+
     public function created(Asset $asset): void
     {
         $this->syncItexiaIdToLdapIfNeeded($asset);
+    }
+
+    public function updated(Asset $asset): void
+    {
+        $changes = $asset->getChanges();
+        unset($changes['updated_at'], $changes['created_at']);
+
+        if ($changes === []) {
+            return;
+        }
+
+        $diff = AssetAuditDiffBuilder::build($asset->getOriginal(), $changes, self::AUDITED_FIELDS);
+        if ($diff === []) {
+            return;
+        }
+
+        $actorId = auth()->id();
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventUpdated,
+            'user_id' => is_int($actorId) ? $actorId : null,
+            'reason' => 'Asset-Felder wurden aktualisiert.',
+            'meta' => [
+                'source' => $this->resolveSource(),
+                'actor_type' => is_int($actorId) ? 'user' : 'system',
+                'changes' => $diff,
+            ],
+        ]);
     }
 
     public function saved(Asset $asset): void
@@ -49,5 +113,30 @@ class AssetObserver
     private function appBound(string $abstract): bool
     {
         return app()->bound($abstract);
+    }
+
+    private function resolveSource(): string
+    {
+        $contextSource = AssetAuditContext::source();
+        if ($contextSource !== null && $contextSource !== '') {
+            return $contextSource;
+        }
+
+        if (app()->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            if (is_array($argv) && isset($argv[1]) && is_string($argv[1]) && $argv[1] !== '') {
+                return 'console:'.$argv[1];
+            }
+
+            return 'console';
+        }
+
+        if (request()->route()?->getName()) {
+            return 'route:'.request()->route()->getName();
+        }
+
+        $path = trim((string) request()->path(), '/');
+
+        return $path !== '' ? 'request:'.$path : 'request';
     }
 }

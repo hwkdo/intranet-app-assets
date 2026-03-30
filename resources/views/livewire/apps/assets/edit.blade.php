@@ -10,6 +10,7 @@ use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\OwnerChangeActionResolver;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -257,7 +258,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
             $validated['is_clarification'] = $this->asset->is_clarification;
         }
 
-        $this->asset->update(array_merge($validated, $extra));
+        AssetAuditContext::runWith('assets.edit.save', function () use ($validated, $extra): void {
+            $this->asset->update(array_merge($validated, $extra));
+        });
 
         if ($this->image !== null) {
             $this->asset->addMedia($this->image->getRealPath())

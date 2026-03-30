@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -68,9 +69,11 @@ class AssetRequestClarification extends Component
             'user_id' => $userId,
         ]);
 
-        $this->asset->update([
-            'is_clarification' => true,
-        ]);
+        AssetAuditContext::runWith('assets.clarification.request', function (): void {
+            $this->asset->update([
+                'is_clarification' => true,
+            ]);
+        });
 
         $this->asset->historyEntries()->create([
             'event' => AssetHistory::EventOwnerRequestedClarification,
