@@ -1,12 +1,15 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
+use Hwkdo\IntranetAppAssets\Support\OwnerChangeActionResolver;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -113,6 +116,45 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     public function users(): \Illuminate\Database\Eloquent\Collection
     {
         return \App\Models\User::orderBy('nachname')->orderBy('vorname')->get();
+    }
+
+    #[Computed]
+    public function ownerChangeAction(): ?array
+    {
+        if ($this->asset->user_id === null) {
+            return null;
+        }
+
+        $pendingReturn = AssetReturn::query()
+            ->whereNull('completed_at')
+            ->whereHas('handover', fn ($query) => $query->where('asset_id', $this->asset->id))
+            ->latest('id')
+            ->first();
+
+        $openHandover = Handover::query()
+            ->where('asset_id', $this->asset->id)
+            ->whereNull('confirmed_at')
+            ->whereNull('rejected_at')
+            ->latest('id')
+            ->first();
+
+        $rejectedHandover = Handover::query()
+            ->where('asset_id', $this->asset->id)
+            ->whereNotNull('rejected_at')
+            ->latest('rejected_at')
+            ->latest('id')
+            ->first();
+
+        return OwnerChangeActionResolver::resolve([
+            'has_pending_return' => $pendingReturn !== null,
+            'has_open_handover' => $openHandover !== null,
+            'has_rejected_handover' => $rejectedHandover !== null,
+            'is_clarification' => (bool) $this->asset->is_clarification,
+            'pending_return_href' => $pendingReturn !== null ? route('apps.assets.admin.return.complete', $pendingReturn) : null,
+            'open_handover_href' => $openHandover !== null ? route('apps.assets.admin.open-handover.resolve', $openHandover) : null,
+            'rejected_handover_href' => $rejectedHandover !== null ? route('apps.assets.admin.rejected-handover.resolve', $rejectedHandover) : null,
+            'clarification_href' => route('apps.assets.admin.clarification.resolve', $this->asset),
+        ]);
     }
 
     public function updatedInvoiceNumber(?string $value): void
@@ -322,6 +364,16 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                             · <strong>Standort:</strong> {{ filled($asset->location) ? $asset->location : '—' }}
                             · <strong>Vermisst:</strong> {{ $asset->is_missing ? 'Ja' : 'Nein' }}
                             · <strong>In Klärung:</strong> {{ $asset->is_clarification ? 'Ja' : 'Nein' }}
+                            @if($this->ownerChangeAction)
+                                <br>
+                                <a href="{{ $this->ownerChangeAction['href'] }}" wire:navigate class="text-primary-600 underline hover:no-underline dark:text-primary-400">
+                                    {{ $this->ownerChangeAction['label'] }}
+                                </a>
+                                <span class="text-zinc-500">- {{ $this->ownerChangeAction['hint'] }}</span>
+                            @else
+                                <br>
+                                <span class="text-zinc-500">Kein direkter Spezialfall gefunden. Bei Bedarf bitte über Rückgabeprozess neu zuordnen.</span>
+                            @endif
                         </flux:callout.text>
                     </flux:callout>
                 </flux:field>
