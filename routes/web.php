@@ -25,6 +25,9 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/domaenengeraete', 'intranet-app-assets::apps.assets.domaenengeraete')->name('apps.assets.domaenengeraete');
     Route::livewire('apps/assets/domain-compare', 'intranet-app-assets::apps.assets.domain-compare')->name('apps.assets.domain-compare');
     Route::livewire('apps/assets/itexiageraete', 'intranet-app-assets::apps.assets.itexiageraete')->name('apps.assets.itexiageraete');
+    Route::livewire('apps/assets/legacy-assets', 'intranet-app-assets::apps.assets.legacy-assets')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.legacy-assets');
     Route::livewire('apps/assets/settings/user', 'intranet-app-assets::apps.assets.settings.user')->name('apps.assets.settings.user');
 
     // Mehrfach-Übergaben (vor handover/{handover}, damit „bulk“ nicht als Handover-ID gilt)
