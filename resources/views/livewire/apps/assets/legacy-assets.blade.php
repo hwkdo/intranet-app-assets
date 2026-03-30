@@ -139,7 +139,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
         /** @var IntranetLegacyService $legacyService */
         $legacyService = app(IntranetLegacyService::class);
 
-        return $importer->fetchLegacyAssets($legacyService);
+        return $importer->fetchLegacyAssets($legacyService, 'all');
     }
 
     /**

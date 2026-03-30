@@ -16,9 +16,9 @@ class LegacyAssetImportService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function fetchLegacyAssets(IntranetLegacyService $legacyService): array
+    public function fetchLegacyAssets(IntranetLegacyService $legacyService, string $scope = 'itexia'): array
     {
-        return $legacyService->getAssetsExportAlle();
+        return $legacyService->getAssetsExportAlle($scope);
     }
 
     /**

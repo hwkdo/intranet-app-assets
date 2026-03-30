@@ -6,6 +6,7 @@ use Hwkdo\IntranetAppAssets\Services\LegacyAssetImportService;
 it('returns legacy assets fetched from legacy service', function () {
     $legacyService = \Mockery::mock(IntranetLegacyService::class);
     $legacyService->shouldReceive('getAssetsExportAlle')
+        ->with('itexia')
         ->once()
         ->andReturn([
             ['id' => 1, 'itexiaid' => 'ITX-1'],
