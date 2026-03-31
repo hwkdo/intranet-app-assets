@@ -24,20 +24,19 @@ class AssetObserver
         'is_missing',
         'itexia_id',
         'itexia_uuid',
-        'itexia_check_at',
         'order_number',
         'invoice_number',
         'invoice_number_pending',
         'domain_connection',
-        'domain_last_seen',
-        'domain_last_checked',
+        
+        
         'last_logon',
-        'last_logon_timestamp',
+        
         'intune_device_id',
         'intune_last_check_in',
         'imei',
-        'configmgr_last_logon_user',
-        'configmgr_last_logon_timestamp',
+        
+        
         'configmgr_serial_number',
         'configmgr_last_sync_at',
         'configmgr_mac_addresses',
