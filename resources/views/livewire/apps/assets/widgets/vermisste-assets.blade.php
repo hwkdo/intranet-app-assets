@@ -6,6 +6,13 @@ use Livewire\Component;
 
 new class extends Component
 {
+    private function itemLimit(): int
+    {
+        $value = auth()->user()?->settings->dashboard->personalGrid?->widgetItemCounts['vermisste-assets'] ?? 5;
+
+        return min(max((int) $value, 1), 30);
+    }
+
     public function mount(): void
     {
         $this->authorize('manage-app-assets');
@@ -18,14 +25,14 @@ new class extends Component
             ->with(['type', 'vendor', 'owner'])
             ->where('is_missing', true)
             ->orderByDesc('updated_at')
-            ->limit(5)
+            ->limit($this->itemLimit())
             ->get();
     }
 
     #[Computed]
     public function hasMore(): bool
     {
-        return $this->totalCount() > 5;
+        return $this->totalCount() > $this->itemLimit();
     }
 
     #[Computed]
@@ -54,7 +61,7 @@ new class extends Component
 
 <x-intranet-app-base::dashboard.widget-card
     :title="'Vermisste Assets ('.$this->totalCount().')'"
-    description="Assets mit Status Vermisst (max. 5)"
+    :description="'Assets mit Status Vermisst (max. '.$this->itemLimit().')'"
 >
     @forelse($this->assets as $asset)
         <a

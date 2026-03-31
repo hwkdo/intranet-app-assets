@@ -6,6 +6,13 @@ use Livewire\Component;
 
 new class extends Component
 {
+    private function itemLimit(): int
+    {
+        $value = auth()->user()?->settings->dashboard->personalGrid?->widgetItemCounts['unbestaetigte-uebergaben'] ?? 5;
+
+        return min(max((int) $value, 1), 30);
+    }
+
     #[Computed]
     public function handovers(): \Illuminate\Database\Eloquent\Collection
     {
@@ -15,14 +22,14 @@ new class extends Component
             ->whereNull('confirmed_at')
             ->whereNull('rejected_at')
             ->orderByDesc('created_at')
-            ->limit(5)
+            ->limit($this->itemLimit())
             ->get();
     }
 
     #[Computed]
     public function hasMore(): bool
     {
-        return $this->totalCount() > 5;
+        return $this->totalCount() > $this->itemLimit();
     }
 
     #[Computed]
@@ -53,7 +60,7 @@ new class extends Component
 
 <x-intranet-app-base::dashboard.widget-card
     :title="'Unbestätigte Übergaben ('.$this->totalCount().')'"
-    description="Ihre offenen Übergaben (max. 5)"
+    :description="'Ihre offenen Übergaben (max. '.$this->itemLimit().')'"
 >
     @forelse($this->handovers as $handover)
         @if($handover->asset)
