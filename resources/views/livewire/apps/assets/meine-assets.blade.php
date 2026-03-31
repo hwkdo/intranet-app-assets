@@ -89,7 +89,6 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
     {
         return Asset::query()
             ->with(['type', 'vendor'])
-            ->withCount('handovers')
             ->where('user_id', auth()->id())
             ->orderBy('model')
             ->get();
@@ -303,7 +302,6 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                     <flux:table.column>Seriennummer</flux:table.column>
                     <flux:table.column>Typ</flux:table.column>
                     <flux:table.column>Hersteller</flux:table.column>
-                    <flux:table.column>Übergabe</flux:table.column>
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -338,13 +336,6 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                 <flux:tooltip :content="$vendorName" position="top">
                                     <span class="block truncate">{{ $vendorName }}</span>
                                 </flux:tooltip>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                @if($asset->handovers_count > 0)
-                                    <flux:badge color="zinc" size="sm">{{ $asset->handovers_count }} {{ $asset->handovers_count === 1 ? 'Übergabe' : 'Übergaben' }}</flux:badge>
-                                @else
-                                    <span class="text-zinc-400">—</span>
-                                @endif
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex flex-wrap items-center gap-1">
@@ -395,7 +386,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="7" class="text-center text-zinc-500 py-8">
+                            <flux:table.cell colspan="6" class="text-center text-zinc-500 py-8">
                                 Ihnen sind derzeit keine Assets zugewiesen.
                             </flux:table.cell>
                         </flux:table.row>

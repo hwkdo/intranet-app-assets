@@ -5,7 +5,6 @@ namespace Hwkdo\IntranetAppAssets\Services;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
-use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Illuminate\Support\Facades\DB;
 
@@ -49,10 +48,6 @@ class AssetReturnAdminCompletionService
 
         AssetAuditContext::runWith('assets.return.complete', function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
             DB::transaction(function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
-                $this->deleteAllHandoversForAsset($asset);
-
-                $assetReturn = AssetReturn::query()->findOrFail($returnId);
-
                 $now = now();
                 $assetReturn->update([
                     'recipient_user_id' => $adminUserId,
@@ -130,17 +125,5 @@ class AssetReturnAdminCompletionService
                 'location' => $location,
             ]),
         ]);
-    }
-
-    private function deleteAllHandoversForAsset(Asset $asset): void
-    {
-        Handover::query()
-            ->where('asset_id', $asset->id)
-            ->with('assetReturns')
-            ->get()
-            ->each(function (Handover $handover): void {
-                $handover->notes()->delete();
-                $handover->delete();
-            });
     }
 }
