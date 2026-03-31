@@ -10,6 +10,10 @@ use Livewire\Component;
 
 new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class extends Component
 {
+    private const WIDGET_ITEM_COUNT_MIN = 1;
+
+    private const WIDGET_ITEM_COUNT_MAX = 30;
+
     /** @var array<int, array{key: string, title: string, description: string, component: string, defaultW: int, defaultH: int, minW: int, minH: int, defaultEnabled: bool}> */
     public array $availableWidgets = [];
 
@@ -18,6 +22,9 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
 
     /** @var array<int, array{widgetKey: string, x: int, y: int, w: int, h: int}> */
     public array $layout = [];
+
+    /** @var array<string, int> */
+    public array $widgetItemCounts = [];
 
     public function mount(DashboardWidgetRegistry $registry): void
     {
@@ -42,6 +49,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
         $settings = $user->settings->app->assets->dashboard ?? [];
         $savedEnabled = Arr::wrap($settings['enabledWidgets'] ?? []);
         $savedLayout = Arr::wrap($settings['layout'] ?? []);
+        $savedItemCounts = Arr::wrap($settings['widgetItemCounts'] ?? []);
         $defaultEnabled = collect($this->availableWidgets)
             ->filter(static fn (array $widget): bool => $widget['defaultEnabled'] === true)
             ->pluck('key')
@@ -50,6 +58,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
 
         $this->enabledWidgets = $this->sanitizeEnabledWidgets($savedEnabled !== [] ? $savedEnabled : $defaultEnabled);
         $this->layout = $this->normalizeLayout($savedLayout, $this->enabledWidgets);
+        $this->widgetItemCounts = $this->sanitizeWidgetItemCounts($savedItemCounts);
         $this->persistDashboardSettings();
     }
 
@@ -97,6 +106,40 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
         $this->skipRender();
     }
 
+    public function saveWidgetItemCount(string $widgetKey, mixed $value): void
+    {
+        if (! $this->supportsWidgetItemCount($widgetKey)) {
+            return;
+        }
+
+        $this->widgetItemCounts[$widgetKey] = is_numeric($value) ? (int) $value : $value;
+
+        $validated = validator(
+            ['value' => $this->widgetItemCounts[$widgetKey] ?? null],
+            ['value' => ['required', 'integer', 'min:'.self::WIDGET_ITEM_COUNT_MIN, 'max:'.self::WIDGET_ITEM_COUNT_MAX]],
+        )->validate();
+
+        $this->widgetItemCounts[$widgetKey] = (int) $validated['value'];
+        $this->persistDashboardSettings();
+        $this->skipRender();
+    }
+
+    public function resetToDefault(): void
+    {
+        $defaultEnabled = collect($this->availableWidgets)
+            ->filter(static fn (array $widget): bool => $widget['defaultEnabled'] === true)
+            ->pluck('key')
+            ->values()
+            ->all();
+
+        $this->enabledWidgets = $this->sanitizeEnabledWidgets($defaultEnabled);
+        $this->layout = $this->normalizeLayout([], $this->enabledWidgets);
+        $this->widgetItemCounts = $this->defaultWidgetItemCounts();
+
+        $this->persistDashboardSettings();
+        $this->dispatch('assets-dashboard-sync', layout: $this->layout);
+    }
+
     /**
      * @return array<int, array{key: string, title: string, description: string, component: string, defaultW: int, defaultH: int, minW: int, minH: int, defaultEnabled: bool}>
      */
@@ -110,6 +153,18 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
         ));
     }
 
+    public function supportsWidgetItemCount(string $widgetKey): bool
+    {
+        return in_array($widgetKey, $this->availableWidgetKeys(), true);
+    }
+
+    public function widgetItemCountValue(string $widgetKey): int
+    {
+        $value = $this->widgetItemCounts[$widgetKey] ?? 5;
+
+        return min(max((int) $value, self::WIDGET_ITEM_COUNT_MIN), self::WIDGET_ITEM_COUNT_MAX);
+    }
+
     private function persistDashboardSettings(): void
     {
         /** @var User $user */
@@ -119,6 +174,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
                 'version' => 1,
                 'enabledWidgets' => $this->enabledWidgets,
                 'layout' => $this->layout,
+                'widgetItemCounts' => $this->widgetItemCounts,
             ],
         ]);
         $user->save();
@@ -209,6 +265,31 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
             $this->availableWidgets
         ));
     }
+
+    /**
+     * @param  array<mixed>  $rawCounts
+     * @return array<string, int>
+     */
+    private function sanitizeWidgetItemCounts(array $rawCounts): array
+    {
+        $counts = [];
+
+        foreach ($this->availableWidgetKeys() as $widgetKey) {
+            $rawValue = $rawCounts[$widgetKey] ?? 5;
+            $value = is_numeric($rawValue) ? (int) $rawValue : 5;
+            $counts[$widgetKey] = min(max($value, self::WIDGET_ITEM_COUNT_MIN), self::WIDGET_ITEM_COUNT_MAX);
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function defaultWidgetItemCounts(): array
+    {
+        return $this->sanitizeWidgetItemCounts([]);
+    }
 };
 ?>
 
@@ -221,22 +302,77 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
         <div class="space-y-4">
             <div class="flex items-center justify-between gap-3">
                 <flux:text class="text-zinc-500 dark:text-white">Widgets auswählen und per Drag & Drop anordnen.</flux:text>
-                <flux:dropdown position="bottom" align="end">
+                <flux:modal.trigger name="assets-dashboard-widgets-flyout">
                     <flux:button variant="ghost" icon="squares-plus" icon-trailing="chevron-down">Widgets</flux:button>
-                    <flux:menu>
-                        @foreach($availableWidgets as $widget)
-                            <flux:menu.item wire:click="toggleWidget('{{ $widget['key'] }}')">
-                                <div class="flex w-full items-center justify-between gap-3">
-                                    <span>{{ $widget['title'] }}</span>
-                                    @if(in_array($widget['key'], $enabledWidgets, true))
-                                        <flux:icon name="check" class="size-4 text-green-600" />
-                                    @endif
-                                </div>
-                            </flux:menu.item>
-                        @endforeach
-                    </flux:menu>
-                </flux:dropdown>
+                </flux:modal.trigger>
             </div>
+
+            <flux:modal name="assets-dashboard-widgets-flyout" variant="flyout" class="md:max-w-lg">
+                <div class="space-y-5">
+                    <div class="space-y-1">
+                        <flux:heading size="lg">Widgets</flux:heading>
+                        <flux:text class="text-zinc-500">
+                            Widgets aktivieren/deaktivieren und das Dashboard auf den Standard zurücksetzen.
+                        </flux:text>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <flux:heading size="sm">Assets</flux:heading>
+                            <div class="space-y-1">
+                                @foreach($availableWidgets as $widget)
+                                    <div class="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+                                        <button
+                                            type="button"
+                                            class="min-w-0 flex-1 text-left hover:opacity-90"
+                                            wire:click="toggleWidget('{{ $widget['key'] }}')"
+                                        >
+                                            <span class="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $widget['title'] }}</span>
+                                            @if(! empty($widget['description']))
+                                                <span class="mt-0.5 block text-xs text-zinc-500 dark:text-white">{{ $widget['description'] }}</span>
+                                            @endif
+                                        </button>
+
+                                        <span class="shrink-0 flex items-center gap-2">
+                                            @if($this->supportsWidgetItemCount($widget['key']))
+                                                <span class="w-24">
+                                                    <flux:input
+                                                        type="number"
+                                                        min="1"
+                                                        max="30"
+                                                        size="sm"
+                                                        :value="$this->widgetItemCountValue($widget['key'])"
+                                                        wire:change="saveWidgetItemCount('{{ $widget['key'] }}', $event.target.value)"
+                                                    />
+                                                </span>
+                                            @endif
+                                            @if(in_array($widget['key'], $enabledWidgets, true))
+                                                <flux:icon name="check-circle" class="size-5 text-green-600" />
+                                            @else
+                                                <flux:icon name="minus-circle" class="size-5 text-zinc-400" />
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-between gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                        <flux:button
+                            variant="danger"
+                            icon="arrow-path"
+                            wire:click="resetToDefault"
+                            wire:confirm="Dashboard wirklich auf Standard zurücksetzen?"
+                        >
+                            Zurücksetzen auf Standard
+                        </flux:button>
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Schließen</flux:button>
+                        </flux:modal.close>
+                    </div>
+                </div>
+            </flux:modal>
 
             <div
                 class="grid-stack"

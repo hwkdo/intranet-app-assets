@@ -8,7 +8,9 @@ new class extends Component
 {
     private function itemLimit(): int
     {
-        $value = auth()->user()?->settings->dashboard->personalGrid?->widgetItemCounts['fehlende-rechnungsnr'] ?? 5;
+        $value = auth()->user()?->settings->app->assets->dashboard['widgetItemCounts']['fehlende-rechnungsnr']
+            ?? auth()->user()?->settings->dashboard->personalGrid?->widgetItemCounts['fehlende-rechnungsnr']
+            ?? 5;
 
         return min(max((int) $value, 1), 30);
     }
