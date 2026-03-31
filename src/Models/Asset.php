@@ -8,17 +8,60 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Laravel\Scout\Searchable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Asset extends Model implements HasMedia
 {
     use InteractsWithMedia;
+    use Searchable;
     use SoftDeletes;
 
     protected $table = 'intranet_app_assets_assets';
 
     protected $guarded = [];
+
+    public function searchableAs(): string
+    {
+        return 'intranet_app_assets_assets';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        $this->loadMissing(['owner', 'type', 'vendor']);
+
+        return [
+            'id' => (string) $this->id,
+            'name' => $this->normalizedString($this->name),
+            'model' => $this->normalizedString($this->model),
+            'location' => $this->normalizedString($this->location),
+            'owner_name' => $this->normalizedString($this->owner?->name),
+            'owner_vorname' => $this->normalizedString($this->owner?->vorname),
+            'owner_nachname' => $this->normalizedString($this->owner?->nachname),
+            'type_name' => $this->normalizedString($this->type?->name),
+            'vendor_name' => $this->normalizedString($this->vendor?->name),
+            'serial_number' => $this->normalizedString($this->serial_number),
+            'imei' => $this->normalizedString($this->imei),
+            'itexia_id' => $this->normalizedString($this->itexia_id),
+            'itexia_uuid' => $this->normalizedString($this->itexia_uuid),
+            'intune_device_id' => $this->normalizedString($this->intune_device_id),
+            'configmgr_serial_number' => $this->normalizedString($this->configmgr_serial_number),
+            'smbios_guid' => $this->normalizedString($this->smbios_guid),
+            'order_number' => $this->normalizedString($this->order_number),
+            'invoice_number' => $this->normalizedString($this->invoice_number),
+            'domain_connection' => $this->normalizedString($this->domain_connection),
+            'configmgr_last_logon_user' => $this->normalizedString($this->configmgr_last_logon_user),
+            'status_tokens' => $this->statusTokens(),
+            'history_text' => $this->historyText(),
+            'notes_text' => $this->notesText(),
+            'created_at' => $this->created_at?->timestamp ?? now()->timestamp,
+        ];
+    }
 
     protected function casts(): array
     {
@@ -184,5 +227,140 @@ class Asset extends Model implements HasMedia
             'confirmed_at' => null,
             'confirmation_method' => null,
         ]);
+    }
+
+    private function statusTokens(): string
+    {
+        $tokens = [];
+
+        if ($this->is_missing) {
+            $tokens[] = 'missing';
+        }
+
+        if ($this->is_clarification) {
+            $tokens[] = 'clarification';
+        }
+
+        if ($this->invoice_number_pending) {
+            $tokens[] = 'invoice_pending';
+        }
+
+        return implode(' ', $tokens);
+    }
+
+    private function historyText(): string
+    {
+        $historyEntries = $this->relationLoaded('historyEntries')
+            ? $this->historyEntries
+            : $this->historyEntries()->latest('id')->limit(50)->get(['event', 'reason', 'meta']);
+
+        $parts = $historyEntries
+            ->map(function (AssetHistory $entry): string {
+                $meta = $entry->meta;
+                $metaText = is_array($meta) ? json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
+
+                return trim(implode(' ', array_filter([
+                    $this->normalizedString($entry->event),
+                    $this->normalizedString($entry->reason),
+                    $this->normalizedString($metaText),
+                ])));
+            })
+            ->filter()
+            ->values();
+
+        return $this->normalizedString($parts->implode(' '));
+    }
+
+    private function notesText(): string
+    {
+        $parts = $this->collectRelatedNoteTexts()
+            ->map(fn (mixed $text): string => $this->normalizedString($text))
+            ->filter()
+            ->values();
+
+        return $parts->implode(' ');
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    private function collectRelatedNoteTexts(): Collection
+    {
+        if ($this->relationLoaded('notes') || $this->relationLoaded('handovers') || $this->relationLoaded('attachments')) {
+            $collected = collect();
+
+            if ($this->relationLoaded('notes')) {
+                $collected = $collected->merge($this->notes->pluck('note'));
+            }
+
+            if ($this->relationLoaded('handovers')) {
+                $collected = $collected->merge(
+                    $this->handovers
+                        ->flatMap(function (Handover $handover): Collection {
+                            $notes = $handover->relationLoaded('notes') ? $handover->notes->pluck('note') : collect();
+                            $returnNotes = collect();
+
+                            if ($handover->relationLoaded('assetReturn') && $handover->assetReturn !== null && $handover->assetReturn->relationLoaded('notes')) {
+                                $returnNotes = $handover->assetReturn->notes->pluck('note');
+                            }
+
+                            return $notes->merge($returnNotes);
+                        })
+                );
+            }
+
+            if ($this->relationLoaded('attachments')) {
+                $collected = $collected->merge(
+                    $this->attachments
+                        ->flatMap(fn (AssetAttachment $attachment): Collection => $attachment->relationLoaded('notes') ? $attachment->notes->pluck('note') : collect())
+                );
+            }
+
+            return $collected->map(fn (mixed $value): string => (string) $value)->values();
+        }
+
+        $assetNotes = AssetNote::query()
+            ->where('noteable_type', self::class)
+            ->where('noteable_id', $this->id)
+            ->pluck('note');
+
+        $handoverIds = Handover::query()
+            ->where('asset_id', $this->id)
+            ->pluck('id');
+
+        $handoverNotes = AssetNote::query()
+            ->where('noteable_type', Handover::class)
+            ->whereIn('noteable_id', $handoverIds)
+            ->pluck('note');
+
+        $assetReturnIds = AssetReturn::query()
+            ->whereIn('handover_id', $handoverIds)
+            ->pluck('id');
+
+        $assetReturnNotes = AssetNote::query()
+            ->where('noteable_type', AssetReturn::class)
+            ->whereIn('noteable_id', $assetReturnIds)
+            ->pluck('note');
+
+        $attachmentIds = AssetAttachment::query()
+            ->where('asset_id', $this->id)
+            ->pluck('id');
+
+        $attachmentNotes = AssetNote::query()
+            ->where('noteable_type', AssetAttachment::class)
+            ->whereIn('noteable_id', $attachmentIds)
+            ->pluck('note');
+
+        return $assetNotes
+            ->merge($handoverNotes)
+            ->merge($assetReturnNotes)
+            ->merge($attachmentNotes)
+            ->map(fn (mixed $value): string => (string) $value)
+            ->values();
+    }
+
+    private function normalizedString(mixed $value): string
+    {
+        return trim((string) ($value ?? ''));
     }
 }

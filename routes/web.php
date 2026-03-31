@@ -19,6 +19,7 @@ Route::bind('assetReturn', function (string $value): AssetReturn {
 
 Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets', 'intranet-app-assets::apps.assets.dashboard')->name('apps.assets.index');
+    Route::livewire('apps/assets/suche', 'intranet-app-assets::apps.assets.search')->name('apps.assets.search');
     Route::livewire('apps/assets/meine-assets', 'intranet-app-assets::apps.assets.meine-assets')->name('apps.assets.meine-assets');
     Route::livewire('apps/assets/liste', 'intranet-app-assets::apps.assets.liste')->name('apps.assets.liste');
     Route::livewire('apps/assets/mobilgeraete', 'intranet-app-assets::apps.assets.mobilgeraete')->name('apps.assets.mobilgeraete');
