@@ -30,13 +30,25 @@ class BenutzerSuchenTool extends Tool
             return Response::error('Das Feld "suchbegriff" ist erforderlich. Suche z. B. nach Vorname, Nachname, Username oder E-Mail.');
         }
 
+        $suchbegriffe = $this->buildSuchbegriffe($suchbegriff);
+
         $users = User::query()
-            ->where(function ($query) use ($suchbegriff): void {
+            ->where(function ($query) use ($suchbegriff, $suchbegriffe): void {
                 $query
                     ->where('vorname', 'like', '%'.$suchbegriff.'%')
                     ->orWhere('nachname', 'like', '%'.$suchbegriff.'%')
                     ->orWhere('username', 'like', '%'.$suchbegriff.'%')
-                    ->orWhere('email', 'like', '%'.$suchbegriff.'%');
+                    ->orWhere('email', 'like', '%'.$suchbegriff.'%')
+                    ->orWhereRaw("CONCAT(COALESCE(vorname, ''), ' ', COALESCE(nachname, '')) LIKE ?", ['%'.$suchbegriff.'%'])
+                    ->orWhereRaw("CONCAT(COALESCE(nachname, ''), ' ', COALESCE(vorname, '')) LIKE ?", ['%'.$suchbegriff.'%']);
+
+                foreach ($suchbegriffe as $teil) {
+                    $query
+                        ->orWhere('vorname', 'like', '%'.$teil.'%')
+                        ->orWhere('nachname', 'like', '%'.$teil.'%')
+                        ->orWhere('username', 'like', '%'.$teil.'%')
+                        ->orWhere('email', 'like', '%'.$teil.'%');
+                }
             })
             ->orderBy('nachname')
             ->orderBy('vorname')
@@ -64,9 +76,24 @@ class BenutzerSuchenTool extends Tool
     {
         return [
             'suchbegriff' => $schema->string()
-                ->description('Suchbegriff für Vorname, Nachname, Username oder E-Mail. Beispiel: "max.mustermann" oder "mustermann@firma.de".')
+                ->description('Suchbegriff für Vorname, Nachname, Vollname, Username oder E-Mail. Beispiele: "Max Mustermann", "max.mustermann", "mustermann@firma.de".')
                 ->required(),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function buildSuchbegriffe(string $suchbegriff): array
+    {
+        $teile = preg_split('/\s+/u', trim($suchbegriff)) ?: [];
+
+        return collect($teile)
+            ->map(static fn (string $teil): string => trim($teil))
+            ->filter(static fn (string $teil): bool => $teil !== '' && mb_strlen($teil) >= 2)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
