@@ -32,7 +32,7 @@ new #[Title('Assets - KI-Chat')] class extends Component
     #[Computed]
     public function model(): string
     {
-        return (string) ($this->appSettings?->openWebUiModel ?? config('openwebui-api-laravel.default_model', 'gpt-oss:20b'));
+        return (string) ($this->appSettings?->openWebUiModel ?? 'intranet-app-assets');
     }
 
     #[Computed]

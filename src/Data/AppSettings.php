@@ -43,5 +43,11 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Tage ab Asset-Anlage: automatische D3-Suche nach Rechnung anhand BEN; danach als „fehlende Rechnungsnr.“ markieren (1–365)')]
         public int $invoiceAutoResolveMaxDays = 14,
+
+        #[Description('OpenWebUi-Modell für KI Chat')]
+        public string $openWebUiModel = 'intranet-app-assets',
+
+        #[Description('OpenWebUI Collection-IDs für file_search im Assets-KI-Chat')]
+        public array $openWebUiCollectionIds = [],
     ) {}
 }
