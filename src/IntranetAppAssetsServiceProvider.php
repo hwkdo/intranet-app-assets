@@ -80,6 +80,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
 
         $this->app->booted(function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+            $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
         });
 
         $this->app->resolving(Schedule::class, function () {
@@ -87,6 +88,12 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         });
 
         $this->configureTypesenseIndexSettings();
+
+        $relayConfig = require __DIR__.'/../config/relay.php';
+        $existingServers = config('relay.servers', []);
+        config([
+            'relay.servers' => array_merge($existingServers, $relayConfig['servers'] ?? []),
+        ]);
     }
 
     protected function configureTypesenseIndexSettings(): void

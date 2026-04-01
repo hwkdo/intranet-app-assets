@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets;
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
+use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
 use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
 use Hwkdo\IntranetAppAssets\Tasks\AssetsInClarificationAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
@@ -51,7 +52,12 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface,
 
     public static function mcpServers(): array
     {
-        return [];
+        return [
+            'assets' => [
+                'class' => AssetsServer::class,
+                'middleware' => ['auth:api'],
+            ],
+        ];
     }
 
     public static function taskProviders(): array
