@@ -24,6 +24,12 @@ Schedule::command('intranet-app-assets:itexia-uuid-sync --limit=120')
     ->runInBackground()
     ->when(fn () => config('app.env') === 'production');
 
+Schedule::command('intranet-app-assets:itexia-rooms-sync --limit=250')
+    ->cron('10,25,40,55 * * * *')
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->when(fn () => config('app.env') === 'production');
+
 Schedule::command('intranet-app-assets:itexia-image-sync --limit=60')
     ->cron('7,22,37,52 * * * *')
     ->withoutOverlapping(30)

@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,6 +50,8 @@ class Asset extends Model implements HasMedia
             'imei' => $this->normalizedString($this->imei),
             'itexia_id' => $this->normalizedString($this->itexia_id),
             'itexia_uuid' => $this->normalizedString($this->itexia_uuid),
+            'itexia_actual_room_id' => $this->itexia_actual_room_id !== null ? (string) $this->itexia_actual_room_id : null,
+            'itexia_target_room_id' => $this->itexia_target_room_id !== null ? (string) $this->itexia_target_room_id : null,
             'intune_device_id' => $this->normalizedString($this->intune_device_id),
             'configmgr_serial_number' => $this->normalizedString($this->configmgr_serial_number),
             'smbios_guid' => $this->normalizedString($this->smbios_guid),
@@ -74,6 +77,7 @@ class Asset extends Model implements HasMedia
             'last_logon' => 'datetime',
             'last_logon_timestamp' => 'datetime',
             'itexia_check_at' => 'datetime',
+            'itexia_rooms_synced_at' => 'datetime',
             'intune_last_check_in' => 'datetime',
             'configmgr_mac_addresses' => 'array',
         ];
@@ -104,8 +108,8 @@ class Asset extends Model implements HasMedia
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
      */
     public function scopeInvoiceNumberPending($query)
     {
@@ -118,8 +122,8 @@ class Asset extends Model implements HasMedia
     /**
      * Assets mit BEN, aber ohne Rechnungsnummer (Kandidaten für automatische D3-Suche).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
      */
     public function scopeEligibleForInvoiceAutoResolve($query)
     {

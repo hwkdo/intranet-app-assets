@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\SeventhingsLaravel\Support\ItexiaActualRoomResolver;
 
 class ItexiaCreation
 {
@@ -97,15 +98,18 @@ class ItexiaCreation
     }
 
     /**
-     * Sucht anhand Standort des Assets oder Raum des Besitzers einen Itexia-Raum und liefert dessen ID.
+     * Sucht anhand Raum des Besitzers (Vorrang) oder Standort des Assets (location) einen Itexia-Raum und liefert dessen ID.
      */
     public static function resolveActualRoomId(Asset $asset): ?int
     {
-        $search = trim((string) ($asset->location ?? ''));
+        $asset->loadMissing('owner');
+        $search = '';
+        $owner = $asset->owner;
+        if ($owner !== null) {
+            $search = trim((string) ($owner->raum ?? ''));
+        }
         if ($search === '') {
-            $asset->loadMissing('owner');
-            $owner = $asset->owner;
-            $search = $owner !== null && isset($owner->raum) ? trim((string) $owner->raum) : '';
+            $search = trim((string) ($asset->location ?? ''));
         }
         if ($search === '') {
             return null;
@@ -118,29 +122,10 @@ class ItexiaCreation
 
         try {
             $client = app()->make($seventhingsClass);
-            $rooms = $client->getRaeume();
         } catch (\Throwable) {
             return null;
         }
 
-        $searchLower = mb_strtolower($search);
-        foreach ($rooms as $room) {
-            $name = $room->name ?? '';
-            $label = $room->label ?? '';
-            $nummer = $room->nummer ?? '';
-            $nameLower = mb_strtolower(trim((string) $name));
-            $labelLower = mb_strtolower(trim((string) $label));
-            $nummerLower = mb_strtolower(trim((string) $nummer));
-            if ($searchLower === $nameLower
-                || $searchLower === $labelLower
-                || $searchLower === $nummerLower
-                || ($nameLower !== '' && mb_strpos($nameLower, $searchLower) !== false)
-                || ($labelLower !== '' && mb_strpos($labelLower, $searchLower) !== false)
-            ) {
-                return (int) $room->id;
-            }
-        }
-
-        return null;
+        return ItexiaActualRoomResolver::resolveRoomIdFromSearchHint($client, $search);
     }
 }

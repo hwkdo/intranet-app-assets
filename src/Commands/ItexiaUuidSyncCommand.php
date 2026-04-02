@@ -5,8 +5,9 @@ namespace Hwkdo\IntranetAppAssets\Commands;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
-use Illuminate\Support\Facades\Cache;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaRoomFieldsSync;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -172,6 +173,8 @@ class ItexiaUuidSyncCommand extends Command
                     ]);
                 }
             }
+
+            AssetItexiaRoomFieldsSync::applyFromItexiaAsset($asset, $itexiaAsset, false);
 
             $asset->itexia_check_at = now();
             $asset->save();

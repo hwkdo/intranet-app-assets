@@ -19,7 +19,7 @@ class AssetAbfragenTool extends Tool
 {
     protected string $name = 'assets_abfragen';
 
-    protected string $description = 'Filtert Assets per Eloquent-Abfrage nach strukturierten Kriterien (z. B. Besitzer, Bestellnummer, Rechnungsnummer, Typ, Hersteller, Status) und unterstützt Bulk-Abgleich von Seriennummern. WICHTIG: serial_numbers muss als echtes JSON-Array übergeben werden.';
+    protected string $description = 'Filtert Assets per Eloquent-Abfrage nach strukturierten Kriterien (Besitzer, BEN, Rechnung, Typ, Hersteller, Bulk-Seriennummern, gecachte Itexia-Räume, …). WICHTIG zu Itexia: «in Itexia gefunden», «mit Itexia-UUID» → found_in_itexia=true (itexia_uuid gesetzt). Nur itexia_id ohne UUID ist nicht «gefunden». «Ohne Itexia-Ist-Raum» / fehlende Raumzuordnung laut Sync-Datenbank: found_in_itexia=true und itexia_actual_room_missing=true (itexia_actual_room_id IS NULL). Optional itexia_target_room_missing für fehlenden Soll-Raum. Exakte Raum-IDs: itexia_actual_room_id / itexia_target_room_id (Integer). Gecachte Felder können bis zum nächsten Sync veraltet sein; Live-Abgleich: itexia_raum_intranet_pruefen. «location» ist nur Intranet-Standorttext. serial_numbers als echtes JSON-Array.';
 
     public function handle(Request $request): Response|ResponseFactory
     {
@@ -42,6 +42,11 @@ class AssetAbfragenTool extends Tool
             'asset_type_id' => ['nullable', 'integer', 'exists:intranet_app_assets_asset_types,id'],
             'asset_vendor_id' => ['nullable', 'integer', 'exists:intranet_app_assets_asset_vendors,id'],
             'invoice_number_pending' => ['nullable', 'boolean'],
+            'found_in_itexia' => ['nullable', 'boolean'],
+            'itexia_actual_room_missing' => ['nullable', 'boolean'],
+            'itexia_target_room_missing' => ['nullable', 'boolean'],
+            'itexia_actual_room_id' => ['nullable', 'integer'],
+            'itexia_target_room_id' => ['nullable', 'integer'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
 
@@ -72,6 +77,7 @@ class AssetAbfragenTool extends Tool
 
         $result = $assets->map(function (Asset $asset): array {
             $url = route('apps.assets.show', $asset->id);
+            $foundInItexia = self::assetHasItexiaUuid($asset);
 
             return [
                 'id' => $asset->id,
@@ -86,6 +92,11 @@ class AssetAbfragenTool extends Tool
                 'invoice_number' => $asset->invoice_number,
                 'invoice_number_pending' => (bool) $asset->invoice_number_pending,
                 'itexia_id' => $asset->itexia_id,
+                'itexia_uuid' => $asset->itexia_uuid,
+                'itexia_actual_room_id' => $asset->itexia_actual_room_id,
+                'itexia_target_room_id' => $asset->itexia_target_room_id,
+                'itexia_rooms_synced_at' => $asset->itexia_rooms_synced_at?->toIso8601String(),
+                'found_in_itexia' => $foundInItexia,
                 'url' => $url,
                 'url_markdown' => sprintf('[Asset #%d](%s)', $asset->id, $url),
             ];
@@ -124,6 +135,11 @@ class AssetAbfragenTool extends Tool
                 'asset_type_id' => $validated['asset_type_id'] ?? null,
                 'asset_vendor_id' => $validated['asset_vendor_id'] ?? null,
                 'invoice_number_pending' => $validated['invoice_number_pending'] ?? null,
+                'found_in_itexia' => $validated['found_in_itexia'] ?? null,
+                'itexia_actual_room_missing' => $validated['itexia_actual_room_missing'] ?? null,
+                'itexia_target_room_missing' => $validated['itexia_target_room_missing'] ?? null,
+                'itexia_actual_room_id' => $validated['itexia_actual_room_id'] ?? null,
+                'itexia_target_room_id' => $validated['itexia_target_room_id'] ?? null,
                 'limit' => $limit,
             ],
             'total' => $result->count(),
@@ -180,7 +196,44 @@ class AssetAbfragenTool extends Tool
             $query->where('invoice_number_pending', (bool) $filters['invoice_number_pending']);
         }
 
+        if (isset($filters['found_in_itexia'])) {
+            if ((bool) $filters['found_in_itexia']) {
+                $query->whereNotNull('itexia_uuid')->where('itexia_uuid', '!=', '');
+            } else {
+                $query->where(function (Builder $q): void {
+                    $q->whereNull('itexia_uuid')->orWhere('itexia_uuid', '');
+                });
+            }
+        }
+
+        if (isset($filters['itexia_actual_room_missing']) && (bool) $filters['itexia_actual_room_missing']) {
+            $query->whereNull('itexia_actual_room_id');
+        }
+
+        if (isset($filters['itexia_target_room_missing']) && (bool) $filters['itexia_target_room_missing']) {
+            $query->whereNull('itexia_target_room_id');
+        }
+
+        if (array_key_exists('itexia_actual_room_id', $filters) && $filters['itexia_actual_room_id'] !== null) {
+            $query->where('itexia_actual_room_id', (int) $filters['itexia_actual_room_id']);
+        }
+
+        if (array_key_exists('itexia_target_room_id', $filters) && $filters['itexia_target_room_id'] !== null) {
+            $query->where('itexia_target_room_id', (int) $filters['itexia_target_room_id']);
+        }
+
         return $query;
+    }
+
+    /**
+     * True, wenn das Objekt in Itexia/Seventhings gesucht und die UUID gespeichert wurde (itexia_uuid).
+     * Nur itexia_id (Barcode) ohne UUID zählt nicht als «gefunden».
+     */
+    private static function assetHasItexiaUuid(Asset $asset): bool
+    {
+        $uuid = $asset->itexia_uuid;
+
+        return $uuid !== null && trim((string) $uuid) !== '';
     }
 
     private function normalizeSerialNumber(?string $serialNumber): ?string
@@ -250,6 +303,21 @@ class AssetAbfragenTool extends Tool
             'invoice_number_pending' => $schema->boolean()
                 ->description('Filtert auf Assets mit/ohne offene Rechnungsnummer.')
                 ->nullable(),
+            'found_in_itexia' => $schema->boolean()
+                ->description('Pflicht bei Nutzerformulierungen wie «in Itexia gefunden», «mit Itexia-UUID», «in Seventhings»: immer true setzen. true = itexia_uuid gesetzt (wirklich synchronisiert); false = keine UUID. Ohne diesen Filter: beliebige Assets — nicht mit «gefunden in Itexia» verwechseln.')
+                ->nullable(),
+            'itexia_actual_room_missing' => $schema->boolean()
+                ->description('true = nur Assets, bei denen itexia_actual_room_id NULL ist (kein gecachter Ist-Raum laut Sync). Typisch zusammen mit found_in_itexia=true für «in Itexia bekannt, aber ohne Ist-Raum-Zuordnung in der DB».')
+                ->nullable(),
+            'itexia_target_room_missing' => $schema->boolean()
+                ->description('true = nur Assets mit itexia_target_room_id NULL (kein gecachter Soll-Raum).')
+                ->nullable(),
+            'itexia_actual_room_id' => $schema->integer()
+                ->description('Exakter Filter auf gecachte Seventhings-Ist-Raum-ID (actual_room). Nicht kombinieren mit itexia_actual_room_missing=true.')
+                ->nullable(),
+            'itexia_target_room_id' => $schema->integer()
+                ->description('Exakter Filter auf gecachte Seventhings-Soll-Raum-ID (target_room).')
+                ->nullable(),
             'limit' => $schema->integer()
                 ->description('Maximale Anzahl Treffer (1-500, Standard 20). Bei serial_numbers wird kein zusätzliches Limit erzwungen.')
                 ->nullable(),
@@ -273,6 +341,11 @@ class AssetAbfragenTool extends Tool
                 'asset_type_id' => $schema->integer()->nullable(),
                 'asset_vendor_id' => $schema->integer()->nullable(),
                 'invoice_number_pending' => $schema->boolean()->nullable(),
+                'found_in_itexia' => $schema->boolean()->nullable(),
+                'itexia_actual_room_missing' => $schema->boolean()->nullable(),
+                'itexia_target_room_missing' => $schema->boolean()->nullable(),
+                'itexia_actual_room_id' => $schema->integer()->nullable(),
+                'itexia_target_room_id' => $schema->integer()->nullable(),
                 'limit' => $schema->integer()->required(),
             ])
                 ->description('Die tatsächlich angewendeten Filter. Wenn serial_numbers gesetzt wurde, enthält serial_numbers_normalized die finale Vergleichsmenge.')
@@ -300,11 +373,16 @@ class AssetAbfragenTool extends Tool
                     'owner_name' => $schema->string()->description('Name des Besitzers.')->nullable(),
                     'type' => $schema->string()->description('Asset-Typ.')->nullable(),
                     'vendor' => $schema->string()->description('Hersteller.')->nullable(),
-                    'location' => $schema->string()->description('Standort.')->nullable(),
+                    'location' => $schema->string()->description('Intranet-Standorttext (Freitext), nicht der Itexia-Ist-Raum (actual_room).')->nullable(),
                     'order_number' => $schema->string()->description('Bestellnummer (BEN).')->nullable(),
                     'invoice_number' => $schema->string()->description('Rechnungsnummer.')->nullable(),
                     'invoice_number_pending' => $schema->boolean()->description('Kennzeichnet offene Rechnungsnummer.')->required(),
-                    'itexia_id' => $schema->string()->description('Itexia-ID.')->nullable(),
+                    'itexia_id' => $schema->string()->description('Itexia-Barcode/ID (geplant); allein kein Nachweis für «gefunden in Itexia».')->nullable(),
+                    'itexia_uuid' => $schema->string()->description('Seventhings-Objekt-UUID nach erfolgreicher Suche; null = noch nicht in Itexia gefunden/synchronisiert.')->nullable(),
+                    'itexia_actual_room_id' => $schema->integer()->description('Gecachter Seventhings-Ist-Raum (actual_room), zuletzt per Sync/PATCH aktualisiert; null = noch nicht synchronisiert.')->nullable(),
+                    'itexia_target_room_id' => $schema->integer()->description('Gecachter Seventhings-Soll-Raum (target_room); null = nicht gesetzt oder noch nicht synchronisiert.')->nullable(),
+                    'itexia_rooms_synced_at' => $schema->string()->description('Zeitpunkt der letzten Raum-Synchronisation (ISO-8601) oder null.')->nullable(),
+                    'found_in_itexia' => $schema->boolean()->description('Kurz: itexia_uuid gesetzt (true) oder nicht (false).')->required(),
                     'url' => $schema->string()->description('Direkter Link zur Asset-Detailseite.')->required(),
                     'url_markdown' => $schema->string()->description('Markdown-Link zur Asset-Detailseite.')->required(),
                 ]))
