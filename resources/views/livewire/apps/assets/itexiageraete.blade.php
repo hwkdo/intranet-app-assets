@@ -27,6 +27,10 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     #[Url]
     public string $invoiceOrderFilter = 'all';
 
+    /** @var 'all'|'with-room'|'without-room' */
+    #[Url(as: 'itexiaRoom')]
+    public string $itexiaRoomFilter = 'all';
+
     /** @var list<int|string> */
     #[Url(as: 'types')]
     public array $typeIds = [];
@@ -42,6 +46,11 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     }
 
     public function updatedInvoiceOrderFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedItexiaRoomFilter(): void
     {
         $this->resetPage();
     }
@@ -107,6 +116,13 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                 $q->whereNotNull('invoice_number')->where('invoice_number', '!=', '')
                     ->orWhereNotNull('order_number')->where('order_number', '!=', '');
             }))
+            ->when($this->itexiaRoomFilter === 'with-room', fn ($q) => $q->where(function ($q) {
+                $q->whereNotNull('itexia_actual_room_id')
+                    ->orWhereNotNull('itexia_target_room_id');
+            }))
+            ->when($this->itexiaRoomFilter === 'without-room', fn ($q) => $q
+                ->whereNull('itexia_actual_room_id')
+                ->whereNull('itexia_target_room_id'))
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds));
     }
 
@@ -249,6 +265,11 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                     <flux:select.option value="all">Alle</flux:select.option>
                     <flux:select.option value="without">Ohne Rechnung/Bestellung</flux:select.option>
                     <flux:select.option value="with">Mit Rechnung/Bestellung</flux:select.option>
+                </flux:select>
+                <flux:select wire:model.live="itexiaRoomFilter" placeholder="Itexia-Raum" class="w-52 shrink-0">
+                    <flux:select.option value="all">Alle</flux:select.option>
+                    <flux:select.option value="with-room">Nur mit Raum</flux:select.option>
+                    <flux:select.option value="without-room">Nur ohne Raum</flux:select.option>
                 </flux:select>
             </div>
             <flux:dropdown position="bottom" align="end">
