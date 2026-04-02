@@ -81,6 +81,18 @@ class AssetsDashboardWidgetProvider implements DashboardWidgetProviderInterface
                 minH: 3,
                 defaultEnabled: true,
             ),
+            new DashboardWidgetDefinition(
+                key: 'ki-chat',
+                title: 'Assets KI-Chat',
+                description: 'Assets-KI-Chat mit MCP-Tools (gleiche Konfiguration wie die Chat-Seite)',
+                component: 'intranet-app-assets::apps.assets.widgets.ki-chat',
+                defaultW: 12,
+                defaultH: 10,
+                minW: 6,
+                minH: 6,
+                defaultEnabled: false,
+                supportsItemCount: false,
+            ),
         ];
     }
 }
