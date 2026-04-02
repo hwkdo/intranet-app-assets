@@ -18,9 +18,9 @@ class ItexiaRoomsSyncCommand extends Command
                             {--details : Pro Asset ausgeben}
                             {--limit=200 : Maximal so viele Datensätze aktualisieren}
                             {--asset-id= : Nur dieses Asset (ID), sofern itexia_uuid gesetzt}
-                            {--uuids-per-request=50 : Chunk-Größe für findAssetsByUuids}';
+                            {--uuids-per-request=50 : Chunk-Größe pro GET objects (filter[in])}';
 
-    protected $description = 'Aktualisiert itexia_actual_room_id und itexia_target_room_id per Batch-Abfrage (findAssetsByUuids).';
+    protected $description = 'Aktualisiert itexia_actual_room_id und itexia_target_room_id per Client::findAssetsByUuids (Seventhings Customer API).';
 
     public function handle(): int
     {
@@ -52,6 +52,8 @@ class ItexiaRoomsSyncCommand extends Command
 
         /** @var Client $client */
         $client = $this->laravel->make($seventhingsClass);
+        $uuidFieldKey = config('intranet-app-assets.seventhings_object_id_key');
+        $uuidFieldKey = is_string($uuidFieldKey) && trim($uuidFieldKey) !== '' ? trim($uuidFieldKey) : null;
         $verbose = $this->option('details');
         $limit = max(1, (int) $this->option('limit'));
         $assetId = $this->option('asset-id') !== null ? (int) $this->option('asset-id') : null;
@@ -95,7 +97,7 @@ class ItexiaRoomsSyncCommand extends Command
             }
 
             try {
-                $itexiaAssets = $client->findAssetsByUuids($chunk, null, $uuidsPerRequest, 1000);
+                $itexiaAssets = $client->findAssetsByUuids($chunk, $uuidFieldKey, $uuidsPerRequest, 1000);
             } catch (Throwable $e) {
                 if ($this->isRateLimitException($e)) {
                     $this->error('Rate Limit (429/420 Too Many Requests) erreicht. Abbruch.');
