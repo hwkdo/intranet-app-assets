@@ -14,6 +14,7 @@ use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -37,6 +38,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
     public string $asset_type_id = '';
 
     public string $asset_vendor_id = '';
+
+    /** Sucheingaben für Combobox (Typ / Hersteller), :filter="false" + serverseitige Liste */
+    public string $asset_type_search = '';
+
+    public string $asset_vendor_search = '';
 
     /** Einheiten: pro Eintrag ein Asset mit spezifischen Feldern (wie Direkteingabe) */
     public array $units = [];
@@ -223,15 +229,140 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
     }
 
     #[Computed]
-    public function assetTypes(): Collection
+    public function filteredAssetTypes(): Collection
     {
-        return AssetType::allOrdered();
+        $term = trim($this->asset_type_search);
+        $q = AssetType::query()->orderBy('name');
+
+        if ($term !== '') {
+            $like = '%'.addcslashes($term, '%_\\').'%';
+            $q->where('name', 'like', $like);
+        }
+
+        $results = $q->limit(75)->get();
+
+        if (filled($this->asset_type_id)) {
+            $selected = AssetType::query()->find((int) $this->asset_type_id);
+            if ($selected !== null && ! $results->contains(fn (AssetType $t): bool => (int) $t->id === (int) $selected->id)) {
+                $results = $results->prepend($selected)->unique('id')->values();
+            }
+        }
+
+        return $results;
     }
 
     #[Computed]
-    public function assetVendors(): Collection
+    public function filteredAssetVendors(): Collection
     {
-        return AssetVendor::allOrdered();
+        $term = trim($this->asset_vendor_search);
+        $q = AssetVendor::query()->orderBy('name');
+
+        if ($term !== '') {
+            $like = '%'.addcslashes($term, '%_\\').'%';
+            $q->where('name', 'like', $like);
+        }
+
+        $results = $q->limit(75)->get();
+
+        if (filled($this->asset_vendor_id)) {
+            $selected = AssetVendor::query()->find((int) $this->asset_vendor_id);
+            if ($selected !== null && ! $results->contains(fn (AssetVendor $v): bool => (int) $v->id === (int) $selected->id)) {
+                $results = $results->prepend($selected)->unique('id')->values();
+            }
+        }
+
+        return $results;
+    }
+
+    public function updatedAssetTypeSearch(): void
+    {
+        $this->resetErrorBag('asset_type_search');
+    }
+
+    public function updatedAssetVendorSearch(): void
+    {
+        $this->resetErrorBag('asset_vendor_search');
+    }
+
+    public function createAssetTypeFromWizard(): void
+    {
+        $validator = Validator::make(
+            ['asset_type_search' => trim($this->asset_type_search)],
+            [
+                'asset_type_search' => [
+                    'required',
+                    'string',
+                    'min:2',
+                    'max:255',
+                    'unique:intranet_app_assets_asset_types,name',
+                ],
+            ],
+            [
+                'asset_type_search.required' => 'Bitte einen Namen für den neuen Typ eingeben.',
+                'asset_type_search.min' => 'Der Name muss mindestens 2 Zeichen haben.',
+                'asset_type_search.unique' => 'Dieser Typ existiert bereits – bitte in der Liste auswählen.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            $this->addError('asset_type_search', $validator->errors()->first('asset_type_search'));
+
+            return;
+        }
+
+        $name = $validator->validated()['asset_type_search'];
+
+        $type = AssetType::query()->create([
+            'name' => $name,
+            'is_domain_object' => false,
+            'is_intune_object' => false,
+            'itexia_creation_allowed' => false,
+        ]);
+
+        $this->asset_type_id = (string) $type->id;
+        $this->asset_type_search = '';
+        $this->resetErrorBag('asset_type_search');
+
+        Flux::toast('Typ „'.$type->name.'“ wurde angelegt.', variant: 'success');
+    }
+
+    public function createAssetVendorFromWizard(): void
+    {
+        $validator = Validator::make(
+            ['asset_vendor_search' => trim($this->asset_vendor_search)],
+            [
+                'asset_vendor_search' => [
+                    'required',
+                    'string',
+                    'min:2',
+                    'max:255',
+                    'unique:intranet_app_assets_asset_vendors,name',
+                ],
+            ],
+            [
+                'asset_vendor_search.required' => 'Bitte einen Namen für den neuen Hersteller eingeben.',
+                'asset_vendor_search.min' => 'Der Name muss mindestens 2 Zeichen haben.',
+                'asset_vendor_search.unique' => 'Dieser Hersteller existiert bereits – bitte in der Liste auswählen.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            $this->addError('asset_vendor_search', $validator->errors()->first('asset_vendor_search'));
+
+            return;
+        }
+
+        $name = $validator->validated()['asset_vendor_search'];
+
+        $vendor = AssetVendor::query()->create([
+            'name' => $name,
+        ]);
+
+        $this->asset_vendor_id = (string) $vendor->id;
+        $this->asset_vendor_search = '';
+        $this->resetErrorBag('asset_vendor_search');
+
+        Flux::toast('Hersteller „'.$vendor->name.'“ wurde angelegt.', variant: 'success');
     }
 
     #[Computed]
@@ -492,21 +623,53 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                     </flux:field>
                     <flux:field>
                         <flux:label>Typ <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
-                        <flux:select variant="listbox" searchable wire:model="asset_type_id" placeholder="Typ auswählen…">
-                            @foreach($this->assetTypes as $type)
-                                <flux:select.option value="{{ $type->id }}">{{ $type->name }}</flux:select.option>
+                        <flux:select
+                            wire:model="asset_type_id"
+                            variant="combobox"
+                            :filter="false"
+                            placeholder="Typ auswählen…"
+                        >
+                            <x-slot name="input">
+                                <flux:select.input
+                                    wire:model.live.debounce.300ms="asset_type_search"
+                                    placeholder="Typ suchen oder neu anlegen…"
+                                    :invalid="$errors->has('asset_type_search')"
+                                />
+                            </x-slot>
+                            @foreach($this->filteredAssetTypes as $type)
+                                <flux:select.option value="{{ $type->id }}" wire:key="wizard-asset-type-{{ $type->id }}">{{ $type->name }}</flux:select.option>
                             @endforeach
+                            <flux:select.option.create wire:click="createAssetTypeFromWizard" min-length="2">
+                                Typ „<span wire:text="asset_type_search"></span>“ anlegen
+                            </flux:select.option.create>
                         </flux:select>
                         <flux:error name="asset_type_id" />
+                        <flux:error name="asset_type_search" />
                     </flux:field>
                     <flux:field>
                         <flux:label>Hersteller <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
-                        <flux:select variant="listbox" searchable wire:model="asset_vendor_id" placeholder="Hersteller auswählen…">
-                            @foreach($this->assetVendors as $vendor)
-                                <flux:select.option value="{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
+                        <flux:select
+                            wire:model="asset_vendor_id"
+                            variant="combobox"
+                            :filter="false"
+                            placeholder="Hersteller auswählen…"
+                        >
+                            <x-slot name="input">
+                                <flux:select.input
+                                    wire:model.live.debounce.300ms="asset_vendor_search"
+                                    placeholder="Hersteller suchen oder neu anlegen…"
+                                    :invalid="$errors->has('asset_vendor_search')"
+                                />
+                            </x-slot>
+                            @foreach($this->filteredAssetVendors as $vendor)
+                                <flux:select.option value="{{ $vendor->id }}" wire:key="wizard-asset-vendor-{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
                             @endforeach
+                            <flux:select.option.create wire:click="createAssetVendorFromWizard" min-length="2">
+                                Hersteller „<span wire:text="asset_vendor_search"></span>“ anlegen
+                            </flux:select.option.create>
                         </flux:select>
                         <flux:error name="asset_vendor_id" />
+                        <flux:error name="asset_vendor_search" />
                     </flux:field>
                 </div>
             </flux:fieldset>
