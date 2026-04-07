@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('intranet_app_assets_permanent_deletion_archives', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('original_asset_id')->index();
+            $table->unsignedBigInteger('original_asset_id');
             $table->timestamp('archived_at')->useCurrent();
             $table->unsignedBigInteger('deleted_by_user_id')->nullable();
             $table->string('source', 64)->default('force_delete');
@@ -21,6 +21,9 @@ return new class extends Migration
                 ->references('id')
                 ->on('users')
                 ->nullOnDelete();
+
+            // Kurzer Name: MySQL-Limit 64 Zeichen für Identifier (Auto-Name wäre zu lang).
+            $table->index('original_asset_id', 'iaa_perm_del_arch_orig_asset_idx');
         });
     }
 

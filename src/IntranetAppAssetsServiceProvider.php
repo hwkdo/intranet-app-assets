@@ -7,6 +7,7 @@ use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
+use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
@@ -18,6 +19,8 @@ use Hwkdo\IntranetAppAssets\Models\AssetNote;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
+use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
+use Hwkdo\IntranetAppAssets\Services\AssetOwnerHandoverAutomationService;
 use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
@@ -38,6 +41,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->singleton(AssetPermanentDeletionArchiveRecorder::class);
+        $this->app->singleton(AssetOwnerHandoverAutomationService::class);
 
         if (class_exists(IntranetLegacyService::class)) {
             $this->app->bind(
@@ -66,6 +70,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
                 BackfillOwnerHandoversCommand::class,
+                EnsureAssetHandoversCommand::class,
             ]);
     }
 
@@ -74,6 +79,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         parent::boot();
 
         Asset::observe(AssetObserver::class);
+        Asset::observe(AssetOwnerHandoverObserver::class);
         AssetHistory::observe(AssetHistoryObserver::class);
         AssetNote::observe(AssetNoteObserver::class);
 
