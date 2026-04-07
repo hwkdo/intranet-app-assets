@@ -84,8 +84,6 @@ class OpenHandoverAdminResolutionService
             'is_missing' => false,
             'is_clarification' => false,
         ]);
-        $asset->refresh();
-        $asset->ensureHandoverForOwner();
 
         $asset->historyEntries()->create([
             'event' => AssetHistory::EventPendingHandoverAdminResolvedNewOwner,

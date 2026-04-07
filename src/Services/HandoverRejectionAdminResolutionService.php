@@ -89,8 +89,6 @@ class HandoverRejectionAdminResolutionService
             'user_id' => $newOwnerUserId,
             'is_missing' => false,
         ]);
-        $asset->refresh();
-        $asset->ensureHandoverForOwner();
 
         $asset->historyEntries()->create([
             'event' => AssetHistory::EventHandoverRejectionAdminResolvedNewOwner,

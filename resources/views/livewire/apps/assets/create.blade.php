@@ -224,7 +224,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                     ->usingFileName($this->unit_images[$index]->getClientOriginalName())
                     ->toMediaCollection('image');
             }
-            $asset->ensureHandoverForOwner();
             $asset->notes()->create([
                 'note' => 'Asset erstellt von '.auth()->user()->name.'.',
                 'user_id' => auth()->id(),

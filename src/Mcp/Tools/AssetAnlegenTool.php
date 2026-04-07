@@ -166,10 +166,6 @@ class AssetAnlegenTool extends Tool
             'is_missing' => false,
         ]);
 
-        if ($asset->user_id !== null) {
-            $asset->ensureHandoverForOwner();
-        }
-
         $url = route('apps.assets.show', $asset->id);
 
         return Response::structured([

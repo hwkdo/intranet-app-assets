@@ -346,7 +346,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                     ->usingFileName($this->unit_images[$index]->getClientOriginalName())
                     ->toMediaCollection('image');
             }
-            $asset->ensureHandoverForOwner();
             $asset->notes()->create([
                 'note' => 'Asset erstellt von '.auth()->user()->name.' (Assistent).',
                 'user_id' => auth()->id(),

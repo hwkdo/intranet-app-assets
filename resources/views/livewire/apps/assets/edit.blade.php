@@ -268,9 +268,6 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 ->toMediaCollection('image');
         }
 
-        $this->asset->refresh();
-        $this->asset->ensureHandoverForOwner();
-
         session()->flash('success', 'Asset wurde erfolgreich gespeichert.');
         $this->redirect(route('apps.assets.show', $this->asset), navigate: true);
     }

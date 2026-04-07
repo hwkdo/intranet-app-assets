@@ -203,36 +203,6 @@ class Asset extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
 
-    /**
-     * Stellt sicher, dass bei gesetztem Besitzer (user_id) ein Handover existiert.
-     * Jede Besitzzuordnung soll einen Handover haben (unbestätigt, bis der Empfänger bestätigt).
-     */
-    public function ensureHandoverForOwner(): void
-    {
-        if ($this->user_id === null) {
-            return;
-        }
-
-        $openExists = Handover::query()
-            ->where('asset_id', $this->id)
-            ->where('recipient_user_id', $this->user_id)
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->exists();
-
-        if ($openExists) {
-            return;
-        }
-
-        Handover::create([
-            'asset_id' => $this->id,
-            'recipient_user_id' => $this->user_id,
-            'issuer_user_id' => auth()->id(),
-            'confirmed_at' => null,
-            'confirmation_method' => null,
-        ]);
-    }
-
     private function statusTokens(): string
     {
         $tokens = [];
