@@ -18,6 +18,7 @@ use Hwkdo\IntranetAppAssets\Models\AssetNote;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
+use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface;
@@ -35,6 +36,8 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
     public function register(): void
     {
         parent::register();
+
+        $this->app->singleton(AssetPermanentDeletionArchiveRecorder::class);
 
         if (class_exists(IntranetLegacyService::class)) {
             $this->app->bind(

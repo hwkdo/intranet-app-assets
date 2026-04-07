@@ -67,12 +67,23 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
 <div>
     <x-intranet-app-assets::assets-layout heading="Gelöschte Assets" subheading="Archivierte Assets mit Verlauf und Aktionen">
         <div class="space-y-4">
-            <div class="max-w-sm">
-                <flux:input
-                    wire:model.live.debounce.300ms="search"
-                    placeholder="Suchen nach SN, Modell, Name, Itexia-ID..."
-                    icon="magnifying-glass"
-                    clearable
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="max-w-sm flex-1 min-w-[12rem]">
+                    <flux:input
+                        wire:model.live.debounce.300ms="search"
+                        placeholder="Suchen nach SN, Modell, Name, Itexia-ID..."
+                        icon="magnifying-glass"
+                        clearable
+                    />
+                </div>
+                <flux:button
+                    href="{{ route('apps.assets.deleted.permanent-archive') }}"
+                    variant="ghost"
+                    size="sm"
+                    icon="archive-box"
+                    class="shrink-0"
+                    title="Archiv endgültig gelöschter Assets"
+                    wire:navigate
                 />
             </div>
 

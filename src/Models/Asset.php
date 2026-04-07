@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
+use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -166,6 +167,10 @@ class Asset extends Model implements HasMedia
 
     protected static function booted(): void
     {
+        static::forceDeleting(function (self $asset): void {
+            app(AssetPermanentDeletionArchiveRecorder::class)->record($asset);
+        });
+
         static::deleting(function (self $asset): void {
             if (! $asset->isForceDeleting()) {
                 return;

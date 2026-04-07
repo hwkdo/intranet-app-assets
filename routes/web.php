@@ -86,6 +86,9 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/deleted', 'intranet-app-assets::apps.assets.deleted')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.deleted');
+    Route::livewire('apps/assets/deleted/archiv-endgueltig', 'intranet-app-assets::apps.assets.permanent-deletion-archive')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.deleted.permanent-archive');
     Route::livewire('apps/assets/admin/abgelehnte-uebergaben', 'intranet-app-assets::apps.assets.rejected-handovers-overview')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.rejected-handovers');
@@ -124,7 +127,8 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->name('apps.assets.admin.return.complete-commit');
 
     // Wildcard-Routen zuletzt
-    Route::livewire('apps/assets/{asset}', 'intranet-app-assets::apps.assets.show')->name('apps.assets.show');
+    // withTrashed: Livewire/Implicit Binding nutzt sonst resolveRouteBinding ohne gelöschte Datensätze — Detail von „Gelöschte Assets“ würde 404 liefern.
+    Route::livewire('apps/assets/{asset}', 'intranet-app-assets::apps.assets.show')->withTrashed()->name('apps.assets.show');
     Route::livewire('apps/assets/{asset}/edit', 'intranet-app-assets::apps.assets.edit')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.edit');
