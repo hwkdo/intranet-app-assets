@@ -29,6 +29,14 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     #[Url]
     public string $statusFilter = '';
 
+    /** @var 'model'|'updated_at' */
+    #[Url(as: 'sort')]
+    public string $sortColumn = 'model';
+
+    /** @var 'asc'|'desc' */
+    #[Url(as: 'sdir')]
+    public string $sortDirection = 'asc';
+
     /** @var list<int> */
     public array $selectedAssetIds = [];
 
@@ -38,11 +46,45 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
 
     private const SELECTION_SESSION_KEY = 'intranet_app_assets.bulk.assets_list.selection';
 
+    /** @var list<string> */
+    private const SORT_COLUMNS = ['model', 'updated_at'];
+
     public function mount(): void
     {
+        $this->sanitizeSortFromUrl();
         $stored = Session::get(self::SELECTION_SESSION_KEY, []);
         $this->selectedAssetIds = $this->sanitizeIds(is_array($stored) ? $stored : []);
         $this->pruneStaleSelection();
+    }
+
+    public function updatedSortColumn(): void
+    {
+        $this->sanitizeSortFromUrl();
+        $this->resetPage();
+    }
+
+    public function updatedSortDirection(): void
+    {
+        if (! in_array($this->sortDirection, ['asc', 'desc'], true)) {
+            $this->sortDirection = 'asc';
+        }
+        $this->resetPage();
+    }
+
+    public function sortBy(string $column): void
+    {
+        if (! in_array($column, self::SORT_COLUMNS, true)) {
+            return;
+        }
+
+        if ($this->sortColumn === $column) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortColumn = $column;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 
     public function updatedSearch(): void
@@ -109,11 +151,51 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         return array_values(array_intersect($selected, $allowed));
     }
 
+    #[Computed]
+    public function listingSortColumn(): string
+    {
+        return in_array($this->sortColumn, self::SORT_COLUMNS, true) ? $this->sortColumn : 'model';
+    }
+
+    #[Computed]
+    public function listingSortDirection(): string
+    {
+        return $this->sortDirection === 'desc' ? 'desc' : 'asc';
+    }
+
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Asset::query()
+            ->with(['type', 'vendor', 'owner']);
+
+        return $this->applyListingSort($query);
+    }
+
+    /**
+     * Exporte bleiben stabil nach Modell sortiert, unabhängig von der Tabellensortierung.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    protected function exportBaseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
-            ->orderBy('model');
+            ->orderBy('model')
+            ->orderBy('id');
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Asset>
+     */
+    protected function applyListingSort(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        $column = $this->listingSortColumn;
+        $direction = $this->listingSortDirection;
+
+        return $query
+            ->orderBy($column, $direction)
+            ->orderBy('id', $direction);
     }
 
     #[Computed]
@@ -170,7 +252,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
      */
     public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->baseQuery();
+        return $this->exportBaseQuery();
     }
 
     /**
@@ -180,7 +262,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     {
         $typeIds = $this->validatedTypeIdsForQuery();
 
-        return $this->baseQuery()
+        return $this->exportBaseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $term = '%'.$this->search.'%';
@@ -220,6 +302,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 }
                 return implode(', ', $status);
             }],
+            ['heading' => 'Aktualisiert', 'value' => fn (Asset $a) => $a->updated_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
         ];
     }
 
@@ -310,6 +393,17 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             $this->selectedAssetIds = $pruned;
             Session::put(self::SELECTION_SESSION_KEY, $this->selectedAssetIds);
             $this->selectPage = $this->areAllCurrentPageSelected();
+        }
+    }
+
+    private function sanitizeSortFromUrl(): void
+    {
+        if (! in_array($this->sortColumn, self::SORT_COLUMNS, true)) {
+            $this->sortColumn = 'model';
+        }
+
+        if (! in_array($this->sortDirection, ['asc', 'desc'], true)) {
+            $this->sortDirection = 'asc';
         }
     }
 }; ?>
@@ -465,6 +559,13 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 <flux:table.column>Hersteller</flux:table.column>
                 <flux:table.column>Besitzer</flux:table.column>
                 <flux:table.column>Status</flux:table.column>
+                <flux:table.column
+                    sortable
+                    :sorted="$this->listingSortColumn === 'updated_at'"
+                    :direction="$this->listingSortDirection"
+                    wire:click="sortBy('updated_at')"
+                    align="end"
+                >Aktualisiert</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -515,6 +616,20 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 @endif
                             </div>
                         </flux:table.cell>
+                        @php
+                            $updatedAt = $asset->updated_at;
+                            $updatedRelative = $updatedAt ? $updatedAt->diffForHumans(['parts' => 1]) : '—';
+                            $updatedAbsolute = $updatedAt ? $updatedAt->timezone((string) config('app.timezone'))->format('d.m.Y H:i') : '';
+                        @endphp
+                        <flux:table.cell class="w-24 max-w-[6.5rem] whitespace-nowrap text-end text-sm text-zinc-600 dark:text-zinc-200">
+                            @if($updatedAt)
+                                <flux:tooltip :content="$updatedAbsolute" position="top">
+                                    <span class="block truncate">{{ $updatedRelative }}</span>
+                                </flux:tooltip>
+                            @else
+                                <span>—</span>
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>
                             <div class="flex flex-wrap items-center gap-1">
                                 @php
@@ -540,7 +655,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="8" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="9" class="text-center text-zinc-500 py-8">
                             Keine Assets gefunden.
                         </flux:table.cell>
                     </flux:table.row>
