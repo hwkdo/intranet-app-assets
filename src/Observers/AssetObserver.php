@@ -11,7 +11,14 @@ use Illuminate\Support\Facades\Log;
 
 class AssetObserver
 {
-    /** @var list<string> */
+    /**
+     * Felder, deren Änderungen im Verlauf protokolliert werden.
+     *
+     * Nicht enthalten u. a.: last_logon, intune_last_check_in — reine Hintergrund-/Sync-Werte
+     * (Domain/Horizon, Intune-Sync), keine fachlich relevanten Asset-Stammdaten-Änderungen.
+     *
+     * @var list<string>
+     */
     private const AUDITED_FIELDS = [
         'serial_number',
         'model',
@@ -28,15 +35,8 @@ class AssetObserver
         'invoice_number',
         'invoice_number_pending',
         'domain_connection',
-        
-        
-        'last_logon',
-        
         'intune_device_id',
-        'intune_last_check_in',
         'imei',
-        
-        
         'configmgr_serial_number',
         'configmgr_last_sync_at',
         'configmgr_mac_addresses',
