@@ -29,7 +29,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     #[Url]
     public string $statusFilter = '';
 
-    /** @var 'model'|'updated_at' */
+    /** @var 'model'|'created_at' */
     #[Url(as: 'sort')]
     public string $sortColumn = 'model';
 
@@ -47,7 +47,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     private const SELECTION_SESSION_KEY = 'intranet_app_assets.bulk.assets_list.selection';
 
     /** @var list<string> */
-    private const SORT_COLUMNS = ['model', 'updated_at'];
+    private const SORT_COLUMNS = ['model', 'created_at'];
 
     public function mount(): void
     {
@@ -302,7 +302,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 }
                 return implode(', ', $status);
             }],
-            ['heading' => 'Aktualisiert', 'value' => fn (Asset $a) => $a->updated_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
+            ['heading' => 'Angelegt', 'value' => fn (Asset $a) => $a->created_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
         ];
     }
 
@@ -561,11 +561,11 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column
                     sortable
-                    :sorted="$this->listingSortColumn === 'updated_at'"
+                    :sorted="$this->listingSortColumn === 'created_at'"
                     :direction="$this->listingSortDirection"
-                    wire:click="sortBy('updated_at')"
+                    wire:click="sortBy('created_at')"
                     align="end"
-                >Aktualisiert</flux:table.column>
+                >Angelegt</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -617,14 +617,14 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                             </div>
                         </flux:table.cell>
                         @php
-                            $updatedAt = $asset->updated_at;
-                            $updatedRelative = $updatedAt ? $updatedAt->diffForHumans(['parts' => 1]) : '—';
-                            $updatedAbsolute = $updatedAt ? $updatedAt->timezone((string) config('app.timezone'))->format('d.m.Y H:i') : '';
+                            $createdAt = $asset->created_at;
+                            $createdRelative = $createdAt ? $createdAt->diffForHumans(['parts' => 1]) : '—';
+                            $createdAbsolute = $createdAt ? $createdAt->timezone((string) config('app.timezone'))->format('d.m.Y H:i') : '';
                         @endphp
                         <flux:table.cell class="w-24 max-w-[6.5rem] whitespace-nowrap text-end text-sm text-zinc-600 dark:text-zinc-200">
-                            @if($updatedAt)
-                                <flux:tooltip :content="$updatedAbsolute" position="top">
-                                    <span class="block truncate">{{ $updatedRelative }}</span>
+                            @if($createdAt)
+                                <flux:tooltip :content="$createdAbsolute" position="top">
+                                    <span class="block truncate">{{ $createdRelative }}</span>
                                 </flux:tooltip>
                             @else
                                 <span>—</span>
