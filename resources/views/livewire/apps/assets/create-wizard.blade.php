@@ -67,6 +67,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'order_number' => null,
             'invoice_number' => null,
             'invoice_number_unknown' => false,
+            'domain_connection' => null,
             'is_clarification' => false,
             'is_missing' => false,
         ];
@@ -89,6 +90,9 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 $newUnit['invoice_number'] = trim((string) $first['invoice_number']);
             }
             $newUnit['invoice_number_unknown'] = (bool) ($first['invoice_number_unknown'] ?? false);
+            if (filled($first['domain_connection'] ?? null)) {
+                $newUnit['domain_connection'] = $first['domain_connection'];
+            }
         }
         $this->units[] = $newUnit;
         $this->unit_images[] = null;
@@ -284,6 +288,24 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
         $this->resetErrorBag('asset_vendor_search');
     }
 
+    public function updatedAssetTypeId(string $value): void
+    {
+        $type = AssetType::query()->find($value);
+        if ($type === null || ! $type->is_domain_object) {
+            foreach (array_keys($this->units) as $i) {
+                $this->units[$i]['domain_connection'] = null;
+            }
+        }
+    }
+
+    #[Computed]
+    public function showDomainConnectionField(): bool
+    {
+        $type = AssetType::query()->find($this->asset_type_id);
+
+        return $type?->is_domain_object ?? false;
+    }
+
     public function createAssetTypeFromWizard(): void
     {
         $validator = Validator::make(
@@ -385,6 +407,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.invoice_number_unknown' => 'boolean',
             'units.*.itexia_id' => 'nullable|string|max:255',
+            'units.*.domain_connection' => 'nullable|string|in:default,schulung',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
             'unit_images' => 'array',
@@ -467,6 +490,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'invoice_number_pending' => $invoiceNumberUnknown,
                 'created_by_user_id' => $creatorId,
                 'itexia_id' => $this->showItexiaId ? ($unit['itexia_id'] ?? null) : null,
+                'domain_connection' => $this->showDomainConnectionField ? (($unit['domain_connection'] ?? null) ?: null) : null,
                 'is_clarification' => $unit['is_clarification'] ?? false,
                 'is_missing' => $unit['is_missing'] ?? false,
             ];
@@ -730,6 +754,17 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                 </flux:select>
                                 <flux:error name="units.{{ $index }}.user_id" />
                             </flux:field>
+                            @if($this->showDomainConnectionField)
+                                <flux:field>
+                                    <flux:label>Domain Connection</flux:label>
+                                    <flux:select variant="listbox" wire:model="units.{{ $index }}.domain_connection" placeholder="Verbindung wählen…" clearable>
+                                        <flux:select.option value="">Keine</flux:select.option>
+                                        <flux:select.option value="default">Verwaltung</flux:select.option>
+                                        <flux:select.option value="schulung">Schulung</flux:select.option>
+                                    </flux:select>
+                                    <flux:error name="units.{{ $index }}.domain_connection" />
+                                </flux:field>
+                            @endif
                             @if($this->showOrderNumber)
                                 <x-intranet-app-assets::order-number-input
                                     name="units.{{ $index }}.order_number"
