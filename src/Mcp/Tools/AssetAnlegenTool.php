@@ -94,7 +94,7 @@ class AssetAnlegenTool extends Tool
             $invoiceValidationError = $invoiceValidationService->getValidationError((string) $validated['invoice_number']);
             if ($invoiceValidationError !== null) {
                 return $this->errorWithLog(
-                    $invoiceValidationError.' Bitte zuerst d3_rechnung_suchen aufrufen und eine gültige T-Nummer übernehmen.',
+                    $invoiceValidationError.' Wenn nur Rechnungsnummer/Freitext bekannt: d3_rechnung_suchen zur Ermittlung der T-Nummer; wenn schon T… bekannt: keine Suche — für OCR-Felder d3_rechnung_analysieren und invoice_number als T… setzen.',
                     $validated
                 );
             }
@@ -165,6 +165,10 @@ class AssetAnlegenTool extends Tool
             'is_clarification' => false,
             'is_missing' => false,
         ]);
+
+        if ($asset->user_id !== null) {
+            $asset->ensureHandoverForOwner();
+        }
 
         $url = route('apps.assets.show', $asset->id);
 

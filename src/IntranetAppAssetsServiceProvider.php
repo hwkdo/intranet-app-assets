@@ -7,7 +7,6 @@ use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
-use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
@@ -19,9 +18,6 @@ use Hwkdo\IntranetAppAssets\Models\AssetNote;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
-use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
-use Hwkdo\IntranetAppAssets\Services\AssetOwnerHandoverAutomationService;
-use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface;
@@ -39,9 +35,6 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
     public function register(): void
     {
         parent::register();
-
-        $this->app->singleton(AssetPermanentDeletionArchiveRecorder::class);
-        $this->app->singleton(AssetOwnerHandoverAutomationService::class);
 
         if (class_exists(IntranetLegacyService::class)) {
             $this->app->bind(
@@ -69,8 +62,8 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
+                Commands\D3InvoiceAnalysesBackfillCommand::class,
                 BackfillOwnerHandoversCommand::class,
-                EnsureAssetHandoversCommand::class,
             ]);
     }
 
@@ -79,7 +72,6 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         parent::boot();
 
         Asset::observe(AssetObserver::class);
-        Asset::observe(AssetOwnerHandoverObserver::class);
         AssetHistory::observe(AssetHistoryObserver::class);
         AssetNote::observe(AssetNoteObserver::class);
 
@@ -160,13 +152,13 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
+                // itexia_*_room_id absichtlich nicht in query_by: interne IDs, selten Suchziel; alte Typesense-Collections
+                // ohne diese Felder im Schema würden sonst bei jeder Suche einen ObjectNotFound werfen.
                 'query_by' => implode(',', [
                     'serial_number',
                     'imei',
                     'itexia_id',
                     'itexia_uuid',
-                    'itexia_actual_room_id',
-                    'itexia_target_room_id',
                     'intune_device_id',
                     'configmgr_serial_number',
                     'smbios_guid',

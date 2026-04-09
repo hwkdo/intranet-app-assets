@@ -375,7 +375,7 @@ class AssetAbfragenTool extends Tool
                     'vendor' => $schema->string()->description('Hersteller.')->nullable(),
                     'location' => $schema->string()->description('Intranet-Standorttext (Freitext), nicht der Itexia-Ist-Raum (actual_room).')->nullable(),
                     'order_number' => $schema->string()->description('Bestellnummer (BEN).')->nullable(),
-                    'invoice_number' => $schema->string()->description('Rechnungsnummer.')->nullable(),
+                    'invoice_number' => $schema->string()->description('Oft D3-T-Nummer (T…). Für Rechnungsanalyse: bei T+Ziffern sofort d3_rechnung_analysieren(id), nicht d3_rechnung_suchen.')->nullable(),
                     'invoice_number_pending' => $schema->boolean()->description('Kennzeichnet offene Rechnungsnummer.')->required(),
                     'itexia_id' => $schema->string()->description('Itexia-Barcode/ID (geplant); allein kein Nachweis für «gefunden in Itexia».')->nullable(),
                     'itexia_uuid' => $schema->string()->description('Seventhings-Objekt-UUID nach erfolgreicher Suche; null = noch nicht in Itexia gefunden/synchronisiert.')->nullable(),

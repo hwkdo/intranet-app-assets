@@ -39,4 +39,27 @@ return [
      * Nur Zahlungsbelege mit diesem Belegtyp werden als valide Rechnungsnummer akzeptiert.
      */
     'd3_invoice_belegtyp' => env('INTRANET_APP_ASSETS_D3_INVOICE_BELEGTYP', 'Rechnung'),
+
+    /*
+     * D3-Rechnungsanalyse via OCR/Vision:
+     * - max_pages: Begrenzung für große Rechnungs-PDFs
+     * - dpi: Raster-Auflösung für bessere OCR-Erkennung
+     * - vision_model: optionales Override; sonst OPENWEBUI_DEFAULT_MODEL
+     * - vision_http_timeout: Sekunden für /chat/completions (Vision kann länger brauchen als 600 s)
+     * - vision_connect_timeout: Sekunden bis zum TCP-Connect (schnelles Fail bei totem Host)
+     */
+    'd3_invoice_ocr_max_pages' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_OCR_MAX_PAGES', 12),
+    'd3_invoice_ocr_dpi' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_OCR_DPI', 180),
+    #'d3_invoice_vision_model' => env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL', 'llama3.2-vision:11b'),
+    'd3_invoice_vision_model' => env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL', 'qwen2.5vl:7b'),
+    'd3_invoice_vision_http_timeout' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_HTTP_TIMEOUT', 1200),
+    'd3_invoice_vision_connect_timeout' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_CONNECT_TIMEOUT', 30),
+    'd3_invoice_ocr_debug_log' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_OCR_DEBUG_LOG', 'true'), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+     * Gecachte D3-Rechnungsanalyse (Vision): Auto-Queue bei invoice_number, Backfill-Command, MCP-Cache.
+     */
+    'd3_invoice_auto_analyze_enabled' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_AUTO_ANALYZE_ENABLED', 'true'), FILTER_VALIDATE_BOOLEAN),
+    'd3_invoice_analysis_queue' => env('INTRANET_APP_ASSETS_D3_INVOICE_ANALYSIS_QUEUE', null),
+    'd3_invoice_analysis_reanalyze_on_model_change' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_REANALYZE_ON_MODEL_CHANGE', 'false'), FILTER_VALIDATE_BOOLEAN),
 ];

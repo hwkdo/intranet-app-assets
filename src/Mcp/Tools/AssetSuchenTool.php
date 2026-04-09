@@ -18,7 +18,7 @@ class AssetSuchenTool extends Tool
 {
     protected string $name = 'assets_suchen';
 
-    protected string $description = 'Sucht Assets per Typesense und liefert strukturierte Basisdaten sowie einen direkten Link zur Asset-Detailseite.';
+    protected string $description = 'Sucht Assets per Typesense und liefert Basisdaten inkl. order_number und invoice_number (D3-T-Nummer wenn hinterlegt). Für «Rechnung zum Asset analysieren»: wenn invoice_number mit T und Ziffern beginnt → direkt d3_rechnung_analysieren(id=invoice_number), nicht d3_rechnung_suchen.';
 
     public function handle(Request $request): Response|ResponseFactory
     {
@@ -46,6 +46,9 @@ class AssetSuchenTool extends Tool
                 'type' => $asset->type?->name,
                 'vendor' => $asset->vendor?->name,
                 'location' => $asset->location,
+                'order_number' => $asset->order_number,
+                'invoice_number' => $asset->invoice_number,
+                'invoice_number_pending' => (bool) $asset->invoice_number_pending,
                 'itexia_id' => $asset->itexia_id,
                 'url' => $url,
                 'url_markdown' => sprintf('[Asset #%d](%s)', $asset->id, $url),
@@ -94,6 +97,9 @@ class AssetSuchenTool extends Tool
                     'type' => $schema->string()->description('Asset-Typ.')->nullable(),
                     'vendor' => $schema->string()->description('Hersteller.')->nullable(),
                     'location' => $schema->string()->description('Standort.')->nullable(),
+                    'order_number' => $schema->string()->description('Bestellnummer (BEN), falls gesetzt.')->nullable(),
+                    'invoice_number' => $schema->string()->description('Rechnungsreferenz im Intranet; oft D3-Dokument-ID (T…). Wenn Format T+Ziffern: für Beleganalyse d3_rechnung_analysieren(id=invoice_number) — nicht d3_rechnung_suchen.')->nullable(),
+                    'invoice_number_pending' => $schema->boolean()->description('True wenn Rechnungsnummer noch offen.')->required(),
                     'itexia_id' => $schema->string()->description('Itexia-ID.')->nullable(),
                     'url' => $schema->string()->description('Direkter Link zur Asset-Detailseite.')->required(),
                     'url_markdown' => $schema->string()->description('Markdown-Link zur Asset-Detailseite.')->required(),

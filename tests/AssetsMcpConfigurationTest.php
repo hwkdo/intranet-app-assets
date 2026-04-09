@@ -6,9 +6,9 @@ use Hwkdo\IntranetAppAssets\Mcp\Tools\AssetAnlegenTool;
 use Hwkdo\IntranetAppAssets\Mcp\Tools\AssetSuchenTool;
 use Hwkdo\IntranetAppAssets\Mcp\Tools\AssetTypenAuflistenTool;
 use Hwkdo\IntranetAppAssets\Mcp\Tools\BestellungPruefenTool;
+use Hwkdo\IntranetAppAssets\Mcp\Tools\D3RechnungAnalysierenTool;
 use Hwkdo\IntranetAppAssets\Mcp\Tools\HerstellerAuflistenTool;
 use Hwkdo\IntranetAppBase\Mcp\Tools\BenutzerSuchenTool;
-use Hwkdo\IntranetAppBase\Mcp\Tools\D3RechnungAbrufenTool;
 use Hwkdo\IntranetAppBase\Mcp\Tools\D3RechnungSuchenTool;
 use Hwkdo\IntranetAppAssets\Mcp\Tools\ItexiaRaumIntranetPruefenTool;
 use Hwkdo\SeventhingsLaravel\Mcp\Tools\ItexiaRaumAktualisierenTool;
@@ -26,8 +26,8 @@ it('registriert die MCP tools in der erwarteten Reihenfolge', function () {
         AssetSuchenTool::class,
         AssetAbfragenTool::class,
         BestellungPruefenTool::class,
+        D3RechnungAnalysierenTool::class,
         D3RechnungSuchenTool::class,
-        D3RechnungAbrufenTool::class,
         AssetAnlegenTool::class,
         ItexiaRaumIntranetPruefenTool::class,
         ItexiaRaumAktualisierenTool::class,
@@ -47,6 +47,8 @@ it('hat klare server instructions fuer den modell flow', function () {
         ->toContain('asset_typen_auflisten')
         ->toContain('asset_anlegen')
         ->toContain('Intranet-Bestellprozess')
+        ->toContain('d3_rechnung_analysieren')
+        ->toContain('sofort d3_rechnung_analysieren(id=invoice_number)')
         ->toContain('itexia_actual_room_missing')
         ->toContain('nicht der Itexia-Ist-Raum')
         ->toContain('Keine Itexia-Raumzuordnung')

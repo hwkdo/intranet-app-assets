@@ -3,8 +3,12 @@
 namespace Hwkdo\IntranetAppAssets\Observers;
 
 use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
+use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
+use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditDiffBuilder;
 use Illuminate\Support\Facades\Log;
@@ -81,6 +85,36 @@ class AssetObserver
         if ($asset->wasChanged('itexia_id')) {
             $this->syncItexiaIdToLdapIfNeeded($asset);
         }
+
+        $this->queueD3InvoiceAnalysisIfNeeded($asset);
+    }
+
+    private function queueD3InvoiceAnalysisIfNeeded(Asset $asset): void
+    {
+        if (! (bool) config('intranet-app-assets.d3_invoice_auto_analyze_enabled', true)) {
+            return;
+        }
+
+        if (! $asset->wasRecentlyCreated && ! $asset->wasChanged('invoice_number')) {
+            return;
+        }
+
+        $invoice = trim((string) ($asset->invoice_number ?? ''));
+        if ($invoice === '' || ! D3InvoiceValidationService::isValidFormat($invoice)) {
+            return;
+        }
+
+        $row = D3InvoiceAnalysis::query()->where('d3_document_id', D3InvoiceAnalysis::normalizeDocumentId($invoice))->first();
+        if ($row?->status === D3InvoiceAnalysisStatus::Completed && $row->isDispatchRedundant()) {
+            return;
+        }
+
+        if ($row?->status === D3InvoiceAnalysisStatus::Pending) {
+            return;
+        }
+
+        D3InvoiceAnalysis::requestAnalysis($invoice, false);
+        AnalyzeD3InvoiceJob::dispatch($invoice, false);
     }
 
     private function syncItexiaIdToLdapIfNeeded(Asset $asset): void
