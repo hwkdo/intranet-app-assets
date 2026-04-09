@@ -29,9 +29,15 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
 
     public string $search = '';
 
+    public bool $onlyFailed = false;
+
     public bool $showDetailModal = false;
 
     public ?int $detailAnalysisId = null;
+
+    public bool $showErrorModal = false;
+
+    public ?int $errorAnalysisId = null;
 
     public function mount(): void
     {
@@ -48,6 +54,11 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
     {
         $this->resetPage('analysisPage');
         $this->resetPage('pendingPage');
+    }
+
+    public function updatedOnlyFailed(): void
+    {
+        $this->resetPage('analysisPage');
     }
 
     #[Computed]
@@ -87,6 +98,26 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         }
     }
 
+    public function openError(int $analysisId): void
+    {
+        $this->authorize('manage-app-assets');
+        $this->errorAnalysisId = $analysisId;
+        $this->showErrorModal = true;
+    }
+
+    public function closeError(): void
+    {
+        $this->showErrorModal = false;
+        $this->errorAnalysisId = null;
+    }
+
+    public function updatedShowErrorModal(bool $value): void
+    {
+        if (! $value) {
+            $this->errorAnalysisId = null;
+        }
+    }
+
     public function startAnalysis(string $documentId): void
     {
         $this->authorize('manage-app-assets');
@@ -113,6 +144,9 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         return D3InvoiceAnalysis::query()
             ->when($q !== '', function ($query) use ($q): void {
                 $query->where('d3_document_id', 'like', '%'.$q.'%');
+            })
+            ->when($this->onlyFailed, function ($query): void {
+                $query->where('status', D3InvoiceAnalysisStatus::Failed);
             })
             ->orderByDesc('updated_at')
             ->paginate(20, ['*'], 'analysisPage');
@@ -196,6 +230,16 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         return D3InvoiceAnalysis::query()->find($this->detailAnalysisId);
     }
 
+    #[Computed]
+    public function errorAnalysis(): ?D3InvoiceAnalysis
+    {
+        if ($this->errorAnalysisId === null) {
+            return null;
+        }
+
+        return D3InvoiceAnalysis::query()->find($this->errorAnalysisId);
+    }
+
     public function statusLabel(D3InvoiceAnalysis $row): string
     {
         return match ($row->status) {
@@ -238,6 +282,10 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
             </flux:button.group>
 
             @if($tab === 'analyzed')
+                <div class="flex items-center gap-3">
+                    <flux:checkbox wire:model.live="onlyFailed" label="Nur fehlgeschlagene anzeigen" />
+                </div>
+
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column>D3-ID</flux:table.column>
@@ -271,6 +319,11 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                                     @if($row->status === \Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus::Completed && is_array($row->result_json))
                                         <flux:button wire:click="openDetail({{ $row->id }})" size="sm" variant="ghost" icon="eye">
                                             Ergebnis
+                                        </flux:button>
+                                    @endif
+                                    @if($row->status === \Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus::Failed)
+                                        <flux:button wire:click="openError({{ $row->id }})" size="sm" variant="ghost" icon="exclamation-triangle">
+                                            Fehlerdetails
                                         </flux:button>
                                     @endif
                                     <flux:button
@@ -369,6 +422,24 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                 </div>
                 <div class="flex justify-end gap-2">
                     <flux:button wire:click="closeDetail" variant="ghost">Schließen</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
+
+    <flux:modal wire:model="showErrorModal" class="max-w-3xl" variant="flyout">
+        @if($this->errorAnalysis)
+            @php($ea = $this->errorAnalysis)
+            <div class="space-y-4">
+                <flux:heading size="lg">Fehler {{ $ea->d3_document_id }}</flux:heading>
+                <flux:text class="text-zinc-500">
+                    Status: {{ $this->statusLabel($ea) }} · Zeit: {{ $ea->failed_at?->format('d.m.Y H:i') ?? '—' }}
+                </flux:text>
+                <div class="max-h-[60vh] overflow-auto rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/20">
+                    <pre class="whitespace-pre-wrap break-words text-xs font-mono text-red-800 dark:text-red-200">{{ $ea->error_message ?? 'Keine Fehlermeldung gespeichert.' }}</pre>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <flux:button wire:click="closeError" variant="ghost">Schließen</flux:button>
                 </div>
             </div>
         @endif
