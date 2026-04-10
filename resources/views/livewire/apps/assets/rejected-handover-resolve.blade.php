@@ -103,7 +103,7 @@
                     <flux:button type="submit" variant="primary" icon="check">
                         Speichern und abschließen
                     </flux:button>
-                    <flux:button :href="route('apps.assets.admin.rejected-handovers')" variant="ghost" wire:navigate>
+                    <flux:button :href="route('apps.assets.admin.handovers', ['filter' => 'rejected'])" variant="ghost" wire:navigate>
                         Zurück zur Liste
                     </flux:button>
                 </div>

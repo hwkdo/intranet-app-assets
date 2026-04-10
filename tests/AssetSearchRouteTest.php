@@ -9,3 +9,9 @@ it('registers a dedicated assets search route', function () {
 it('registers the alle assets liste route', function () {
     expect(Route::has('apps.assets.liste'))->toBeTrue();
 });
+
+it('registers the unified admin uebergaben route and legacy redirects', function () {
+    expect(Route::has('apps.assets.admin.handovers'))->toBeTrue();
+    expect(Route::has('apps.assets.admin.open-handovers'))->toBeTrue();
+    expect(Route::has('apps.assets.admin.rejected-handovers'))->toBeTrue();
+});

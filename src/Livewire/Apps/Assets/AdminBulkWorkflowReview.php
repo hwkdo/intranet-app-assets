@@ -11,6 +11,7 @@ use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Services\OpenHandoverAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -41,8 +42,8 @@ class AdminBulkWorkflowReview extends Component
         return match ($this->workflow['flow']) {
             BulkAdminWorkflowSession::FLOW_RETURN_COMPLETE => route('apps.assets.admin.returns.pending'),
             BulkAdminWorkflowSession::FLOW_CLARIFICATION => route('apps.assets.admin.clarifications'),
-            BulkAdminWorkflowSession::FLOW_OPEN_HANDOVER => route('apps.assets.admin.open-handovers'),
-            BulkAdminWorkflowSession::FLOW_REJECTED_HANDOVER => route('apps.assets.admin.rejected-handovers'),
+            BulkAdminWorkflowSession::FLOW_OPEN_HANDOVER => route('apps.assets.admin.handovers', ['filter' => 'open']),
+            BulkAdminWorkflowSession::FLOW_REJECTED_HANDOVER => route('apps.assets.admin.handovers', ['filter' => 'rejected']),
             BulkAdminWorkflowSession::FLOW_RETURN_INITIATE => route('apps.assets.liste'),
             default => route('apps.assets.admin.index'),
         };
@@ -168,7 +169,7 @@ class AdminBulkWorkflowReview extends Component
         };
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.admin-bulk-workflow-review');
     }
@@ -230,6 +231,7 @@ class AdminBulkWorkflowReview extends Component
             $ret = $returns->get($id);
             if ($ret === null) {
                 $rows[] = ['primary' => 'Rückgabe #'.$id, 'secondary' => 'Nicht gefunden'];
+
                 continue;
             }
             $asset = $ret->handover?->asset;
@@ -259,6 +261,7 @@ class AdminBulkWorkflowReview extends Component
             $asset = $assets->get($id);
             if ($asset === null) {
                 $rows[] = ['primary' => 'Asset #'.$id, 'secondary' => 'Nicht gefunden'];
+
                 continue;
             }
             $rows[] = [
@@ -287,6 +290,7 @@ class AdminBulkWorkflowReview extends Component
             $handover = $handovers->get($id);
             if ($handover === null) {
                 $rows[] = ['primary' => 'Übergabe #'.$id, 'secondary' => 'Nicht gefunden'];
+
                 continue;
             }
             $asset = $handover->asset;
@@ -320,6 +324,7 @@ class AdminBulkWorkflowReview extends Component
             $handover = $handovers->get($id);
             if ($handover === null) {
                 $rows[] = ['primary' => 'Übergabe #'.$id, 'secondary' => 'Nicht gefunden'];
+
                 continue;
             }
             $asset = $handover->asset;
@@ -349,6 +354,7 @@ class AdminBulkWorkflowReview extends Component
             $asset = $assets->get($id);
             if ($asset === null) {
                 $rows[] = ['primary' => 'Asset #'.$id, 'secondary' => 'Nicht gefunden'];
+
                 continue;
             }
             $rows[] = [

@@ -84,7 +84,7 @@ new class extends Component
 
     @if($this->hasMore)
         <div class="pt-1">
-            <flux:button variant="ghost" size="sm" :href="route('apps.assets.admin.rejected-handovers')" wire:navigate>
+            <flux:button variant="ghost" size="sm" :href="route('apps.assets.admin.handovers', ['filter' => 'rejected'])" wire:navigate>
                 Weitere anzeigen
             </flux:button>
         </div>

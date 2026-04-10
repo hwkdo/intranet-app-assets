@@ -2,9 +2,11 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -30,11 +32,11 @@ class RejectedHandoverResolve extends Component
 
         if (! $handover->isRejected()) {
             session()->flash('message', 'Diese Übergabe ist nicht als abgelehnt markiert.');
-            $this->redirect(route('apps.assets.admin.rejected-handovers'), navigate: true);
+            $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'rejected']), navigate: true);
         }
         if ($handover->isConfirmed()) {
             session()->flash('message', 'Diese Übergabe ist bestätigt.');
-            $this->redirect(route('apps.assets.admin.rejected-handovers'), navigate: true);
+            $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'rejected']), navigate: true);
         }
 
         $handover->load(['recipient', 'issuer']);
@@ -82,9 +84,9 @@ class RejectedHandoverResolve extends Component
         $this->redirect(route('apps.assets.admin.rejected-handover.resolve-commit', $this->handover), navigate: false);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
-        $users = \App\Models\User::query()
+        $users = User::query()
             ->orderBy('nachname')
             ->orderBy('vorname')
             ->get();

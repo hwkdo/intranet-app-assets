@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 use Hwkdo\IntranetAppAssets\Services\BulkAdminWorkflowExecutor;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -62,7 +63,7 @@ class AdminBulkWorkflowCommit extends Component
         $this->redirect($url, navigate: true);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.admin-bulk-workflow-commit');
     }
@@ -72,8 +73,8 @@ class AdminBulkWorkflowCommit extends Component
         return match ($flow) {
             BulkAdminWorkflowSession::FLOW_RETURN_COMPLETE => route('apps.assets.admin.returns.pending'),
             BulkAdminWorkflowSession::FLOW_CLARIFICATION => route('apps.assets.admin.clarifications'),
-            BulkAdminWorkflowSession::FLOW_OPEN_HANDOVER => route('apps.assets.admin.open-handovers'),
-            BulkAdminWorkflowSession::FLOW_REJECTED_HANDOVER => route('apps.assets.admin.rejected-handovers'),
+            BulkAdminWorkflowSession::FLOW_OPEN_HANDOVER => route('apps.assets.admin.handovers', ['filter' => 'open']),
+            BulkAdminWorkflowSession::FLOW_REJECTED_HANDOVER => route('apps.assets.admin.handovers', ['filter' => 'rejected']),
             BulkAdminWorkflowSession::FLOW_RETURN_INITIATE => route('apps.assets.liste'),
             default => route('apps.assets.admin.index'),
         };

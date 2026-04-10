@@ -26,7 +26,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
 
         if ($handover->isConfirmed() || $handover->isRejected()) {
             session()->flash('message', 'Diese Übergabe ist nicht mehr offen.');
-            $this->redirect(route('apps.assets.admin.open-handovers'), navigate: true);
+            $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'open']), navigate: true);
         }
 
         $handover->load(['recipient', 'issuer']);
@@ -178,7 +178,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
                     <flux:button type="submit" variant="primary" icon="check">
                         Speichern und abschließen
                     </flux:button>
-                    <flux:button :href="route('apps.assets.admin.open-handovers')" variant="ghost" wire:navigate>
+                    <flux:button :href="route('apps.assets.admin.handovers', ['filter' => 'open'])" variant="ghost" wire:navigate>
                         Zurück zur Liste
                     </flux:button>
                 </div>

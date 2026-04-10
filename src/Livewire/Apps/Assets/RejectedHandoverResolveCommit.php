@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -38,7 +39,7 @@ class RejectedHandoverResolveCommit extends Component
             session()->forget($key);
             session()->flash('message', 'Diese Übergabe kann nicht mehr aufgelöst werden.');
 
-            $this->redirect(route('apps.assets.admin.rejected-handovers'), navigate: true);
+            $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'rejected']), navigate: true);
 
             return;
         }
@@ -65,10 +66,10 @@ class RejectedHandoverResolveCommit extends Component
 
         session()->flash('message', 'Die abgelehnte Übergabe wurde bearbeitet und das Asset aktualisiert.');
 
-        $this->redirect(route('apps.assets.admin.rejected-handovers'), navigate: true);
+        $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'rejected']), navigate: true);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.rejected-handover-resolve-commit');
     }

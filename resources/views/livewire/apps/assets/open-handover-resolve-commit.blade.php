@@ -34,7 +34,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe speichern')] c
             session()->forget($key);
             session()->flash('message', 'Diese Übergabe kann nicht mehr aufgelöst werden.');
 
-            $this->redirect(route('apps.assets.admin.open-handovers'), navigate: true);
+            $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'open']), navigate: true);
 
             return;
         }
@@ -61,7 +61,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe speichern')] c
 
         session()->flash('message', 'Die offene Übergabe wurde aufgelöst und das Asset aktualisiert.');
 
-        $this->redirect(route('apps.assets.admin.open-handovers'), navigate: true);
+        $this->redirect(route('apps.assets.admin.handovers', ['filter' => 'open']), navigate: true);
     }
 
     public function render(): \Illuminate\Contracts\View\View

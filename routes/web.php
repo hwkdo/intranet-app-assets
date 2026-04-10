@@ -92,7 +92,13 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/deleted/archiv-endgueltig', 'intranet-app-assets::apps.assets.permanent-deletion-archive')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.deleted.permanent-archive');
-    Route::livewire('apps/assets/admin/abgelehnte-uebergaben', 'intranet-app-assets::apps.assets.rejected-handovers-overview')
+    Route::livewire('apps/assets/admin/uebergaben', 'intranet-app-assets::apps.assets.admin-handovers-overview')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.handovers');
+    Route::get('apps/assets/admin/offene-uebergaben', fn () => redirect()->route('apps.assets.admin.handovers', ['filter' => 'open']))
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.open-handovers');
+    Route::get('apps/assets/admin/abgelehnte-uebergaben', fn () => redirect()->route('apps.assets.admin.handovers', ['filter' => 'rejected']))
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.rejected-handovers');
     Route::livewire('apps/assets/admin/abgelehnte-uebergaben/{handover}/bearbeiten', 'intranet-app-assets::apps.assets.rejected-handover-resolve')
@@ -101,9 +107,6 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/admin/abgelehnte-uebergaben/{handover}/speichern', 'intranet-app-assets::apps.assets.rejected-handover-resolve-commit')
         ->middleware(['can:manage-app-assets', 'ldap.password.confirm'])
         ->name('apps.assets.admin.rejected-handover.resolve-commit');
-    Route::livewire('apps/assets/admin/offene-uebergaben', 'intranet-app-assets::apps.assets.open-handovers-overview')
-        ->middleware('can:manage-app-assets')
-        ->name('apps.assets.admin.open-handovers');
     Route::livewire('apps/assets/admin/offene-uebergaben/{handover}/bearbeiten', 'intranet-app-assets::apps.assets.open-handover-resolve')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.open-handover.resolve');
