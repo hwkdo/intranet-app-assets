@@ -169,22 +169,40 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
 <x-intranet-app-assets::assets-layout heading="Domänengeräte" subheading="Assets vom Typ Domänengerät (is_domain_object)">
     <div class="space-y-4">
         @can('manage-app-assets')
-            {{-- Helles Infopanel bewusst auch im Dark Mode: immer dunkle Schrift (Flux würde sonst helle Dark-Textfarbe auf hellem Grund erzwingen). --}}
-            <div class="rounded-xl border-2 border-amber-400/90 bg-amber-50 p-4 text-zinc-900 shadow-sm dark:border-amber-500/70 dark:bg-amber-50 dark:text-zinc-900">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex gap-3">
-                        <flux:icon icon="arrows-right-left" class="size-10 shrink-0 text-amber-800 dark:text-amber-800" />
-                        <div class="min-w-0">
-                            {{-- Kein flux:heading/flux:text: Flux erzwingt Dark-Mode-Textfarben, die auf dem hellen amber-Panel unsichtbar werden. --}}
-                            <h3 class="text-sm font-semibold leading-snug text-zinc-900">Domain-Abgleich (AD vs. Assets)</h3>
-                            <p class="mt-1.5 text-sm leading-relaxed text-zinc-800">
-                                Vergleichen Sie diese Liste mit den Computerkonten in Active Directory (Verwaltung/Schulung) und finden Sie fehlende oder zusätzliche Einträge.
-                            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+                {{-- Helles Infopanel bewusst auch im Dark Mode: immer dunkle Schrift (Flux würde sonst helle Dark-Textfarbe auf hellem Grund erzwingen). --}}
+                <div class="rounded-xl border-2 border-amber-400/90 bg-amber-50 p-4 text-zinc-900 shadow-sm dark:border-amber-500/70 dark:bg-amber-50 dark:text-zinc-900">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex gap-3">
+                            <flux:icon icon="arrows-right-left" class="size-10 shrink-0 text-amber-800 dark:text-amber-800" />
+                            <div class="min-w-0">
+                                {{-- Kein flux:heading/flux:text: Flux erzwingt Dark-Mode-Textfarben, die auf dem hellen amber-Panel unsichtbar werden. --}}
+                                <h3 class="text-sm font-semibold leading-snug text-zinc-900">Domain-Abgleich (AD vs. Assets)</h3>
+                                <p class="mt-1.5 text-sm leading-relaxed text-zinc-800">
+                                    Vergleichen Sie diese Liste mit den Computerkonten in Active Directory (Verwaltung/Schulung) und finden Sie fehlende oder zusätzliche Einträge.
+                                </p>
+                            </div>
                         </div>
+                        <flux:button :href="route('apps.assets.domain-compare')" variant="primary" icon="arrows-right-left" wire:navigate class="w-full shrink-0 sm:w-auto">
+                            Domain-Abgleich öffnen
+                        </flux:button>
                     </div>
-                    <flux:button :href="route('apps.assets.domain-compare')" variant="primary" icon="arrows-right-left" wire:navigate class="w-full shrink-0 sm:w-auto">
-                        Domain-Abgleich öffnen
-                    </flux:button>
+                </div>
+                <div class="rounded-xl border-2 border-amber-400/90 bg-amber-50 p-4 text-zinc-900 shadow-sm dark:border-amber-500/70 dark:bg-amber-50 dark:text-zinc-900">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex gap-3">
+                            <flux:icon icon="server" class="size-10 shrink-0 text-amber-800 dark:text-amber-800" />
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold leading-snug text-zinc-900">SCCM-Abgleich (AD vs. SCCM)</h3>
+                                <p class="mt-1.5 text-sm leading-relaxed text-zinc-800">
+                                    Ermitteln Sie pro Domäne, welche Computer in den AD-OUs vorkommen, aber nicht in ConfigMgr/SCCM registriert sind.
+                                </p>
+                            </div>
+                        </div>
+                        <flux:button :href="route('apps.assets.sccm-compare')" variant="primary" icon="server" wire:navigate class="w-full shrink-0 sm:w-auto">
+                            SCCM-Abgleich öffnen
+                        </flux:button>
+                    </div>
                 </div>
             </div>
         @endcan

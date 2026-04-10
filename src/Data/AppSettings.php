@@ -38,6 +38,12 @@ class AppSettings extends BaseAppSettings
         #[Description('OU-DNs pro Connection für die AD-Computer-Suche beim Domain-Abgleich. JSON: {"default":["OU=...,DC=..."],"schulung":[]}')]
         public array $computerSearchOus = ['default' => [], 'schulung' => []],
 
+        #[Description('NetBIOS-Ressourcendomänen für den SCCM-Abgleich (v_R_System.Resource_Domain_OR_Workgr0) pro LDAP-Connection. Schlüssel: default, schulung')]
+        public array $sccmResourceDomains = [
+            'default' => 'HWKDO',
+            'schulung' => 'HWK-SCHULUNG',
+        ],
+
         #[Description('Kommagetrennte E-Mail-Adressen für Inventar-Hinweise, wenn ein Asset mit Itexia-ID gelöscht und in Seventhings gefunden wurde')]
         public string $empfaengerInventarMails = 'asset@hwk-do.de',
 
