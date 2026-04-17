@@ -44,7 +44,7 @@ return [
      * D3-Rechnungsanalyse via OCR/Vision:
      * - max_pages: Begrenzung für große Rechnungs-PDFs
      * - dpi: Raster-Auflösung für bessere OCR-Erkennung
-     * - vision_model: optionales Override; sonst OPENWEBUI_DEFAULT_MODEL
+     * - vision_model / vision_model_langdock: Env-Fallback, wenn in AppSettings (Admin) die Felder leer sind.
      * - vision_http_timeout: Sekunden für /chat/completions (Vision kann länger brauchen als 600 s)
      * - vision_connect_timeout: Sekunden bis zum TCP-Connect (schnelles Fail bei totem Host)
      */
@@ -52,8 +52,18 @@ return [
     'd3_invoice_ocr_dpi' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_OCR_DPI', 180),
     #'d3_invoice_vision_model' => env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL', 'llama3.2-vision:11b'),
     'd3_invoice_vision_model' => env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL', 'qwen2.5vl:7b'),
+
+    /*
+     * Modell für D3-Vision, wenn AppSettings → Langdock. Muss eine von Langdock erlaubte ID sein (siehe 400-Fehlertext).
+     */
+    'd3_invoice_vision_model_langdock' => env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK', 'gpt-5-mini'),
     'd3_invoice_vision_http_timeout' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_HTTP_TIMEOUT', 1200),
     'd3_invoice_vision_connect_timeout' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_VISION_CONNECT_TIMEOUT', 30),
+
+    /*
+     * max_tokens für Langdock Chat Completions (D3-Rechnungsvision, OpenAI-kompatibel).
+     */
+    'd3_invoice_langdock_max_tokens' => (int) env('INTRANET_APP_ASSETS_D3_INVOICE_LANGDOCK_MAX_TOKENS', 8192),
     'd3_invoice_ocr_debug_log' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_OCR_DEBUG_LOG', 'true'), FILTER_VALIDATE_BOOLEAN),
 
     /*

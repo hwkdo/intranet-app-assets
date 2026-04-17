@@ -4,9 +4,12 @@ namespace Hwkdo\IntranetAppAssets\Mcp\Tools;
 
 use Hwkdo\D3RestLaravel\Client as D3Client;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
+use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
+use Hwkdo\IntranetAppAssets\Support\D3InvoiceVisionModelResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Request;
@@ -40,17 +43,36 @@ class D3RechnungAnalysierenTool extends Tool
         $documentId = trim((string) $validated['id']);
         $includeRawOcr = (bool) ($validated['include_raw_ocr'] ?? false);
         $forceRefresh = (bool) ($validated['force_refresh'] ?? false);
-        $visionModel = trim((string) ($validated['vision_model'] ?? ''));
+
+        $appSettings = IntranetAppAssetsSettings::resolvedAppSettings();
+        $provider = $appSettings->d3InvoiceVisionLlmProvider;
+
+        $visionModel = D3InvoiceVisionModelResolver::resolve(
+            $provider,
+            isset($validated['vision_model']) ? (string) $validated['vision_model'] : null,
+            $appSettings
+        );
         if ($visionModel === '') {
-            $visionModel = (string) config('intranet-app-assets.d3_invoice_vision_model', config('openwebui-api-laravel.default_model', ''));
-        }
-        if ($visionModel === '') {
-            return Response::error('Kein Vision-Modell konfiguriert. Setze intranet-app-assets.d3_invoice_vision_model oder OPENWEBUI_DEFAULT_MODEL.');
+            return Response::error(
+                $provider === D3InvoiceVisionLlmProvider::Langdock
+                    ? 'Kein Vision-Modell für Langdock: vision_model im Tool, Assets-Admin „Vision-Modell … Langdock“, oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.'
+                    : 'Kein Vision-Modell für Open Web UI: vision_model im Tool, Assets-Admin „Vision-Modell … Open Web UI“, oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL / OPENWEBUI_DEFAULT_MODEL.'
+            );
         }
 
-        $visionToken = trim((string) ($validated['vision_token'] ?? config('openwebui-api-laravel.api_key', '')));
+        $tokenOverride = $validated['vision_token'] ?? null;
+        $visionToken = $tokenOverride !== null && trim((string) $tokenOverride) !== ''
+            ? trim((string) $tokenOverride)
+            : match ($provider) {
+                D3InvoiceVisionLlmProvider::Langdock => trim((string) config('services.langdock.api_key', '')),
+                D3InvoiceVisionLlmProvider::OpenWebUi => trim((string) config('openwebui-api-laravel.api_key', '')),
+            };
         if ($visionToken === '') {
-            return Response::error('Für die Vision-Analyse wird ein OpenWebUI-API-Token benötigt (vision_token oder OPENWEBUI_API_KEY).');
+            return Response::error(
+                $provider === D3InvoiceVisionLlmProvider::Langdock
+                    ? 'Für die Vision-Analyse wird ein Langdock-API-Key benötigt (vision_token oder LANGDOCK_API_KEY).'
+                    : 'Für die Vision-Analyse wird ein OpenWebUI-API-Token benötigt (vision_token oder OPENWEBUI_API_KEY).'
+            );
         }
 
         Log::info('d3_rechnung_analysieren called', [

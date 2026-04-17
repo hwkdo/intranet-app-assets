@@ -7,9 +7,11 @@ use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
+use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
+use Hwkdo\IntranetAppAssets\Contracts\LangdockOpenAiChatPort;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Listeners\UpdateCachedItexiaActualRoom;
 use Hwkdo\IntranetAppAssets\Models\Asset;
@@ -17,7 +19,11 @@ use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetNote;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
+use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
+use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
+use Hwkdo\IntranetAppAssets\Services\LangdockD3InvoiceVisionLlmClient;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface;
@@ -42,6 +48,44 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 LegacyOrderNumberValidationService::class
             );
         }
+
+        $this->app->singleton(LangdockD3InvoiceVisionLlmClient::class);
+        $this->app->singleton(D3InvoiceVisionLlmClientFactory::class);
+        $this->app->singleton(D3InvoiceVisionAnalysisService::class);
+
+        if (! $this->app->bound(LangdockOpenAiChatPort::class)) {
+            $this->app->bind(LangdockOpenAiChatPort::class, function (): LangdockOpenAiChatPort {
+                return new class implements LangdockOpenAiChatPort
+                {
+                    public function createChatCompletion(
+                        string $model,
+                        array $messages,
+                        int $requestTimeoutSeconds,
+                        int $connectTimeoutSeconds,
+                        ?int $maxOutputTokens = null,
+                        ?string $apiKeyOverride = null,
+                    ): array {
+                        throw new \RuntimeException(
+                            'LangdockOpenAiChatPort ist nicht gebunden. In der Host-App AppServiceProvider: LangdockOpenAiChatPort → LangdockCompletionService.'
+                        );
+                    }
+
+                    public function createChatCompletionWithImageFromPath(
+                        string $model,
+                        string $userText,
+                        string $absoluteImagePath,
+                        int $requestTimeoutSeconds,
+                        int $connectTimeoutSeconds,
+                        ?int $maxOutputTokens = null,
+                        ?string $apiKeyOverride = null,
+                    ): array {
+                        throw new \RuntimeException(
+                            'LangdockOpenAiChatPort ist nicht gebunden. In der Host-App AppServiceProvider: LangdockOpenAiChatPort → LangdockCompletionService.'
+                        );
+                    }
+                };
+            });
+        }
     }
 
     public function configurePackage(Package $package): void
@@ -58,13 +102,13 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\IntuneSyncCommand::class,
                 Commands\ItexiaUuidSyncCommand::class,
                 Commands\ItexiaRoomsSyncCommand::class,
-                Commands\ItexiaPushActualRoomsFromIntranetCommand::class,
                 Commands\ItexiaImageSyncCommand::class,
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
                 BackfillOwnerHandoversCommand::class,
+                EnsureAssetHandoversCommand::class,
             ]);
     }
 
@@ -73,6 +117,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         parent::boot();
 
         Asset::observe(AssetObserver::class);
+        Asset::observe(AssetOwnerHandoverObserver::class);
         AssetHistory::observe(AssetHistoryObserver::class);
         AssetNote::observe(AssetNoteObserver::class);
 

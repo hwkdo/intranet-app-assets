@@ -3,8 +3,11 @@
 namespace Hwkdo\IntranetAppAssets\Jobs;
 
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
+use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
+use Hwkdo\IntranetAppAssets\Support\D3InvoiceVisionModelResolver;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -70,19 +73,30 @@ class AnalyzeD3InvoiceJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $visionModel = trim((string) config(
-            'intranet-app-assets.d3_invoice_vision_model',
-            config('openwebui-api-laravel.default_model', '')
-        ));
+        $appSettings = IntranetAppAssetsSettings::resolvedAppSettings();
+        $provider = $appSettings->d3InvoiceVisionLlmProvider;
+
+        $visionModel = D3InvoiceVisionModelResolver::resolve($provider, null, $appSettings);
         if ($visionModel === '') {
-            $row->markFailed('Kein Vision-Modell konfiguriert. Setze intranet-app-assets.d3_invoice_vision_model oder OPENWEBUI_DEFAULT_MODEL.');
+            $row->markFailed(
+                $provider === D3InvoiceVisionLlmProvider::Langdock
+                    ? 'Kein Vision-Modell für Langdock. In den Assets-Admin-Einstellungen „Vision-Modell … Langdock“ setzen oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.'
+                    : 'Kein Vision-Modell für Open Web UI. In den Assets-Admin-Einstellungen „Vision-Modell … Open Web UI“ setzen oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL / OPENWEBUI_DEFAULT_MODEL.'
+            );
 
             return;
         }
 
-        $visionToken = trim((string) config('openwebui-api-laravel.api_key', ''));
+        $visionToken = match ($provider) {
+            D3InvoiceVisionLlmProvider::Langdock => trim((string) config('services.langdock.api_key', '')),
+            D3InvoiceVisionLlmProvider::OpenWebUi => trim((string) config('openwebui-api-laravel.api_key', '')),
+        };
         if ($visionToken === '') {
-            $row->markFailed('Für die Vision-Analyse wird ein OpenWebUI-API-Token benötigt (OPENWEBUI_API_KEY).');
+            $row->markFailed(
+                $provider === D3InvoiceVisionLlmProvider::Langdock
+                    ? 'Für die Vision-Analyse wird ein Langdock-API-Key benötigt (LANGDOCK_API_KEY / services.langdock.api_key).'
+                    : 'Für die Vision-Analyse wird ein OpenWebUI-API-Token benötigt (OPENWEBUI_API_KEY).'
+            );
 
             return;
         }

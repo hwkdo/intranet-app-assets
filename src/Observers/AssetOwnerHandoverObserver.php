@@ -13,16 +13,12 @@ class AssetOwnerHandoverObserver
 
     public function saved(Asset $asset): void
     {
-        if ($asset->wasRecentlyCreated) {
-            if ($asset->user_id !== null) {
-                $this->handoverAutomation->createHandoverForOwnerAssignment($asset);
-            }
-
+        if ($asset->user_id === null) {
             return;
         }
 
-        if ($asset->wasChanged('user_id') && $asset->user_id !== null) {
-            $this->handoverAutomation->createHandoverForOwnerAssignment($asset);
+        if ($asset->wasRecentlyCreated || $asset->wasChanged('user_id')) {
+            $this->handoverAutomation->ensureAnyHandoverForCurrentOwner($asset);
         }
     }
 }

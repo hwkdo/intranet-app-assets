@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Data;
 
+use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
 use Hwkdo\IntranetAppBase\Data\BaseAppSettings;
 
@@ -55,5 +56,14 @@ class AppSettings extends BaseAppSettings
 
         #[Description('OpenWebUI Collection-IDs für file_search im Assets-KI-Chat')]
         public array $openWebUiCollectionIds = [],
+
+        #[Description('LLM-Backend für D3-Rechnungsvision (OCR + strukturierte Auswertung)')]
+        public D3InvoiceVisionLlmProvider $d3InvoiceVisionLlmProvider = D3InvoiceVisionLlmProvider::OpenWebUi,
+
+        #[Description('Vision-Modell für D3-Rechnungen bei Open Web UI (z. B. Ollama-Name). Leer = Fallback auf INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL / OPENWEBUI_DEFAULT_MODEL.')]
+        public string $d3InvoiceVisionModelOpenWebUi = '',
+
+        #[Description('Vision-Modell für D3-Rechnungen bei Langdock (nur von Langdock erlaubte IDs, z. B. gpt-5-mini). Leer = Fallback auf INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.')]
+        public string $d3InvoiceVisionModelLangdock = '',
     ) {}
 }

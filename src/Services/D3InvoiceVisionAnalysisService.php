@@ -3,25 +3,31 @@
 namespace Hwkdo\IntranetAppAssets\Services;
 
 use Hwkdo\D3RestLaravel\Client as D3Client;
-use Hwkdo\OpenwebuiApiLaravel\Services\OpenWebUiRagService;
+use Hwkdo\IntranetAppAssets\Contracts\D3InvoiceVisionLlmClientInterface;
 use Illuminate\Support\Facades\Log;
 use Spatie\PdfToImage\Enums\OutputFormat;
 use Spatie\PdfToImage\Pdf as PdfToImagePdf;
 
 class D3InvoiceVisionAnalysisService
 {
+    public function __construct(
+        private D3InvoiceVisionLlmClientFactory $llmClientFactory,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
     public function analyze(
         string $documentId,
         string $visionModel,
-        string $visionToken,
+        ?string $visionToken = null,
         bool $includeRawOcr = false,
         ?string $traceId = null,
     ): array {
         $traceId ??= bin2hex(random_bytes(6));
         $documentId = trim($documentId);
+        $llm = $this->llmClientFactory->make();
+        $tokenOverride = $this->normalizeBearerOverride($visionToken);
 
         if (! class_exists(D3Client::class)) {
             throw new \RuntimeException('D3-REST-Client ist nicht verfügbar.');
@@ -55,7 +61,7 @@ class D3InvoiceVisionAnalysisService
                 'truncated' => $truncated,
             ]);
 
-            $rawPerPage = $this->extractPerPageOcrMarkdown($imagePaths, $visionModel, $visionToken, $traceId);
+            $rawPerPage = $this->extractPerPageOcrMarkdown($imagePaths, $visionModel, $llm, $tokenOverride, $traceId);
             $this->logProgress($traceId, 'vision_ocr_pages.done', [
                 'chunks' => count($rawPerPage),
             ]);
@@ -65,7 +71,7 @@ class D3InvoiceVisionAnalysisService
 
             $combinedOcr = $this->combinePageMarkdown($rawPerPage);
             $this->logProgress($traceId, 'vision_structured_analysis.start', ['ocr_chars' => mb_strlen($combinedOcr)]);
-            $analysisRaw = $this->analyzeCombinedOcr($combinedOcr, $visionModel, $visionToken);
+            $analysisRaw = $this->analyzeCombinedOcr($combinedOcr, $visionModel, $llm, $tokenOverride);
             $this->logProgress($traceId, 'vision_structured_analysis.done', ['analysis_keys' => array_keys($analysisRaw)]);
             $analysis = $this->normalizeAnalysisData($analysisRaw);
             $this->logProgress($traceId, 'normalize_analysis.done', [
@@ -285,13 +291,24 @@ class D3InvoiceVisionAnalysisService
         ];
     }
 
+    private function normalizeBearerOverride(?string $visionToken): ?string
+    {
+        $t = trim((string) ($visionToken ?? ''));
+
+        return $t === '' ? null : $t;
+    }
+
     /**
      * @param  list<string>  $imagePaths
      * @return list<string>
      */
-    private function extractPerPageOcrMarkdown(array $imagePaths, string $model, string $token, string $traceId): array
-    {
-        $rag = app(OpenWebUiRagService::class);
+    private function extractPerPageOcrMarkdown(
+        array $imagePaths,
+        string $model,
+        D3InvoiceVisionLlmClientInterface $llm,
+        ?string $tokenOverride,
+        string $traceId,
+    ): array {
         $chunks = [];
         $httpTimeouts = $this->d3VisionHttpTimeouts();
 
@@ -321,14 +338,13 @@ Regeln:
 PROMPT;
 
             try {
-                $response = $rag->chatWithImageFilePath(
+                $response = $llm->chatCompletionWithImageFile(
                     $model,
                     $prompt,
                     $imgPath,
-                    $token,
-                    [],
                     $httpTimeouts['request'],
                     $httpTimeouts['connect'],
+                    $tokenOverride,
                 );
             } catch (\Throwable $e) {
                 $this->logProgress($traceId, 'vision_ocr_page.failed', [
@@ -363,8 +379,12 @@ PROMPT;
     /**
      * @return array<string, mixed>
      */
-    private function analyzeCombinedOcr(string $ocrText, string $model, string $token): array
-    {
+    private function analyzeCombinedOcr(
+        string $ocrText,
+        string $model,
+        D3InvoiceVisionLlmClientInterface $llm,
+        ?string $tokenOverride,
+    ): array {
         $analysisPrompt = <<<PROMPT
 Analysiere den folgenden OCR-Text einer Rechnung.
 Antworte ausschließlich als valides JSON-Objekt ohne Markdown-Fences.
@@ -392,14 +412,19 @@ OCR-Text:
 {$ocrText}
 PROMPT;
 
-        $rag = app(OpenWebUiRagService::class);
         $httpTimeouts = $this->d3VisionHttpTimeouts();
-        $response = $rag->postVisionChatCompletion($model, [
+        $response = $llm->chatCompletionWithMessages(
+            $model,
             [
-                'role' => 'user',
-                'content' => $analysisPrompt,
+                [
+                    'role' => 'user',
+                    'content' => $analysisPrompt,
+                ],
             ],
-        ], $token, [], $httpTimeouts['request'], $httpTimeouts['connect']);
+            $httpTimeouts['request'],
+            $httpTimeouts['connect'],
+            $tokenOverride,
+        );
 
         $content = $this->normalizeAssistantContent(data_get($response, 'choices.0.message.content'));
         $json = $this->extractJsonFromContent($content);

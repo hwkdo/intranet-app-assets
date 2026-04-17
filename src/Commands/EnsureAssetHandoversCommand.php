@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class EnsureAssetHandoversCommand extends Command
 {
-    protected $signature = 'assets:ensure-handovers
+    protected $signature = 'intranet-app-assets:ensure-handovers
                             {--dry-run : Nur anzeigen, keine Handovers anlegen}';
 
     protected $description = 'Legt für alle Assets mit Besitzer (user_id) einen Handover an, falls noch keiner existiert.';
