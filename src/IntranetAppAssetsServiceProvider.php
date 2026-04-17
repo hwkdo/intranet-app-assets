@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets;
 
 use App\Services\IntranetLegacyService;
+use App\Services\LangdockCompletionService;
 use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
@@ -19,8 +20,8 @@ use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetNote;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
-use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
+use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
 use Hwkdo\IntranetAppAssets\Services\LangdockD3InvoiceVisionLlmClient;
@@ -53,6 +54,14 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         $this->app->singleton(D3InvoiceVisionLlmClientFactory::class);
         $this->app->singleton(D3InvoiceVisionAnalysisService::class);
 
+        /*
+         * Langdock-Port: Host-App bindet üblicherweise in AppServiceProvider.
+         * Wenn dieses Package zuerst registriert wird, hier nachziehen (Production ohne veraltete Reihenfolge-Annahmen).
+         */
+        if (! $this->app->bound(LangdockOpenAiChatPort::class) && class_exists(LangdockCompletionService::class)) {
+            $this->app->bind(LangdockOpenAiChatPort::class, LangdockCompletionService::class);
+        }
+
         if (! $this->app->bound(LangdockOpenAiChatPort::class)) {
             $this->app->bind(LangdockOpenAiChatPort::class, function (): LangdockOpenAiChatPort {
                 return new class implements LangdockOpenAiChatPort
@@ -66,7 +75,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                         ?string $apiKeyOverride = null,
                     ): array {
                         throw new \RuntimeException(
-                            'LangdockOpenAiChatPort ist nicht gebunden. In der Host-App AppServiceProvider: LangdockOpenAiChatPort → LangdockCompletionService.'
+                            'LangdockOpenAiChatPort: weder in der Host-App gebunden noch App\\Services\\LangdockCompletionService vorhanden (Package-Tests/Workbench: Port mocken).'
                         );
                     }
 
@@ -80,7 +89,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                         ?string $apiKeyOverride = null,
                     ): array {
                         throw new \RuntimeException(
-                            'LangdockOpenAiChatPort ist nicht gebunden. In der Host-App AppServiceProvider: LangdockOpenAiChatPort → LangdockCompletionService.'
+                            'LangdockOpenAiChatPort: weder in der Host-App gebunden noch App\\Services\\LangdockCompletionService vorhanden (Package-Tests/Workbench: Port mocken).'
                         );
                     }
                 };
