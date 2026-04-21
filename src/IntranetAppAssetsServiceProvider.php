@@ -111,6 +111,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\IntuneSyncCommand::class,
                 Commands\ItexiaUuidSyncCommand::class,
                 Commands\ItexiaRoomsSyncCommand::class,
+                Commands\ItexiaPushActualRoomsFromIntranetCommand::class,
                 Commands\ItexiaImageSyncCommand::class,
                 Commands\SyncConfigmgrDataCommand::class,
                 Commands\SetItexiaIdsCommand::class,
