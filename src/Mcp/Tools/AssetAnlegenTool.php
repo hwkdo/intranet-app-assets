@@ -166,7 +166,7 @@ class AssetAnlegenTool extends Tool
             'is_missing' => false,
         ]);
 
-        $url = route('apps.assets.show', $asset->id);
+        $url = route('apps.assets.show', ['asset' => $asset, 'from' => 'liste']);
 
         return Response::structured([
             'created' => true,

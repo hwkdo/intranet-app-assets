@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Models;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class D3InvoiceAnalysis extends Model
@@ -12,6 +13,16 @@ class D3InvoiceAnalysis extends Model
     protected $table = 'intranet_app_assets_d3_invoice_analyses';
 
     protected $guarded = [];
+
+    /**
+     * Assets, deren Rechnungsnummer dieser D3-Dokument-ID entspricht.
+     *
+     * @return HasMany<Asset, D3InvoiceAnalysis>
+     */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class, 'invoice_number', 'd3_document_id');
+    }
 
     /**
      * @return array<string, string>

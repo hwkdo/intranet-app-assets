@@ -161,7 +161,7 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
                                 <flux:table.cell class="font-mono text-sm">{{ $asset->domain_connection }}</flux:table.cell>
                                 <flux:table.cell>{{ $asset->type?->name }} · {{ $asset->vendor?->name }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye" />
+                                    <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'domain-compare']) }}" variant="ghost" size="sm" icon="eye" />
                                 </flux:table.cell>
                             </flux:table.row>
                         @empty

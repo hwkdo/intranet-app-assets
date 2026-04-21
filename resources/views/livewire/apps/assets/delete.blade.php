@@ -3,16 +3,31 @@
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Services\AssetItexiaDeleteInventoryNotifier;
+use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends Component {
     public Asset $asset;
 
+    #[Url(except: null)]
+    public ?string $from = null;
+
+    #[Url(as: 'sq', except: null)]
+    public ?string $searchReturnQuery = null;
+
     #[Validate('required|string|min:3|max:2000')]
     public string $deleteReason = '';
+
+    #[Computed]
+    public function showBackKey(): string
+    {
+        return AssetShowBackOrigin::resolve($this->from, auth()->user(), $this->searchReturnQuery)['key'];
+    }
 
     public function mount(Asset $asset): void
     {
@@ -120,7 +135,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
             >
                 Jetzt löschen
             </flux:button>
-            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost">
+            <flux:button href="{{ route('apps.assets.show', array_filter(['asset' => $asset, 'from' => $this->showBackKey, 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="ghost">
                 Abbrechen
             </flux:button>
         </div>

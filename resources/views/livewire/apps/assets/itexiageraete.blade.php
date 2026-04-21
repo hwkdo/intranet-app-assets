@@ -351,7 +351,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye" />
+                            <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'itexiageraete']) }}" variant="ghost" size="sm" icon="eye" />
                         </flux:table.cell>
                     </flux:table.row>
                 @empty

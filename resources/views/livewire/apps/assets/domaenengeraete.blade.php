@@ -293,7 +293,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye" />
+                            <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'domaenengeraete']) }}" variant="ghost" size="sm" icon="eye" />
                         </flux:table.cell>
                     </flux:table.row>
                 @empty

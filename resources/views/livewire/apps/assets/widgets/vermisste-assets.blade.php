@@ -67,7 +67,7 @@ new class extends Component
 >
     @forelse($this->assets as $asset)
         <a
-            href="{{ route('apps.assets.show', $asset) }}"
+            href="{{ route('apps.assets.show', [$asset, 'from' => 'liste']) }}"
             wire:navigate
             class="group block cursor-pointer rounded-md border border-zinc-200 px-3 py-2 transition-colors duration-150 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/40 dark:hover:bg-white/15"
         >

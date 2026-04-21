@@ -202,7 +202,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
                                             {{ $asset->type?->name ?? '—' }} · {{ $asset->vendor?->name ?? '—' }}
                                         </flux:text>
                                     </div>
-                                    <flux:button href="{{ route('apps.assets.show', $asset) }}" size="sm" variant="ghost" icon="eye">
+                                    <flux:button href="{{ route('apps.assets.show', array_filter(['asset' => $asset, 'from' => 'search', 'sq' => filled(trim($this->searchQuery)) ? trim($this->searchQuery) : null], fn ($v) => $v !== null && $v !== '')) }}" size="sm" variant="ghost" icon="eye">
                                         Öffnen
                                     </flux:button>
                                 </div>

@@ -76,7 +76,7 @@ class AssetAbfragenTool extends Tool
         $assets = $assetsQuery->get();
 
         $result = $assets->map(function (Asset $asset): array {
-            $url = route('apps.assets.show', $asset->id);
+            $url = route('apps.assets.show', ['asset' => $asset, 'from' => 'liste']);
             $foundInItexia = self::assetHasItexiaUuid($asset);
 
             return [

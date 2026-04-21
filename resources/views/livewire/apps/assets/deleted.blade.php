@@ -113,7 +113,7 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
                             <flux:table.cell class="max-w-md">{{ $deletedEntry?->reason ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-center gap-2">
-                                    <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye" />
+                                    <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'deleted']) }}" variant="ghost" size="sm" icon="eye" />
                                     <flux:button
                                         wire:click="restoreAsset({{ $asset->id }})"
                                         wire:confirm="Asset wirklich wiederherstellen?"

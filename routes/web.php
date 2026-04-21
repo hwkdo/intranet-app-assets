@@ -19,15 +19,31 @@ Route::bind('assetReturn', function (string $value): AssetReturn {
 
 Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets', 'intranet-app-assets::apps.assets.dashboard')->name('apps.assets.index');
-    Route::livewire('apps/assets/suche', 'intranet-app-assets::apps.assets.search')->name('apps.assets.search');
+    Route::livewire('apps/assets/suche', 'intranet-app-assets::apps.assets.search')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.search');
     Route::livewire('apps/assets/meine-assets', 'intranet-app-assets::apps.assets.meine-assets')->name('apps.assets.meine-assets');
-    Route::livewire('apps/assets/liste', 'intranet-app-assets::apps.assets.liste')->name('apps.assets.liste');
-    Route::livewire('apps/assets/mobilgeraete', 'intranet-app-assets::apps.assets.mobilgeraete')->name('apps.assets.mobilgeraete');
-    Route::livewire('apps/assets/domaenengeraete', 'intranet-app-assets::apps.assets.domaenengeraete')->name('apps.assets.domaenengeraete');
-    Route::livewire('apps/assets/domain-compare', 'intranet-app-assets::apps.assets.domain-compare')->name('apps.assets.domain-compare');
-    Route::livewire('apps/assets/sccm-compare', 'intranet-app-assets::apps.assets.sccm-compare')->name('apps.assets.sccm-compare');
-    Route::livewire('apps/assets/itexiageraete', 'intranet-app-assets::apps.assets.itexiageraete')->name('apps.assets.itexiageraete');
-    Route::livewire('apps/assets/chat', 'intranet-app-assets::apps.assets.chat')->name('apps.assets.chat');
+    Route::livewire('apps/assets/liste', 'intranet-app-assets::apps.assets.liste')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.liste');
+    Route::livewire('apps/assets/mobilgeraete', 'intranet-app-assets::apps.assets.mobilgeraete')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.mobilgeraete');
+    Route::livewire('apps/assets/domaenengeraete', 'intranet-app-assets::apps.assets.domaenengeraete')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.domaenengeraete');
+    Route::livewire('apps/assets/domain-compare', 'intranet-app-assets::apps.assets.domain-compare')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.domain-compare');
+    Route::livewire('apps/assets/sccm-compare', 'intranet-app-assets::apps.assets.sccm-compare')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.sccm-compare');
+    Route::livewire('apps/assets/itexiageraete', 'intranet-app-assets::apps.assets.itexiageraete')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.itexiageraete');
+    Route::livewire('apps/assets/chat', 'intranet-app-assets::apps.assets.chat')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.chat');
     Route::livewire('apps/assets/legacy-assets', 'intranet-app-assets::apps.assets.legacy-assets')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.legacy-assets');

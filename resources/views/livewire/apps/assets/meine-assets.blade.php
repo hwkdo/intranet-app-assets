@@ -378,7 +378,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                             ></flux:button>
                                         </flux:tooltip>
                                     @endif
-                                    <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye">
+                                    <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'meine-assets']) }}" variant="ghost" size="sm" icon="eye">
                                         Detail
                                     </flux:button>
                                 </div>

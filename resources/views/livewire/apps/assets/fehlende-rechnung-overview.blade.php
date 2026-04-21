@@ -24,7 +24,7 @@
                         <flux:table.cell class="font-mono text-sm">{{ filled($asset->order_number) ? $asset->order_number : '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->createdBy?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
-                            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost" size="sm" icon="eye">
+                            <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'fehlende-rechnung']) }}" variant="ghost" size="sm" icon="eye">
                                 Anzeigen
                             </flux:button>
                         </flux:table.cell>

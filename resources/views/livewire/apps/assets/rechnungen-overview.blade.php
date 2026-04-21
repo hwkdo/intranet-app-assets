@@ -142,6 +142,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         $q = trim($this->search);
 
         return D3InvoiceAnalysis::query()
+            ->withCount('assets')
             ->when($q !== '', function ($query) use ($q): void {
                 $query->where('d3_document_id', 'like', '%'.$q.'%');
             })
@@ -290,6 +291,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                     <flux:table.columns>
                         <flux:table.column>D3-ID</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
+                        <flux:table.column>Assets</flux:table.column>
                         <flux:table.column>Modell</flux:table.column>
                         <flux:table.column>Analysiert</flux:table.column>
                         <flux:table.column></flux:table.column>
@@ -309,6 +311,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                                 <flux:table.cell>
                                     <flux:badge :variant="$this->statusVariant($row)">{{ $this->statusLabel($row) }}</flux:badge>
                                 </flux:table.cell>
+                                <flux:table.cell>{{ $row->assets_count }}</flux:table.cell>
                                 <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
                                     {{ $row->vision_model ?? '—' }}
                                 </flux:table.cell>
@@ -339,7 +342,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="5" class="py-8 text-center text-zinc-500">
+                                <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
                                     Keine Einträge im Cache.
                                 </flux:table.cell>
                             </flux:table.row>

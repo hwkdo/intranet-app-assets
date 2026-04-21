@@ -518,7 +518,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             : "{$count} Assets wurden erfolgreich erstellt.");
 
         $this->redirect(
-            $count === 1 ? route('apps.assets.show', $created[0]) : route('apps.assets.liste'),
+            $count === 1 ? route('apps.assets.show', [$created[0], 'from' => 'liste']) : route('apps.assets.liste'),
             navigate: true
         );
     }

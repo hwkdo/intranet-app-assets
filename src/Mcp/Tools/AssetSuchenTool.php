@@ -35,7 +35,7 @@ class AssetSuchenTool extends Tool
             ->get();
 
         $result = $assets->map(function (Asset $asset): array {
-            $url = route('apps.assets.show', $asset->id);
+            $url = route('apps.assets.show', ['asset' => $asset, 'from' => 'liste']);
 
             return [
                 'id' => $asset->id,

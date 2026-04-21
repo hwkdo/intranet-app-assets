@@ -5,18 +5,27 @@ use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends Component
 {
     public Asset $asset;
+
+    #[Url(except: null)]
+    public ?string $from = null;
+
+    /** Suchbegriff für „Zurück zur Suche“ (URL-Parameter `sq`, wird als `q` an die Suchseite übergeben). */
+    #[Url(as: 'sq', except: null)]
+    public ?string $searchReturnQuery = null;
 
     #[Validate('required|string|min:3')]
     public string $newNote = '';
@@ -264,6 +273,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             ->first();
     }
 
+    /**
+     * @return array{key: string, href: string, label: string, buttonLabel: string}
+     */
+    #[Computed]
+    public function assetShowBack(): array
+    {
+        return AssetShowBackOrigin::resolve($this->from, auth()->user(), $this->searchReturnQuery);
+    }
+
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout
@@ -280,12 +298,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                 $returnHandover = $canInitiateReturnFromShow ? $this->returnInitiatableHandover : null;
             @endphp
             @can('manage-app-assets')
-                <flux:button href="{{ route('apps.assets.edit', $asset) }}" variant="primary" icon="pencil" size="sm">
+                <flux:button href="{{ route('apps.assets.edit', array_filter(['asset' => $asset, 'from' => $this->assetShowBack['key'], 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="primary" icon="pencil" size="sm">
                     Bearbeiten
                 </flux:button>
 
                 @if(! $asset->trashed())
-                    <flux:button href="{{ route('apps.assets.delete', $asset) }}" variant="danger" icon="trash" size="sm">
+                    <flux:button href="{{ route('apps.assets.delete', array_filter(['asset' => $asset, 'from' => $this->assetShowBack['key'], 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="danger" icon="trash" size="sm">
                         Löschen
                     </flux:button>
                 @endif
@@ -302,8 +320,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                 </flux:button>
             @endif
 
-            <flux:button href="{{ route('apps.assets.liste') }}" variant="ghost" icon="arrow-left" size="sm">
-                Zurück zur Liste
+            <flux:button href="{{ $this->assetShowBack['href'] }}" variant="ghost" icon="arrow-left" size="sm" wire:navigate>
+                {{ $this->assetShowBack['buttonLabel'] }}
             </flux:button>
         </div>
 

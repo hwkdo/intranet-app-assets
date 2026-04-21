@@ -9,11 +9,13 @@ use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
-use Hwkdo\IntranetAppAssets\Support\OwnerChangeActionResolver;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
+use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
+use Hwkdo\IntranetAppAssets\Support\OwnerChangeActionResolver;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -23,6 +25,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     use WithFileUploads;
 
     public Asset $asset;
+
+    #[Url(except: null)]
+    public ?string $from = null;
+
+    #[Url(as: 'sq', except: null)]
+    public ?string $searchReturnQuery = null;
 
     #[Validate('required|string|max:255')]
     public string $serial_number = '';
@@ -83,6 +91,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         $this->is_missing = $asset->is_missing;
         $this->domain_connection = $asset->domain_connection;
         $this->intune_device_id = $asset->intune_device_id;
+    }
+
+    #[Computed]
+    public function showBackKey(): string
+    {
+        return AssetShowBackOrigin::resolve($this->from, auth()->user(), $this->searchReturnQuery)['key'];
     }
 
     #[Computed]
@@ -269,7 +283,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         }
 
         session()->flash('success', 'Asset wurde erfolgreich gespeichert.');
-        $this->redirect(route('apps.assets.show', $this->asset), navigate: true);
+        $this->redirect(route('apps.assets.show', array_filter([
+            'asset' => $this->asset,
+            'from' => $this->showBackKey,
+            'sq' => $this->searchReturnQuery,
+        ], fn ($v) => $v !== null && $v !== '')), navigate: true);
     }
 }; ?>
 <div>
@@ -409,7 +427,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
         <div class="flex gap-3">
             <flux:button type="submit" variant="primary">Speichern</flux:button>
-            <flux:button href="{{ route('apps.assets.show', $asset) }}" variant="ghost">Abbrechen</flux:button>
+            <flux:button href="{{ route('apps.assets.show', array_filter(['asset' => $asset, 'from' => $this->showBackKey, 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="ghost">Abbrechen</flux:button>
         </div>
     </form>
 </x-intranet-app-assets::assets-layout>

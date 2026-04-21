@@ -452,7 +452,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                             @if($row['is_missing'])
                                 <flux:button wire:click="importSingle({{ (int) $row['legacy_id'] }})" variant="ghost" size="sm" icon="arrow-down-tray" />
                             @elseif($row['local_asset_id'])
-                                <flux:button href="{{ route('apps.assets.show', $row['local_asset_id']) }}" variant="ghost" size="sm" icon="eye" />
+                                <flux:button href="{{ route('apps.assets.show', ['asset' => $row['local_asset_id'], 'from' => 'legacy-assets']) }}" variant="ghost" size="sm" icon="eye" />
                             @endif
                         </flux:table.cell>
                     </flux:table.row>
