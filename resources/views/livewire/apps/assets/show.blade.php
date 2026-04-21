@@ -858,7 +858,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             <div class="space-y-4">
                 <flux:heading size="lg">Rechnung in D3 suchen</flux:heading>
                 <p class="text-sm text-zinc-500">Suchbegriff (z. B. BEN, Seriennummer, IMEI) eingeben oder die vorgeschlagene Suche nutzen. Treffer in D3 prüfen und bei Bedarf als Rechnungsnummer übernehmen.</p>
-                @livewire('intranet-app-assets::apps.assets.d3-invoice-search', ['assetId' => $asset->id], key('d3-invoice-'.$asset->id))
+                @if($showD3InvoiceModal)
+                    <livewire:intranet-app-assets::apps.assets.d3-invoice-search
+                        :asset-id="$asset->id"
+                        lazy
+                        wire:key="d3-invoice-{{ $asset->id }}"
+                    />
+                @endif
                 <div class="flex justify-end pt-2">
                     <flux:button wire:click="refreshAssetAndCloseD3InvoiceModal" variant="ghost">Schließen</flux:button>
                 </div>
