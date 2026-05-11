@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Data;
 
+use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
 use Hwkdo\IntranetAppBase\Data\BaseAppSettings;
@@ -65,5 +66,8 @@ class AppSettings extends BaseAppSettings
 
         #[Description('Vision-Modell für D3-Rechnungen bei Langdock (nur von Langdock erlaubte IDs, z. B. gpt-5-mini). Leer = Fallback auf INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.')]
         public string $d3InvoiceVisionModelLangdock = '',
+
+        #[Description('Quelle für die BEN-Existenzprüfung: legacy = Legacy-Intranet, intranet_v3 = lokale Bestellungen (Intranet V3), beides = beide Systeme (BEN muss in mind. einem existieren)')]
+        public BenPruefungsQuelle $benPruefungsQuelle = BenPruefungsQuelle::Legacy,
     ) {}
 }

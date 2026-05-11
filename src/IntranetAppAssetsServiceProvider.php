@@ -14,18 +14,22 @@ use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
 use Hwkdo\IntranetAppAssets\Contracts\LangdockOpenAiChatPort;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
+use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Listeners\UpdateCachedItexiaActualRoom;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetNote;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
+use Hwkdo\IntranetAppAssets\Services\CombinedOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
 use Hwkdo\IntranetAppAssets\Services\LangdockD3InvoiceVisionLlmClient;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
+use Hwkdo\IntranetAppAssets\Services\LocalOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface;
 use Hwkdo\SeventhingsLaravel\Events\ItexiaAssetActualRoomUpdated;
@@ -43,12 +47,17 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
     {
         parent::register();
 
-        if (class_exists(IntranetLegacyService::class)) {
-            $this->app->bind(
-                OrderNumberValidationServiceInterface::class,
-                LegacyOrderNumberValidationService::class
-            );
-        }
+        $this->app->bind(OrderNumberValidationServiceInterface::class, function ($app) {
+            $settings = IntranetAppAssetsSettings::resolvedAppSettings();
+
+            return match ($settings->benPruefungsQuelle) {
+                BenPruefungsQuelle::IntranetV3 => $app->make(LocalOrderNumberValidationService::class),
+                BenPruefungsQuelle::Beides => $app->make(CombinedOrderNumberValidationService::class),
+                default => class_exists(IntranetLegacyService::class)
+                    ? $app->make(LegacyOrderNumberValidationService::class)
+                    : $app->make(LocalOrderNumberValidationService::class),
+            };
+        });
 
         $this->app->singleton(LangdockD3InvoiceVisionLlmClient::class);
         $this->app->singleton(D3InvoiceVisionLlmClientFactory::class);
