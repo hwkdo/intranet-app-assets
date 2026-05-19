@@ -19,3 +19,7 @@ it('registers the unified admin uebergaben route and legacy redirects', function
 it('registers the sccm compare route', function () {
     expect(Route::has('apps.assets.sccm-compare'))->toBeTrue();
 });
+
+it('registers the public fido register route', function () {
+    expect(Route::has('api.asset.registerFido'))->toBeTrue();
+});

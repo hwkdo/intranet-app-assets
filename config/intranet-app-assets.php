@@ -72,4 +72,10 @@ return [
     'd3_invoice_auto_analyze_enabled' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_AUTO_ANALYZE_ENABLED', 'true'), FILTER_VALIDATE_BOOLEAN),
     'd3_invoice_analysis_queue' => env('INTRANET_APP_ASSETS_D3_INVOICE_ANALYSIS_QUEUE', null),
     'd3_invoice_analysis_reanalyze_on_model_change' => filter_var(env('INTRANET_APP_ASSETS_D3_INVOICE_REANALYZE_ON_MODEL_CHANGE', 'false'), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+     * Shared secret für öffentlichen FIDO/Yubikey-Registrierungs-Endpunkt (POST /api/asset/registerFido).
+     * Entspricht dem Legacy-Feld app-id.
+     */
+    'fido_register_app_id' => env('INTRANET_APP_ASSETS_FIDO_APP_ID', 'f1b9f0a9-eb81-4a36-9bdc-d8e32c480d30'),
 ];
