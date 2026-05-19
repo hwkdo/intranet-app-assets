@@ -23,7 +23,7 @@ class LegacyAssetImportService
 
     /**
      * @param  array<int, array<string, mixed>>  $legacyAssets
-     * @return array<int, int> map legacyAssetId => localAssetId
+     * @return array<int, array{local_asset_id: int, is_trashed: bool}>
      */
     public function buildLegacyToLocalAssetMap(array $legacyAssets): array
     {
@@ -33,7 +33,7 @@ class LegacyAssetImportService
         ))));
 
         $byItexia = $itexiaIds !== []
-            ? Asset::query()->whereIn('itexia_id', $itexiaIds)->get()->keyBy('itexia_id')
+            ? Asset::query()->withTrashed()->whereIn('itexia_id', $itexiaIds)->get()->keyBy('itexia_id')
             : collect();
 
         $legacyIds = array_values(array_unique(array_map(
@@ -43,7 +43,7 @@ class LegacyAssetImportService
         $legacyIds = array_values(array_filter($legacyIds, static fn (int $id): bool => $id > 0));
 
         $byLegacy = $legacyIds !== []
-            ? Asset::query()->whereIn('legacy_id', $legacyIds)->get()->keyBy('legacy_id')
+            ? Asset::query()->withTrashed()->whereIn('legacy_id', $legacyIds)->get()->keyBy('legacy_id')
             : collect();
 
         $result = [];
@@ -55,13 +55,21 @@ class LegacyAssetImportService
 
             $itexiaId = trim((string) ($legacy['itexiaid'] ?? ''));
             if ($itexiaId !== '' && $byItexia->has($itexiaId)) {
-                $result[$legacyId] = (int) $byItexia->get($itexiaId)->id;
+                $asset = $byItexia->get($itexiaId);
+                $result[$legacyId] = [
+                    'local_asset_id' => (int) $asset->id,
+                    'is_trashed' => $asset->trashed(),
+                ];
 
                 continue;
             }
 
             if ($byLegacy->has($legacyId)) {
-                $result[$legacyId] = (int) $byLegacy->get($legacyId)->id;
+                $asset = $byLegacy->get($legacyId);
+                $result[$legacyId] = [
+                    'local_asset_id' => (int) $asset->id,
+                    'is_trashed' => $asset->trashed(),
+                ];
             }
         }
 
@@ -133,7 +141,7 @@ class LegacyAssetImportService
                 $userId = $userMap[$legacyUserId] ?? User::firstWhere('legacy_id', $legacyUserId)?->id;
             }
 
-            $itexiaId = $legacy['itexiaid'] ?? null;
+            $itexiaId = filled($legacy['itexiaid'] ?? null) ? trim((string) $legacy['itexiaid']) : null;
             $attributes = [
                 'legacy_id' => $legacyId,
                 'serial_number' => $legacy['sn'] ?? '',
@@ -281,8 +289,13 @@ class LegacyAssetImportService
      */
     private function buildLegacyIdToAssetIdMap(array $legacyAssets): array
     {
-        $itexiaIds = array_unique(array_filter(array_column($legacyAssets, 'itexiaid')));
-        $byItexia = $itexiaIds !== [] ? Asset::whereIn('itexia_id', $itexiaIds)->get()->keyBy('itexia_id') : collect();
+        $itexiaIds = array_values(array_filter(array_unique(array_map(
+            static fn (array $legacy): string => trim((string) ($legacy['itexiaid'] ?? '')),
+            $legacyAssets
+        ))));
+        $byItexia = $itexiaIds !== []
+            ? Asset::query()->withTrashed()->whereIn('itexia_id', $itexiaIds)->get()->keyBy('itexia_id')
+            : collect();
 
         $map = [];
         foreach ($legacyAssets as $legacy) {
@@ -290,11 +303,11 @@ class LegacyAssetImportService
             if ($legacyId === null) {
                 continue;
             }
-            $itexiaId = $legacy['itexiaid'] ?? null;
-            if ($itexiaId !== null && isset($byItexia[$itexiaId])) {
-                $map[(int) $legacyId] = (int) $byItexia[$itexiaId]->id;
+            $itexiaId = trim((string) ($legacy['itexiaid'] ?? ''));
+            if ($itexiaId !== '' && $byItexia->has($itexiaId)) {
+                $map[(int) $legacyId] = (int) $byItexia->get($itexiaId)->id;
             } else {
-                $asset = Asset::firstWhere('legacy_id', $legacyId);
+                $asset = Asset::query()->withTrashed()->where('legacy_id', $legacyId)->first();
                 if ($asset !== null) {
                     $map[(int) $legacyId] = (int) $asset->id;
                 }
@@ -395,17 +408,25 @@ class LegacyAssetImportService
 
     private function findOrCreateAsset(int $legacyId, ?string $itexiaId, array $attributes): Asset
     {
+        $itexiaId = filled($itexiaId) ? trim((string) $itexiaId) : null;
+
         if ($itexiaId !== null) {
-            $asset = Asset::firstWhere('itexia_id', $itexiaId);
+            $asset = Asset::query()->withTrashed()->where('itexia_id', $itexiaId)->first();
             if ($asset !== null) {
+                if ($asset->trashed()) {
+                    $asset->restore();
+                }
                 $asset->update($attributes);
 
                 return $asset;
             }
         }
 
-        $asset = Asset::firstWhere('legacy_id', $legacyId);
+        $asset = Asset::query()->withTrashed()->where('legacy_id', $legacyId)->first();
         if ($asset !== null) {
+            if ($asset->trashed()) {
+                $asset->restore();
+            }
             $asset->update($attributes);
 
             return $asset;

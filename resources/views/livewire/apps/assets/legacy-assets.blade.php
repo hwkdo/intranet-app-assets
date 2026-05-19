@@ -48,16 +48,19 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->pruneStaleSelection();
     }
 
     public function updatedOnlyWithItexiaId(): void
     {
         $this->resetPage();
+        $this->pruneStaleSelection();
     }
 
     public function updatedShowOnlyMissing(): void
     {
         $this->resetPage();
+        $this->pruneStaleSelection();
     }
 
     public function updatedSortBy(): void
@@ -165,7 +168,9 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                 continue;
             }
 
-            $isMissing = ! isset($map[$legacyId]);
+            $match = $map[$legacyId] ?? null;
+            $isMissing = $match === null;
+            $isTrashed = $match !== null && ($match['is_trashed'] ?? false);
             if ($this->showOnlyMissing && ! $isMissing) {
                 continue;
             }
@@ -188,7 +193,8 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
             $rows[] = [
                 'legacy_id' => $legacyId,
                 'is_missing' => $isMissing,
-                'local_asset_id' => $map[$legacyId] ?? null,
+                'is_trashed' => $isTrashed,
+                'local_asset_id' => $match['local_asset_id'] ?? null,
                 'itexiaid' => $legacy['itexiaid'] ?? null,
                 'modell' => $legacy['modell'] ?? null,
                 'name' => $legacy['name'] ?? null,
@@ -292,6 +298,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
     @endphp
 
     <div
+        wire:key="legacy-assets-bulk-{{ md5($search.'|'.(int) $onlyWithItexiaId.'|'.(int) $showOnlyMissing.'|'.$sortBy.'|'.$sortDir) }}-page-{{ $this->getPage() }}"
         class="space-y-4"
         x-data="{
             selectedIds: @json($selectedLegacyIds),
@@ -443,6 +450,8 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                         <flux:table.cell>
                             @if($row['is_missing'])
                                 <flux:badge color="amber" size="sm">Fehlt im neuen System</flux:badge>
+                            @elseif($row['is_trashed'] ?? false)
+                                <flux:badge color="zinc" size="sm">Gelöscht im neuen System</flux:badge>
                             @else
                                 <flux:badge color="green" size="sm">Vorhanden</flux:badge>
                             @endif
@@ -451,6 +460,8 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                         <flux:table.cell>
                             @if($row['is_missing'])
                                 <flux:button wire:click="importSingle({{ (int) $row['legacy_id'] }})" variant="ghost" size="sm" icon="arrow-down-tray" />
+                            @elseif(($row['is_trashed'] ?? false) && $row['local_asset_id'])
+                                <flux:button href="{{ route('apps.assets.show', ['asset' => $row['local_asset_id'], 'from' => 'legacy-assets']) }}" variant="ghost" size="sm" icon="eye" title="Gelöschtes Asset anzeigen" />
                             @elseif($row['local_asset_id'])
                                 <flux:button href="{{ route('apps.assets.show', ['asset' => $row['local_asset_id'], 'from' => 'legacy-assets']) }}" variant="ghost" size="sm" icon="eye" />
                             @endif
