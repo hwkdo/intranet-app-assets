@@ -48,6 +48,7 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.legacy-assets');
     Route::livewire('apps/assets/settings/user', 'intranet-app-assets::apps.assets.settings.user')->name('apps.assets.settings.user');
+    Route::livewire('apps/assets/info', 'intranet-app-assets::apps.assets.info')->name('apps.assets.info');
 
     // Mehrfach-Übergaben (vor handover/{handover}, damit „bulk“ nicht als Handover-ID gilt)
     Route::livewire('apps/assets/handover/bulk/confirm', 'intranet-app-assets::apps.assets.handover-bulk-confirm')
