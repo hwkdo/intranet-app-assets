@@ -44,6 +44,9 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/chat', 'intranet-app-assets::apps.assets.chat')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.chat');
+    Route::livewire('apps/assets/yubikeys', 'intranet-app-assets::apps.assets.yubikeys-overview')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.yubikeys');
     Route::livewire('apps/assets/legacy-assets', 'intranet-app-assets::apps.assets.legacy-assets')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.legacy-assets');

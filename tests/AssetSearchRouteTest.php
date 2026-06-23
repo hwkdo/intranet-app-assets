@@ -23,3 +23,6 @@ it('registers the sccm compare route', function () {
 it('registers the public fido register route', function () {
     expect(Route::has('api.asset.registerFido'))->toBeTrue();
 });
+it('registers the yubikeys overview route', function () {
+    expect(Route::has('apps.assets.yubikeys'))->toBeTrue();
+});
