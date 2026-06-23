@@ -13,6 +13,15 @@
                 </div>
                 <flux:switch wire:model.live="onlyWithoutYubikey" label="Nur Benutzer ohne Yubikey" />
             </div>
+            <flux:dropdown position="bottom" align="end">
+                <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
+                    Excel-Export
+                </flux:button>
+                <flux:menu>
+                    <flux:menu.item wire:click="exportExcelAll" icon="document-duplicate">Alle Daten exportieren</flux:menu.item>
+                    <flux:menu.item wire:click="exportExcelFiltered" icon="funnel">Gefilterte Daten exportieren</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
         </div>
 
         <flux:table>

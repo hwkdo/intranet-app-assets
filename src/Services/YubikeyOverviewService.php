@@ -8,7 +8,9 @@ use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class YubikeyOverviewService
 {
@@ -22,13 +24,10 @@ class YubikeyOverviewService
     }
 
     /**
-     * @return LengthAwarePaginator<User>
+     * @return Builder<User>
      */
-    public function paginateActiveUsers(
-        bool $onlyWithoutYubikey = false,
-        string $search = '',
-        int $perPage = 25,
-    ): LengthAwarePaginator {
+    public function activeUsersQuery(bool $onlyWithoutYubikey = false, string $search = ''): Builder
+    {
         $yubikeyTypeId = $this->resolveYubikeyTypeId();
         $search = trim($search);
 
@@ -68,14 +67,98 @@ class YubikeyOverviewService
             });
         }
 
+        return $query;
+    }
+
+    /**
+     * @return LengthAwarePaginator<User>
+     */
+    public function paginateActiveUsers(
+        bool $onlyWithoutYubikey = false,
+        string $search = '',
+        int $perPage = 25,
+    ): LengthAwarePaginator {
+        $yubikeyTypeId = $this->resolveYubikeyTypeId();
+
         /** @var LengthAwarePaginator<User> $users */
-        $users = $query->paginate($perPage);
+        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search)->paginate($perPage);
 
         if ($yubikeyTypeId !== null) {
-            $this->attachYubikeys($users->getCollection(), $yubikeyTypeId, $search);
+            $this->attachYubikeys($users->getCollection(), $yubikeyTypeId, trim($search));
         }
 
         return $users;
+    }
+
+    /**
+     * @return SupportCollection<int, array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}>
+     */
+    public function getExportRows(bool $onlyWithoutYubikey = false, string $search = ''): SupportCollection
+    {
+        $yubikeyTypeId = $this->resolveYubikeyTypeId();
+        $search = trim($search);
+
+        /** @var Collection<int, User> $users */
+        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search)->get();
+
+        if ($yubikeyTypeId !== null) {
+            $this->attachYubikeys($users, $yubikeyTypeId, $search);
+        } else {
+            foreach ($users as $user) {
+                $user->setRelation('yubikeys', collect());
+            }
+        }
+
+        $rows = collect();
+
+        foreach ($users as $user) {
+            /** @var Collection<int, Asset> $yubikeys */
+            $yubikeys = $user->relationLoaded('yubikeys') ? $user->yubikeys : collect();
+
+            if ($yubikeys->isEmpty()) {
+                $rows->push($this->exportRowForUserWithoutYubikey($user));
+
+                continue;
+            }
+
+            foreach ($yubikeys as $yubikey) {
+                $rows->push($this->exportRowForAssignedYubikey($user, $yubikey));
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}
+     */
+    private function exportRowForUserWithoutYubikey(User $user): array
+    {
+        return [
+            'model' => '—',
+            'serial_number' => '—',
+            'type' => '—',
+            'vendor' => '—',
+            'owner' => (string) $user->name,
+            'username' => (string) $user->username,
+            'status' => 'Kein Yubikey',
+        ];
+    }
+
+    /**
+     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}
+     */
+    private function exportRowForAssignedYubikey(User $user, Asset $yubikey): array
+    {
+        return [
+            'model' => $yubikey->display_name,
+            'serial_number' => $yubikey->serial_number,
+            'type' => $yubikey->type?->name ?? '—',
+            'vendor' => $yubikey->vendor?->name ?? '—',
+            'owner' => (string) $user->name,
+            'username' => (string) $user->username,
+            'status' => 'Zugewiesen',
+        ];
     }
 
     /**
