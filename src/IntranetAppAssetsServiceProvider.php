@@ -7,6 +7,7 @@ use App\Services\LangdockCompletionService;
 use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
+use Hwkdo\IntranetAppAssets\Commands\ClearStaleAssetLocationsCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
 use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
@@ -24,6 +25,7 @@ use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
+use Hwkdo\IntranetAppAssets\Observers\AssetOwnerLocationObserver;
 use Hwkdo\IntranetAppAssets\Services\CombinedOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
@@ -127,6 +129,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\InvoiceAutoResolveCommand::class,
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
                 BackfillOwnerHandoversCommand::class,
+                ClearStaleAssetLocationsCommand::class,
                 EnsureAssetHandoversCommand::class,
             ]);
     }
@@ -137,6 +140,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
 
         Asset::observe(AssetObserver::class);
         Asset::observe(AssetOwnerHandoverObserver::class);
+        Asset::observe(AssetOwnerLocationObserver::class);
         AssetHistory::observe(AssetHistoryObserver::class);
         AssetNote::observe(AssetNoteObserver::class);
 
