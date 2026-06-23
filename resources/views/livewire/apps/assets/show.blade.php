@@ -5,6 +5,7 @@ use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Illuminate\Support\Collection;
@@ -49,7 +50,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         $this->asset = $asset->load([
             'type',
             'vendor',
-            'owner',
+            'owner.standort',
             'historyEntries.user',
             'notes.author',
             'attachments.uploader',
@@ -60,6 +61,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             'handovers.assetReturn.notes.author',
         ]);
 
+    }
+
+    /**
+     * @return array{value: ?string, label: string, hint: ?string, source: string}
+     */
+    #[Computed]
+    public function locationDisplay(): array
+    {
+        return AssetLocationDisplayResolver::resolve($this->asset);
     }
 
     #[Computed]
@@ -378,8 +388,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <dt class="font-semibold">Besitzer</dt>
                     <dd>{{ $asset->owner?->name ?? '—' }}</dd>
 
-                    <dt class="font-semibold">Standort</dt>
-                    <dd>{{ $asset->location ?? '—' }}</dd>
+                    <dt class="font-semibold">{{ $this->locationDisplay['label'] }}</dt>
+                    <x-intranet-app-assets::asset-location-display :asset="$asset" />
 
                     <dt class="font-semibold">Itexia-ID</dt>
                     <dd>

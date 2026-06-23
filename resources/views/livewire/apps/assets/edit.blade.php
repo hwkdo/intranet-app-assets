@@ -8,6 +8,7 @@ use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
+use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
@@ -76,7 +77,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
     public function mount(Asset $asset): void
     {
-        $this->asset = $asset;
+        $this->asset = $asset->load(['owner.standort']);
         $this->serial_number = $asset->serial_number;
         $this->model = $asset->model;
         $this->asset_type_id = (string) $asset->asset_type_id;
@@ -91,6 +92,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         $this->is_missing = $asset->is_missing;
         $this->domain_connection = $asset->domain_connection;
         $this->intune_device_id = $asset->intune_device_id;
+    }
+
+    /**
+     * @return array{value: ?string, label: string, hint: ?string, source: string}
+     */
+    #[Computed]
+    public function locationDisplay(): array
+    {
+        return AssetLocationDisplayResolver::resolve($this->asset);
     }
 
     #[Computed]
@@ -379,7 +389,16 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                     <flux:callout variant="subtle" icon="information-circle" class="mt-1">
                         <flux:callout.text>
                             <strong>Besitzer:</strong> {{ $asset->owner?->name ?? '—' }}
-                            · <strong>Standort:</strong> {{ filled($asset->location) ? $asset->location : '—' }}
+                            · <strong>{{ $this->locationDisplay['label'] }}:</strong>
+                            @if(filled($this->locationDisplay['value']))
+                                {{ $this->locationDisplay['value'] }}
+                                <span class="text-zinc-500">({{ $this->locationDisplay['hint'] }})</span>
+                            @else
+                                —
+                                @if(filled($this->locationDisplay['hint']))
+                                    <span class="text-zinc-500">({{ $this->locationDisplay['hint'] }})</span>
+                                @endif
+                            @endif
                             · <strong>Vermisst:</strong> {{ $asset->is_missing ? 'Ja' : 'Nein' }}
                             · <strong>In Klärung:</strong> {{ $asset->is_clarification ? 'Ja' : 'Nein' }}
                             @if($this->ownerChangeAction)
