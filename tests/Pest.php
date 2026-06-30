@@ -1,5 +1,7 @@
 <?php
 
-use Hwkdo\IntranetAppAssets\Tests\TestCase;
+declare(strict_types=1);
 
-uses(TestCase::class)->in(__DIR__);
+pest()->extend(Tests\TestCase::class)
+    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->in('AssetDisposalFromInventarMailTest.php');
