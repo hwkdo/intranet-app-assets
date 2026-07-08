@@ -35,4 +35,20 @@ class IntranetAppAssetsSettings extends Model
 
         return $row?->settings instanceof AppSettings ? $row->settings : new AppSettings;
     }
+
+    public static function persistAppSettings(AppSettings $settings): IntranetAppAssetsSettings
+    {
+        $current = static::current();
+
+        if ($current !== null) {
+            $current->update(['settings' => $settings]);
+
+            return $current->refresh();
+        }
+
+        return static::create([
+            'version' => 1,
+            'settings' => $settings,
+        ]);
+    }
 }

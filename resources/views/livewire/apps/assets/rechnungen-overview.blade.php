@@ -118,7 +118,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         }
     }
 
-    public function startAnalysis(string $documentId): void
+    public function startAnalysis(string $documentId, bool $force = false): void
     {
         $this->authorize('manage-app-assets');
         $documentId = D3InvoiceAnalysis::normalizeDocumentId($documentId);
@@ -128,9 +128,16 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
             return;
         }
 
-        D3InvoiceAnalysis::requestAnalysis($documentId, false);
-        AnalyzeD3InvoiceJob::dispatch($documentId, false);
-        Flux::toast('Analyse für '.$documentId.' wurde in die Warteschlange gestellt.', variant: 'success');
+        D3InvoiceAnalysis::requestAnalysis($documentId, $force);
+        AnalyzeD3InvoiceJob::dispatch($documentId, $force);
+
+        Flux::toast(
+            $force
+                ? 'Analyse für '.$documentId.' wird neu gestartet.'
+                : 'Analyse für '.$documentId.' wurde in die Warteschlange gestellt.',
+            variant: 'success',
+        );
+
         unset($this->pendingDocuments);
     }
 
@@ -330,7 +337,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                                         </flux:button>
                                     @endif
                                     <flux:button
-                                        wire:click="startAnalysis('{{ $row->d3_document_id }}')"
+                                        wire:click="startAnalysis('{{ $row->d3_document_id }}', true)"
                                         wire:confirm="Analyse erneut in die Warteschlange stellen?"
                                         size="sm"
                                         variant="ghost"

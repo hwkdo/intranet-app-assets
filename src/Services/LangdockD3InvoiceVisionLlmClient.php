@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Services;
 
 use Hwkdo\IntranetAppAssets\Contracts\D3InvoiceVisionLlmClientInterface;
-use Hwkdo\IntranetAppAssets\Contracts\LangdockOpenAiChatPort;
+use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
+use Hwkdo\IntranetAppBase\Data\AiRequestContext;
+use Hwkdo\IntranetAppBase\Enums\AiCapability;
 
 class LangdockD3InvoiceVisionLlmClient implements D3InvoiceVisionLlmClientInterface
 {
     public function __construct(
-        private LangdockOpenAiChatPort $langdockOpenAiChat,
+        private readonly IntranetAiGatewayInterface $gateway,
     ) {}
 
     /**
@@ -23,14 +25,19 @@ class LangdockD3InvoiceVisionLlmClient implements D3InvoiceVisionLlmClientInterf
         int $connectTimeoutSeconds,
         ?string $bearerOverride = null,
     ): array {
-        return $this->langdockOpenAiChat->createChatCompletion(
-            $model,
+        $result = $this->gateway->chat(
             $messages,
-            $requestTimeoutSeconds,
-            $connectTimeoutSeconds,
-            null,
-            $bearerOverride,
+            new AiRequestContext(
+                appIdentifier: 'assets',
+                capability: AiCapability::Vision,
+            ),
         );
+
+        return json_decode((string) $result->rawJson, true) ?? [
+            'choices' => [
+                ['message' => ['content' => $result->content]],
+            ],
+        ];
     }
 
     public function chatCompletionWithImageFile(
@@ -41,14 +48,15 @@ class LangdockD3InvoiceVisionLlmClient implements D3InvoiceVisionLlmClientInterf
         int $connectTimeoutSeconds,
         ?string $bearerOverride = null,
     ): array {
-        return $this->langdockOpenAiChat->createChatCompletionWithImageFromPath(
-            $model,
-            $userTextPrompt,
+        return $this->gateway->chatCompletionWithImageFromPath(
             $absoluteImagePath,
+            $userTextPrompt,
+            new AiRequestContext(
+                appIdentifier: 'assets',
+                capability: AiCapability::Vision,
+            ),
             $requestTimeoutSeconds,
             $connectTimeoutSeconds,
-            null,
-            $bearerOverride,
         );
     }
 }

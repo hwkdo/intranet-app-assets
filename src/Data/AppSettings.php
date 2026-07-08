@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hwkdo\IntranetAppAssets\Data;
 
 use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
+use Hwkdo\IntranetAppBase\Contracts\HasAiSettings;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
 use Hwkdo\IntranetAppBase\Data\BaseAppSettings;
+use Hwkdo\IntranetAppBase\Enums\AiProvider;
 
-class AppSettings extends BaseAppSettings
+class AppSettings extends BaseAppSettings implements HasAiSettings
 {
     public function __construct(
         #[Description('Aktiviert die Beispiel-Funktionalität')]
@@ -67,7 +71,50 @@ class AppSettings extends BaseAppSettings
         #[Description('Vision-Modell für D3-Rechnungen bei Langdock (nur von Langdock erlaubte IDs, z. B. gpt-5-mini). Leer = Fallback auf INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.')]
         public string $d3InvoiceVisionModelLangdock = '',
 
+        #[Description('KI-Text-Provider überschreiben (leer = Intranet-Base-Default)')]
+        public ?AiProvider $aiTextProviderOverride = null,
+
+        #[Description('KI-Text-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
+        public ?string $aiTextModelOverride = null,
+
+        #[Description('KI-Bild-Provider überschreiben (leer = Intranet-Base-Default)')]
+        public ?AiProvider $aiImageProviderOverride = null,
+
+        #[Description('KI-Bild-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
+        public ?string $aiImageModelOverride = null,
+
         #[Description('Quelle für die BEN-Existenzprüfung: legacy = Legacy-Intranet, intranet_v3 = lokale Bestellungen (Intranet V3), beides = beide Systeme (BEN muss in mind. einem existieren)')]
         public BenPruefungsQuelle $benPruefungsQuelle = BenPruefungsQuelle::Legacy,
     ) {}
+
+    public function textProviderOverride(): ?AiProvider
+    {
+        return $this->aiTextProviderOverride;
+    }
+
+    public function textModelOverride(): ?string
+    {
+        return $this->normalizedOverrideString($this->aiTextModelOverride);
+    }
+
+    public function imageProviderOverride(): ?AiProvider
+    {
+        return $this->aiImageProviderOverride;
+    }
+
+    public function imageModelOverride(): ?string
+    {
+        return $this->normalizedOverrideString($this->aiImageModelOverride);
+    }
+
+    private function normalizedOverrideString(?string $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
 }

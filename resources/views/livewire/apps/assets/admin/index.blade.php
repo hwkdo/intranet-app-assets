@@ -16,6 +16,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
             <flux:tab name="hersteller" icon="building-office-2">Hersteller</flux:tab>
             <flux:tab name="seventhings" icon="arrows-right-left">Seventhings Mapping</flux:tab>
             <flux:tab name="hintergrundbild" icon="photo">Hintergrundbild</flux:tab>
+            <flux:tab name="ki" icon="sparkles">KI</flux:tab>
             <flux:tab name="einstellungen" icon="cog-6-tooth">Einstellungen</flux:tab>
             <flux:tab name="statistiken" icon="chart-bar">Statistiken</flux:tab>
         </flux:tabs>
@@ -40,12 +41,29 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
             </div>
         </flux:tab.panel>
 
+        <flux:tab.panel name="ki">
+            <div style="min-height: 400px;">
+                @livewire('intranet-app-assets::apps.assets.admin.ki-einstellungen')
+            </div>
+        </flux:tab.panel>
+
         <flux:tab.panel name="einstellungen">
             <div style="min-height: 400px;">
                 @livewire('intranet-app-base::admin-settings', [
                     'appIdentifier' => 'assets',
                     'settingsModelClass' => '\Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings',
                     'appSettingsClass' => '\Hwkdo\IntranetAppAssets\Data\AppSettings',
+                    'excludedKeys' => [
+                        'aiTextProviderOverride',
+                        'aiTextModelOverride',
+                        'aiImageProviderOverride',
+                        'aiImageModelOverride',
+                        'd3InvoiceVisionLlmProvider',
+                        'd3InvoiceVisionModelOpenWebUi',
+                        'd3InvoiceVisionModelLangdock',
+                        'openWebUiModel',
+                        'openWebUiCollectionIds',
+                    ],
                 ])
             </div>
         </flux:tab.panel>

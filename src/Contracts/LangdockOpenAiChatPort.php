@@ -20,6 +20,7 @@ interface LangdockOpenAiChatPort
         int $connectTimeoutSeconds,
         ?int $maxOutputTokens = null,
         ?string $apiKeyOverride = null,
+        array $extraPayload = [],
     ): array;
 
     /**
