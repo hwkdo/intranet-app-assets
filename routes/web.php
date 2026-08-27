@@ -42,7 +42,7 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.itexiageraete');
     Route::livewire('apps/assets/chat', 'intranet-app-assets::apps.assets.chat')
-        ->middleware('can:manage-app-assets')
+        ->middleware(['can:manage-app-assets', 'can:allow_ai_usage'])
         ->name('apps.assets.chat');
     Route::livewire('apps/assets/yubikeys', 'intranet-app-assets::apps.assets.yubikeys-overview')
         ->middleware('can:manage-app-assets')
