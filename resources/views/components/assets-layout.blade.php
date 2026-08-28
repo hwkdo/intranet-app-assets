@@ -9,7 +9,6 @@
     $defaultNavItems = [
         ['label' => 'Übersicht', 'href' => route('apps.assets.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen', 'welcomeSection' => 'main'],
         ['label' => 'Meine Assets', 'href' => route('apps.assets.meine-assets'), 'icon' => 'user', 'description' => 'Ihre zugewiesenen Assets', 'buttonText' => 'Meine Assets anzeigen', 'welcomeSection' => 'main'],
-        ['label' => 'Meine Einstellungen', 'href' => route('apps.assets.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen', 'welcomeSection' => 'settings'],
         ['label' => 'App-Info', 'href' => route('apps.assets.info'), 'icon' => 'information-circle', 'description' => 'Installierte Version und Release-Historie', 'buttonText' => 'App-Info anzeigen', 'welcomeSection' => 'settings'],
         ['type' => 'separator', 'label' => 'Tools', 'permission' => 'manage-app-assets'],
         ['label' => 'Suche', 'href' => route('apps.assets.search'), 'icon' => 'magnifying-glass', 'description' => 'Asset-Suche über Stammdaten, Verlauf und Notizen', 'buttonText' => 'Suche öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
