@@ -213,16 +213,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $typeIds = $this->validatedTypeIdsForQuery();
 
         return $this->baseQuery()
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $term = '%'.$this->search.'%';
-                    $q->where('serial_number', 'like', $term)
-                        ->orWhere('model', 'like', $term)
-                        ->orWhere('name', 'like', $term)
-                        ->orWhere('itexia_id', 'like', $term)
-                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
-                });
-            })
+            ->when(filled($this->search), fn ($query) => $query->matchingListeSearch($this->search))
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
@@ -274,16 +265,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $typeIds = $this->validatedTypeIdsForQuery();
 
         return $this->exportBaseQuery()
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $term = '%'.$this->search.'%';
-                    $q->where('serial_number', 'like', $term)
-                        ->orWhere('model', 'like', $term)
-                        ->orWhere('name', 'like', $term)
-                        ->orWhere('itexia_id', 'like', $term)
-                        ->orWhereHas('owner', fn ($o) => $o->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
-                });
-            })
+            ->when(filled($this->search), fn ($query) => $query->matchingListeSearch($this->search))
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
@@ -510,7 +492,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Suchen nach SN, Modell, Name, Itexia-ID…"
+                        placeholder="Suchen nach SN, Modell, Name, Typ, Hersteller, Besitzer, Standort…"
                         icon="magnifying-glass"
                         clearable
                     />

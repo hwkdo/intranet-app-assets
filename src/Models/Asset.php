@@ -132,6 +132,38 @@ class Asset extends Model implements HasMedia
     }
 
     /**
+     * Volltextsuche für die „Alle Assets“-Liste (alle sichtbaren Tabellenspalten).
+     *
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
+     */
+    public function scopeMatchingListeSearch(Builder $query, string $search): Builder
+    {
+        $term = '%'.trim($search).'%';
+
+        if ($term === '%%') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($term): void {
+            $q->where('serial_number', 'like', $term)
+                ->orWhere('model', 'like', $term)
+                ->orWhere('name', 'like', $term)
+                ->orWhere('itexia_id', 'like', $term)
+                ->orWhere('location', 'like', $term)
+                ->orWhereHas('type', fn (Builder $typeQuery) => $typeQuery->where('name', 'like', $term))
+                ->orWhereHas('vendor', fn (Builder $vendorQuery) => $vendorQuery->where('name', 'like', $term))
+                ->orWhereHas('owner', function (Builder $ownerQuery) use ($term): void {
+                    $ownerQuery->where('vorname', 'like', $term)
+                        ->orWhere('nachname', 'like', $term)
+                        ->orWhere('username', 'like', $term)
+                        ->orWhere('raum', 'like', $term)
+                        ->orWhereHas('standort', fn (Builder $standortQuery) => $standortQuery->where('name', 'like', $term));
+                });
+        });
+    }
+
+    /**
      * Assets mit BEN, aber ohne Rechnungsnummer (Kandidaten für automatische D3-Suche).
      *
      * @param  Builder<Asset>  $query
