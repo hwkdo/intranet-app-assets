@@ -4,7 +4,6 @@ namespace Hwkdo\IntranetAppAssets\Services;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
-use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Illuminate\Support\Facades\DB;
 
@@ -82,7 +81,11 @@ class AssetClarificationAdminResolutionService
             throw new \InvalidArgumentException('Neuer Besitzer erforderlich.');
         }
 
-        $this->deleteAllHandoversForAsset($asset);
+        app(HandoverSupersessionService::class)->supersedeAllActiveForAsset(
+            $asset,
+            $adminUserId,
+            'clarification:new_owner',
+        );
 
         $asset->update([
             'user_id' => $newOwnerUserId,
@@ -111,7 +114,11 @@ class AssetClarificationAdminResolutionService
             throw new \InvalidArgumentException('Standort erforderlich.');
         }
 
-        $this->deleteAllHandoversForAsset($asset);
+        app(HandoverSupersessionService::class)->supersedeAllActiveForAsset(
+            $asset,
+            $adminUserId,
+            'clarification:set_location',
+        );
 
         $asset->update([
             'user_id' => null,
@@ -136,7 +143,11 @@ class AssetClarificationAdminResolutionService
      */
     private function applyMarkMissing(Asset $asset, int $adminUserId, array $baseMeta, string $note): void
     {
-        $this->deleteAllHandoversForAsset($asset);
+        app(HandoverSupersessionService::class)->supersedeAllActiveForAsset(
+            $asset,
+            $adminUserId,
+            'clarification:mark_missing',
+        );
 
         $asset->update([
             'user_id' => null,
@@ -152,22 +163,4 @@ class AssetClarificationAdminResolutionService
         ]);
     }
 
-    private function deleteAllHandoversForAsset(Asset $asset): void
-    {
-        $asset->handovers()->get()->each(function (Handover $handover): void {
-            $this->deleteHandoverWithRelations($handover);
-        });
-    }
-
-    private function deleteHandoverWithRelations(Handover $handover): void
-    {
-        $return = $handover->assetReturn;
-        if ($return !== null) {
-            $return->notes()->delete();
-            $return->delete();
-        }
-
-        $handover->notes()->delete();
-        $handover->delete();
-    }
 }

@@ -9,12 +9,12 @@
 @endphp
 <div>
     <x-intranet-app-assets::assets-layout
-        heading="Übergaben"
-        :subheading="$isRejected ? 'Abgelehnte Übergaben — Besitz und Standort klären' : 'Offene Übergaben — noch nicht bestätigt'"
+        :heading="$isRejected ? 'Abgelehnte Übergaben' : 'Unbestätigte Übergaben'"
+        :subheading="$isRejected ? 'Besitz und Standort klären' : 'Noch nicht vom Empfänger bestätigt'"
     >
         <div class="space-y-4">
             <flux:radio.group wire:model.live="filter" label="Ansicht" variant="segmented">
-                <flux:radio value="{{ AdminHandoversOverview::FILTER_OPEN }}" label="Offen" />
+                <flux:radio value="{{ AdminHandoversOverview::FILTER_OPEN }}" label="Unbestätigt" />
                 <flux:radio value="{{ AdminHandoversOverview::FILTER_REJECTED }}" label="Abgelehnt" />
             </flux:radio.group>
 
@@ -89,7 +89,7 @@
                                                 @if($isRejected)
                                                     Wählen Sie einen oder mehrere Datensätze über die Checkbox in der ersten Tabellenspalte aus, um anschließend eine Mehrfachaktion auf mehrere abgelehnte Übergaben anwenden zu können.
                                                 @else
-                                                    Wählen Sie einen oder mehrere Datensätze über die Checkbox in der ersten Tabellenspalte aus, um anschließend eine Mehrfachaktion auf mehrere offene Übergaben anwenden zu können.
+                                                    Wählen Sie einen oder mehrere Datensätze über die Checkbox in der ersten Tabellenspalte aus, um anschließend eine Mehrfachaktion auf mehrere unbestätigte Übergaben anwenden zu können.
                                                 @endif
                                             </flux:callout.text>
                                         </flux:callout>
@@ -237,7 +237,7 @@
                                     @if($isRejected)
                                         Keine abgelehnten Übergaben.
                                     @else
-                                        Keine offenen Übergaben.
+                                        Keine unbestätigten Übergaben.
                                     @endif
                                 </flux:table.cell>
                             </flux:table.row>

@@ -140,8 +140,7 @@ class BulkAdminWorkflowExecutor
 
         $handovers = Handover::query()
             ->whereIn('id', $session['ids'])
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
+            ->open()
             ->get()
             ->keyBy('id');
 

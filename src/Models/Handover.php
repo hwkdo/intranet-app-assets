@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +23,7 @@ class Handover extends Model
         return [
             'confirmed_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'superseded_at' => 'datetime',
         ];
     }
 
@@ -33,13 +37,41 @@ class Handover extends Model
         return $this->rejected_at !== null;
     }
 
-    /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Handover>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Handover>
-     */
-    public function scopeRejectedPendingAdmin($query)
+    public function isSuperseded(): bool
     {
-        return $query->whereNotNull('rejected_at');
+        return $this->superseded_at !== null;
+    }
+
+    /**
+     * @param  Builder<Handover>  $query
+     * @return Builder<Handover>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('superseded_at');
+    }
+
+    /**
+     * @param  Builder<Handover>  $query
+     * @return Builder<Handover>
+     */
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query
+            ->active()
+            ->whereNull('confirmed_at')
+            ->whereNull('rejected_at');
+    }
+
+    /**
+     * @param  Builder<Handover>  $query
+     * @return Builder<Handover>
+     */
+    public function scopeRejectedPendingAdmin(Builder $query): Builder
+    {
+        return $query
+            ->active()
+            ->whereNotNull('rejected_at');
     }
 
     /** @return BelongsTo<Asset, $this> */
@@ -64,6 +96,12 @@ class Handover extends Model
     public function rejectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function supersededBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'superseded_by_user_id');
     }
 
     /** @return MorphMany<AssetNote, $this> */
@@ -96,6 +134,91 @@ class Handover extends Model
 
     public function isReturned(): bool
     {
-        return $this->assetReturns()->exists();
+        return $this->hasCompletedReturn();
+    }
+
+    public function hasPendingReturn(): bool
+    {
+        if ($this->relationLoaded('assetReturns')) {
+            return $this->assetReturns->contains(
+                static fn (AssetReturn $return): bool => $return->completed_at === null,
+            );
+        }
+
+        return $this->assetReturns()->whereNull('completed_at')->exists();
+    }
+
+    public function hasCompletedReturn(): bool
+    {
+        return $this->completedAssetReturn() !== null;
+    }
+
+    public function completedAssetReturn(): ?AssetReturn
+    {
+        if ($this->relationLoaded('assetReturns')) {
+            return $this->assetReturns
+                ->filter(static fn (AssetReturn $return): bool => $return->completed_at !== null)
+                ->sortByDesc(static fn (AssetReturn $return) => $return->completed_at)
+                ->first();
+        }
+
+        return $this->assetReturns()
+            ->whereNotNull('completed_at')
+            ->latest('completed_at')
+            ->first();
+    }
+
+    /**
+     * @return array{label: string, color: string, hint: ?string}
+     */
+    public function displayStatus(): array
+    {
+        if ($this->isSuperseded()) {
+            return [
+                'label' => 'Admin beendet',
+                'color' => 'zinc',
+                'hint' => filled($this->superseded_reason) ? $this->superseded_reason : null,
+            ];
+        }
+
+        if ($this->isRejected()) {
+            return [
+                'label' => 'Abgelehnt',
+                'color' => 'red',
+                'hint' => $this->rejected_at?->format('d.m.Y H:i'),
+            ];
+        }
+
+        if ($this->hasCompletedReturn()) {
+            $completedAt = $this->completedAssetReturn()?->completed_at;
+
+            return [
+                'label' => 'Zurückgegeben',
+                'color' => 'blue',
+                'hint' => $completedAt?->format('d.m.Y H:i'),
+            ];
+        }
+
+        if ($this->hasPendingReturn()) {
+            return [
+                'label' => 'Rückgabe offen',
+                'color' => 'amber',
+                'hint' => null,
+            ];
+        }
+
+        if ($this->isConfirmed()) {
+            return [
+                'label' => 'Bestätigt',
+                'color' => 'green',
+                'hint' => $this->confirmed_at?->format('d.m.Y H:i'),
+            ];
+        }
+
+        return [
+            'label' => 'Offen',
+            'color' => 'amber',
+            'hint' => null,
+        ];
     }
 }

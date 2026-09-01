@@ -37,6 +37,7 @@ class AssetOwnerHandoverAutomationService
         $exists = Handover::query()
             ->where('asset_id', $asset->id)
             ->where('recipient_user_id', $asset->user_id)
+            ->active()
             ->exists();
 
         if ($exists) {

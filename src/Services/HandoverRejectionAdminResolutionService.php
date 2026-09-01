@@ -29,7 +29,7 @@ class HandoverRejectionAdminResolutionService
         ?string $location,
         ?string $note = null,
     ): void {
-        if (! $handover->isRejected() || $handover->isConfirmed()) {
+        if (! $handover->isRejected() || $handover->isConfirmed() || $handover->isSuperseded()) {
             throw new \InvalidArgumentException('Übergabe kann nicht aufgelöst werden.');
         }
 
@@ -83,7 +83,7 @@ class HandoverRejectionAdminResolutionService
             throw new \InvalidArgumentException('Neuer Besitzer erforderlich.');
         }
 
-        $this->deleteHandoverWithRelations($handover);
+        app(HandoverSupersessionService::class)->supersede($handover, $adminUserId, 'rejected_handover:new_owner');
 
         $asset->update([
             'user_id' => $newOwnerUserId,
@@ -111,7 +111,7 @@ class HandoverRejectionAdminResolutionService
             throw new \InvalidArgumentException('Standort erforderlich.');
         }
 
-        $this->deleteHandoverWithRelations($handover);
+        app(HandoverSupersessionService::class)->supersede($handover, $adminUserId, 'rejected_handover:set_location');
 
         $asset->update([
             'user_id' => null,
@@ -135,7 +135,7 @@ class HandoverRejectionAdminResolutionService
      */
     private function applyMarkMissing(Asset $asset, Handover $handover, int $adminUserId, array $baseMeta, string $note): void
     {
-        $this->deleteHandoverWithRelations($handover);
+        app(HandoverSupersessionService::class)->supersede($handover, $adminUserId, 'rejected_handover:mark_missing');
 
         $asset->update([
             'user_id' => null,
@@ -148,17 +148,5 @@ class HandoverRejectionAdminResolutionService
             'reason' => $note !== '' ? $note : 'Abgelehnte Übergabe: Als vermisst markiert, Besitzer entfernt.',
             'meta' => $baseMeta,
         ]);
-    }
-
-    private function deleteHandoverWithRelations(Handover $handover): void
-    {
-        $return = $handover->assetReturn;
-        if ($return !== null) {
-            $return->notes()->delete();
-            $return->delete();
-        }
-
-        $handover->notes()->delete();
-        $handover->delete();
     }
 }

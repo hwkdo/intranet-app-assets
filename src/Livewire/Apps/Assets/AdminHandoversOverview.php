@@ -230,8 +230,7 @@ class AdminHandoversOverview extends Component
         }
 
         return Handover::query()
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
+            ->open()
             ->with([
                 'asset.type',
                 'asset.vendor',
@@ -312,8 +311,7 @@ class AdminHandoversOverview extends Component
         } else {
             $valid = Handover::query()
                 ->whereIn('id', $this->selectedHandoverIds)
-                ->whereNull('confirmed_at')
-                ->whereNull('rejected_at')
+                ->open()
                 ->pluck('id')
                 ->map(static fn (int|string $id): int => (int) $id)
                 ->all();

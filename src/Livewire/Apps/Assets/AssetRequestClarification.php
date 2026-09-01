@@ -42,8 +42,7 @@ class AssetRequestClarification extends Component
         $hasOpenHandover = Handover::query()
             ->where('asset_id', $asset->id)
             ->where('recipient_user_id', auth()->id())
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
+            ->open()
             ->exists();
 
         if ($hasOpenHandover) {

@@ -28,7 +28,7 @@ final class AssetShowBackOrigin
         'fehlende-rechnung' => ['route' => 'apps.assets.fehlende-rechnung', 'label' => 'Fehlende Rechnung', 'manage' => true],
         'legacy-assets' => ['route' => 'apps.assets.legacy-assets', 'label' => 'Legacy-Assets', 'manage' => true],
         'rechnungen' => ['route' => 'apps.assets.rechnungen', 'label' => 'Rechnungen Analyse', 'manage' => true],
-        'admin-handovers' => ['route' => 'apps.assets.admin.handovers', 'label' => 'Übergaben', 'manage' => true],
+        'admin-handovers' => ['route' => 'apps.assets.admin.open-handovers', 'label' => 'Unbestätigte Übergaben', 'manage' => true],
     ];
 
     /**

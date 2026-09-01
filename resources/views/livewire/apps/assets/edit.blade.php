@@ -160,14 +160,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
         $openHandover = Handover::query()
             ->where('asset_id', $this->asset->id)
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
+            ->open()
             ->latest('id')
             ->first();
 
         $rejectedHandover = Handover::query()
             ->where('asset_id', $this->asset->id)
-            ->whereNotNull('rejected_at')
+            ->rejectedPendingAdmin()
             ->latest('rejected_at')
             ->latest('id')
             ->first();

@@ -24,8 +24,7 @@ class OffeneUebergabenTaskProvider implements TaskProviderInterface
             ->with(['asset.type', 'asset.vendor'])
             ->whereHas('asset')
             ->where('recipient_user_id', $userId)
-            ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
+            ->open()
             ->orderBy('created_at')
             ->get()
             ->map(fn (Handover $handover) => new TaskItem(

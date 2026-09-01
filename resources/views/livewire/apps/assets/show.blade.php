@@ -56,9 +56,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             'attachments.uploader',
             'handovers.recipient',
             'handovers.issuer',
+            'handovers.supersededBy',
             'handovers.notes.author',
-            'handovers.assetReturn.recipient',
-            'handovers.assetReturn.notes.author',
+            'handovers.assetReturns.recipient',
+            'handovers.assetReturns.initiatedBy',
+            'handovers.assetReturns.notes.author',
         ]);
 
     }
@@ -116,14 +118,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                 ]);
             }
 
-            if ($handover->assetReturn) {
+            foreach ($handover->assetReturns as $assetReturn) {
                 $entries->push([
                     'type' => 'return',
-                    'date' => $handover->assetReturn->created_at,
-                    'model' => $handover->assetReturn,
+                    'date' => $assetReturn->completed_at ?? $assetReturn->created_at,
+                    'model' => $assetReturn,
                 ]);
 
-                foreach ($handover->assetReturn->notes as $note) {
+                foreach ($assetReturn->notes as $note) {
                     $entries->push([
                         'type' => 'note',
                         'date' => $note->created_at,
@@ -193,9 +195,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         $this->newNote = '';
         $this->mount($this->asset->fresh([
             'type', 'vendor', 'owner', 'notes.author',
-            'attachments.uploader', 'handovers.recipient',
-            'handovers.issuer', 'handovers.notes.author',
-            'handovers.assetReturn.recipient', 'handovers.assetReturn.notes.author',
+            'attachments.uploader',
+            'handovers.recipient', 'handovers.issuer', 'handovers.supersededBy',
+            'handovers.notes.author', 'handovers.assetReturns.recipient',
+            'handovers.assetReturns.initiatedBy', 'handovers.assetReturns.notes.author',
         ]));
 
         Flux::toast('Notiz wurde hinzugefügt.', variant: 'success');
@@ -219,8 +222,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         $this->asset = $this->asset->fresh([
             'type', 'vendor', 'owner',
             'historyEntries.user', 'notes.author', 'attachments.uploader',
-            'handovers.recipient', 'handovers.issuer', 'handovers.notes.author',
-            'handovers.assetReturn.recipient', 'handovers.assetReturn.notes.author',
+            'handovers.recipient', 'handovers.issuer', 'handovers.supersededBy',
+            'handovers.notes.author', 'handovers.assetReturns.recipient',
+            'handovers.assetReturns.initiatedBy', 'handovers.assetReturns.notes.author',
         ]);
     }
 
@@ -590,14 +594,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 <flux:table.cell>{{ $handover->recipient?->name ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $handover->issuer?->name ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>
-                                    @if($handover->isConfirmed())
-                                        <flux:badge color="green" size="sm">Bestätigt</flux:badge>
-                                        @if($handover->confirmed_at)
-                                            <span class="text-xs text-zinc-500">{{ $handover->confirmed_at->format('d.m.Y') }}</span>
+                                    @php $handoverStatus = $handover->displayStatus(); @endphp
+                                    <div class="flex flex-col gap-1">
+                                        <flux:badge color="{{ $handoverStatus['color'] }}" size="sm">{{ $handoverStatus['label'] }}</flux:badge>
+                                        @if(filled($handoverStatus['hint']))
+                                            <span class="text-xs text-zinc-500">{{ $handoverStatus['hint'] }}</span>
                                         @endif
-                                    @else
-                                        <flux:badge color="amber" size="sm">Offen</flux:badge>
-                                    @endif
+                                    </div>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:button href="{{ route('apps.assets.handover.show', $handover) }}" variant="ghost" size="sm" icon="eye">
@@ -800,9 +803,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                             </flux:timeline.item>
 
                         @elseif($entry['type'] === 'handover')
-                            @php $handover = $entry['model']; @endphp
+                            @php
+                                $handover = $entry['model'];
+                                $handoverStatus = $handover->displayStatus();
+                            @endphp
                             <flux:timeline.item>
-                                <flux:timeline.indicator color="green">
+                                <flux:timeline.indicator color="{{ $handoverStatus['color'] === 'zinc' ? 'zinc' : ($handoverStatus['color'] === 'blue' ? 'blue' : 'green') }}">
                                     <flux:icon.arrow-right-circle variant="micro" />
                                 </flux:timeline.indicator>
                                 <flux:timeline.content>
@@ -816,8 +822,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             <flux:text inline class="text-zinc-400"> · {{ $handover->created_at->format('d.m.Y H:i') }}</flux:text>
                                         </a>
                                     </flux:heading>
-                                    @if($handover->signature)
-                                        <flux:badge size="sm" color="green" icon="check">Unterschrift vorhanden</flux:badge>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                                        <flux:badge size="sm" color="{{ $handoverStatus['color'] }}">{{ $handoverStatus['label'] }}</flux:badge>
+                                        @if($handover->signature)
+                                            <flux:badge size="sm" color="green" icon="check">Unterschrift vorhanden</flux:badge>
+                                        @endif
+                                    </div>
+                                    @if(filled($handoverStatus['hint']))
+                                        <flux:text class="mt-1 text-sm text-zinc-500">{{ $handoverStatus['hint'] }}</flux:text>
                                     @endif
                                 </flux:timeline.content>
                             </flux:timeline.item>
@@ -825,16 +837,24 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @elseif($entry['type'] === 'return')
                             @php $return = $entry['model']; @endphp
                             <flux:timeline.item>
-                                <flux:timeline.indicator color="blue">
+                                <flux:timeline.indicator color="{{ $return->completed_at ? 'blue' : 'amber' }}">
                                     <flux:icon.arrow-left-circle variant="micro" />
                                 </flux:timeline.indicator>
                                 <flux:timeline.content>
                                     <flux:heading>
-                                        Rückgabe
-                                        @if($return->recipient)
-                                            <flux:text inline> entgegengenommen von {{ $return->recipient->name }}</flux:text>
+                                        @if($return->completed_at)
+                                            Rückgabe abgeschlossen
+                                            @if($return->recipient)
+                                                <flux:text inline> · entgegengenommen von {{ $return->recipient->name }}</flux:text>
+                                            @endif
+                                            <flux:text inline class="text-zinc-400"> · {{ $return->completed_at->format('d.m.Y H:i') }}</flux:text>
+                                        @else
+                                            Rückgabe eingeleitet
+                                            @if($return->initiatedBy)
+                                                <flux:text inline> von {{ $return->initiatedBy->name }}</flux:text>
+                                            @endif
+                                            <flux:text inline class="text-zinc-400"> · {{ $return->created_at->format('d.m.Y H:i') }}</flux:text>
                                         @endif
-                                        <flux:text inline class="text-zinc-400"> · {{ $return->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
                                 </flux:timeline.content>
                             </flux:timeline.item>
