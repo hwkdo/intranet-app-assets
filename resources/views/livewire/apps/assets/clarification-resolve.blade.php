@@ -19,6 +19,18 @@
                     <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
                     <dd class="font-mono text-zinc-900 dark:text-white">{{ $asset->serial_number }}</dd>
                 </dl>
+                <div class="mt-4">
+                    <flux:button
+                        href="{{ route('apps.assets.show', $asset) }}"
+                        target="_blank"
+                        rel="noopener"
+                        variant="ghost"
+                        icon="eye"
+                        size="sm"
+                    >
+                        Asset-Detail öffnen
+                    </flux:button>
+                </div>
             </flux:card>
 
             @php $lastNote = $asset->notes()->latest('id')->first(); @endphp
