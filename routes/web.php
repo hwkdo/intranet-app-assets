@@ -183,6 +183,14 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.missing');
 
+    Route::livewire('apps/assets/admin/vermisst/{asset}/bearbeiten', 'intranet-app-assets::apps.assets.missing-resolve')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.missing.resolve');
+
+    Route::livewire('apps/assets/admin/vermisst/{asset}/speichern', 'intranet-app-assets::apps.assets.missing-resolve-commit')
+        ->middleware(['can:manage-app-assets', 'ldap.password.confirm'])
+        ->name('apps.assets.admin.missing.resolve-commit');
+
     Route::livewire('apps/assets/admin/klarung/{asset}/bearbeiten', 'intranet-app-assets::apps.assets.clarification-resolve')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.clarification.resolve');

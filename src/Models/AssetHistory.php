@@ -58,6 +58,12 @@ class AssetHistory extends Model
 
     public const EventPendingHandoverAdminResolvedMissing = 'pending_handover_admin_resolved_missing';
 
+    public const EventMissingAdminResolvedClearOnly = 'missing_admin_resolved_clear_only';
+
+    public const EventMissingAdminResolvedNewOwner = 'missing_admin_resolved_new_owner';
+
+    public const EventMissingAdminResolvedLocation = 'missing_admin_resolved_location';
+
     protected $table = 'intranet_app_assets_asset_histories';
 
     protected $guarded = [];

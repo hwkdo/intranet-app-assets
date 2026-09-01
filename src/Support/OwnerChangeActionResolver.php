@@ -10,10 +10,12 @@ class OwnerChangeActionResolver
      *     has_open_handover: bool,
      *     has_rejected_handover: bool,
      *     is_clarification: bool,
+     *     is_missing: bool,
      *     pending_return_href?: string|null,
      *     open_handover_href?: string|null,
      *     rejected_handover_href?: string|null,
-     *     clarification_href?: string|null
+     *     clarification_href?: string|null,
+     *     missing_href?: string|null
      * }  $state
      * @return array{label: string, href: string, hint: string}|null
      */
@@ -48,6 +50,14 @@ class OwnerChangeActionResolver
                 'label' => 'Klärungsfall bearbeiten',
                 'href' => (string) $state['clarification_href'],
                 'hint' => 'Im Klärungsfall kann die Zuordnung durch die IT angepasst werden.',
+            ];
+        }
+
+        if ($state['is_missing'] && filled($state['missing_href'] ?? null)) {
+            return [
+                'label' => 'Vermisst-Fall bearbeiten',
+                'href' => (string) $state['missing_href'],
+                'hint' => 'Der Vermisst-Fall kann mit Dokumentation und LDAP-Bestätigung aufgelöst werden.',
             ];
         }
 

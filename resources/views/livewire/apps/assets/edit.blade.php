@@ -177,10 +177,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
             'has_open_handover' => $openHandover !== null,
             'has_rejected_handover' => $rejectedHandover !== null,
             'is_clarification' => (bool) $this->asset->is_clarification,
+            'is_missing' => (bool) $this->asset->is_missing,
             'pending_return_href' => $pendingReturn !== null ? route('apps.assets.admin.return.complete', $pendingReturn) : null,
             'open_handover_href' => $openHandover !== null ? route('apps.assets.admin.open-handover.resolve', $openHandover) : null,
             'rejected_handover_href' => $rejectedHandover !== null ? route('apps.assets.admin.rejected-handover.resolve', $rejectedHandover) : null,
             'clarification_href' => route('apps.assets.admin.clarification.resolve', $this->asset),
+            'missing_href' => route('apps.assets.admin.missing.resolve', $this->asset),
         ]);
     }
 

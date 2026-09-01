@@ -59,15 +59,36 @@ it('liefert klaerungsfall wenn sonst nichts offen ist', function () {
         'has_open_handover' => false,
         'has_rejected_handover' => false,
         'is_clarification' => true,
+        'is_missing' => true,
         'pending_return_href' => null,
         'open_handover_href' => null,
         'rejected_handover_href' => null,
         'clarification_href' => '/clarification/4',
+        'missing_href' => '/missing/4',
     ]);
 
     expect($result)->not()->toBeNull()
         ->and($result['label'])->toBe('Klärungsfall bearbeiten')
         ->and($result['href'])->toBe('/clarification/4');
+});
+
+it('liefert vermisst-fall vor null wenn sonst nichts offen ist', function () {
+    $result = OwnerChangeActionResolver::resolve([
+        'has_pending_return' => false,
+        'has_open_handover' => false,
+        'has_rejected_handover' => false,
+        'is_clarification' => false,
+        'is_missing' => true,
+        'pending_return_href' => null,
+        'open_handover_href' => null,
+        'rejected_handover_href' => null,
+        'clarification_href' => null,
+        'missing_href' => '/missing/5',
+    ]);
+
+    expect($result)->not()->toBeNull()
+        ->and($result['label'])->toBe('Vermisst-Fall bearbeiten')
+        ->and($result['href'])->toBe('/missing/5');
 });
 
 it('liefert null wenn kein spezialfall vorliegt', function () {
@@ -76,10 +97,12 @@ it('liefert null wenn kein spezialfall vorliegt', function () {
         'has_open_handover' => false,
         'has_rejected_handover' => false,
         'is_clarification' => false,
+        'is_missing' => false,
         'pending_return_href' => null,
         'open_handover_href' => null,
         'rejected_handover_href' => null,
         'clarification_href' => null,
+        'missing_href' => null,
     ]);
 
     expect($result)->toBeNull();

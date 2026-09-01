@@ -659,6 +659,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histClarNewOwner = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedNewOwner;
                                 $histClarLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedLocation;
                                 $histClarMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedMissing;
+                                $histMissingClear = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventMissingAdminResolvedClearOnly;
+                                $histMissingNewOwner = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventMissingAdminResolvedNewOwner;
+                                $histMissingLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventMissingAdminResolvedLocation;
                                 $histReturnInitiated = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnInitiatedByHolder;
                                 $histReturnCompleted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnCompletedByAdmin;
                                 $histHandoverConfirmCleared = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedStatusCleared;
@@ -674,6 +677,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing => 'green',
                                     $histOwnerClarification => 'amber',
                                     $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing => 'green',
+                                    $histMissingClear, $histMissingNewOwner, $histMissingLocation => 'green',
                                     $histReturnInitiated => 'amber',
                                     $histReturnCompleted => 'green',
                                     $histHandoverConfirmCleared => 'green',
@@ -705,6 +709,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     @elseif($histEvent === $histOwnerClarification)
                                         <flux:icon.question-mark-circle variant="micro" />
                                     @elseif(in_array($histEvent, [$histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true))
+                                        <flux:icon.arrow-path variant="micro" />
+                                    @elseif(in_array($histEvent, [$histMissingClear, $histMissingNewOwner, $histMissingLocation], true))
                                         <flux:icon.arrow-path variant="micro" />
                                     @elseif($histEvent === $histReturnInitiated)
                                         <flux:icon.arrow-uturn-left variant="micro" />
@@ -752,6 +758,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             Klärung: Besitzer entfernt, Standort gesetzt
                                         @elseif($histEvent === $histClarMissing)
                                             Klärung: Als vermisst markiert
+                                        @elseif($histEvent === $histMissingClear)
+                                            Vermisst: ohne Änderung aufgelöst
+                                        @elseif($histEvent === $histMissingNewOwner)
+                                            Vermisst: Neuer Besitzer zugewiesen
+                                        @elseif($histEvent === $histMissingLocation)
+                                            Vermisst: Auf Lager gelegt
                                         @elseif($histEvent === $histReturnInitiated)
                                             Rückgabe eingeleitet
                                         @elseif($histEvent === $histReturnCompleted)
@@ -773,6 +785,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     @elseif(in_array($histEvent, [$histHandoverRejected, $histRejectionAck, $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif(in_array($histEvent, [$histOwnerClarification, $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true) && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histMissingClear, $histMissingNewOwner, $histMissingLocation], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif(in_array($histEvent, [$histReturnInitiated, $histReturnCompleted], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>

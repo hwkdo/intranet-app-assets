@@ -8,6 +8,7 @@
                 <flux:table.column>Asset</flux:table.column>
                 <flux:table.column>Seriennummer</flux:table.column>
                 <flux:table.column>Typ</flux:table.column>
+                <flux:table.column>Besitzer (laut System)</flux:table.column>
                 <flux:table.column>Standort</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
@@ -22,6 +23,7 @@
                         </flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name ?? '—' }}</flux:table.cell>
+                        <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>{{ filled($asset->location) ? $asset->location : '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <div class="flex flex-wrap gap-1">
@@ -35,19 +37,19 @@
                                     Detail
                                 </flux:button>
                                 <flux:button
-                                    :href="route('apps.assets.edit', [$asset, 'from' => 'liste'])"
+                                    :href="route('apps.assets.admin.missing.resolve', $asset)"
                                     variant="primary"
                                     size="sm"
-                                    icon="pencil-square"
+                                    icon="check-circle"
                                 >
-                                    Bearbeiten
+                                    Auflösen
                                 </flux:button>
                             </div>
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="5" class="py-8 text-center text-zinc-500">
+                        <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
                             Keine vermissten Assets.
                         </flux:table.cell>
                     </flux:table.row>
