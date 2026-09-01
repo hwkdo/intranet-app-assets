@@ -575,9 +575,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 <flux:table.column>Modell / Name</flux:table.column>
                 <flux:table.column>Seriennummer</flux:table.column>
                 <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
-                <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>Standort</flux:table.column>
+                <flux:table.column class="w-36">Hersteller</flux:table.column>
+                <flux:table.column class="w-36">Besitzer</flux:table.column>
+                <flux:table.column class="w-36">Standort</flux:table.column>
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column
                     sortable
@@ -616,20 +616,33 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         </flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name }}</flux:table.cell>
-                        <flux:table.cell class="max-w-[10rem]">
+                        <flux:table.cell class="overflow-hidden">
                             @php $vendorName = $asset->vendor?->name ?? '—'; @endphp
-                            <flux:tooltip :content="$vendorName" position="top">
-                                <span class="block truncate">{{ $vendorName }}</span>
-                            </flux:tooltip>
+                            @if($vendorName !== '—')
+                                <flux:tooltip :content="$vendorName" position="top">
+                                    <span class="block min-w-0 truncate">{{ $vendorName }}</span>
+                                </flux:tooltip>
+                            @else
+                                <span>—</span>
+                            @endif
                         </flux:table.cell>
-                        <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
                         @php
+                            $ownerName = $asset->owner?->name;
                             $locationValue = AssetLocationDisplayResolver::resolve($asset)['value'];
                         @endphp
-                        <flux:table.cell class="max-w-[10rem]">
+                        <flux:table.cell class="overflow-hidden">
+                            @if(filled($ownerName))
+                                <flux:tooltip :content="$ownerName" position="top">
+                                    <span class="block min-w-0 truncate">{{ $ownerName }}</span>
+                                </flux:tooltip>
+                            @else
+                                <span>—</span>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell class="overflow-hidden">
                             @if(filled($locationValue))
                                 <flux:tooltip :content="$locationValue" position="top">
-                                    <span class="block truncate">{{ $locationValue }}</span>
+                                    <span class="block min-w-0 truncate">{{ $locationValue }}</span>
                                 </flux:tooltip>
                             @else
                                 <span>—</span>
