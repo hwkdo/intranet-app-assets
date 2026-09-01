@@ -7,7 +7,6 @@ use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
 use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
 use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
-use Hwkdo\IntranetAppAssets\Tasks\AssetsInClarificationAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
@@ -65,7 +64,6 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface,
         return [
             OffeneUebergabenTaskProvider::class,
             FehlendeRechnungsnrTaskProvider::class,
-            AssetsInClarificationAdminTaskProvider::class,
             PendingAssetReturnsAdminTaskProvider::class,
         ];
     }
