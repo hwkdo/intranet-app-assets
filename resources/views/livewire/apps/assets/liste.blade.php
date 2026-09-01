@@ -4,6 +4,7 @@ use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Illuminate\Support\Facades\Session;
@@ -28,6 +29,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
 
     #[Url]
     public string $statusFilter = '';
+
+    #[Url(as: 'ohneBesitzer')]
+    public bool $onlyWithoutOwner = false;
 
     /** @var 'model'|'created_at' */
     #[Url(as: 'sort')]
@@ -102,6 +106,11 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $this->resetPage();
     }
 
+    public function updatedOnlyWithoutOwner(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSelectedAssetIds(): void
     {
         $this->selectedAssetIds = $this->sanitizeIds($this->selectedAssetIds);
@@ -166,7 +175,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = Asset::query()
-            ->with(['type', 'vendor', 'owner']);
+            ->with(['type', 'vendor', 'owner.standort']);
 
         return $this->applyListingSort($query);
     }
@@ -179,7 +188,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     protected function exportBaseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
-            ->with(['type', 'vendor', 'owner'])
+            ->with(['type', 'vendor', 'owner.standort'])
             ->orderBy('model')
             ->orderBy('id');
     }
@@ -218,6 +227,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
             ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true))
+            ->when($this->onlyWithoutOwner, fn ($q) => $q->whereNull('user_id'))
             ->paginate(25);
     }
 
@@ -277,7 +287,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
-            ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true));
+            ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true))
+            ->when($this->onlyWithoutOwner, fn ($q) => $q->whereNull('user_id'));
     }
 
     /**
@@ -291,6 +302,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
             ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
             ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Standort', 'value' => fn (Asset $a) => AssetLocationDisplayResolver::resolve($a)['value'] ?? '—'],
             ['heading' => 'Status', 'value' => function (Asset $a) {
                 $status = [];
                 if ($a->is_missing) {
@@ -522,6 +534,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     <flux:select.option value="clarification">In Klärung</flux:select.option>
                     <flux:select.option value="in_stock">Auf Lager</flux:select.option>
                 </flux:select>
+                <flux:checkbox wire:model.live="onlyWithoutOwner" label="Nur ohne Besitzer" class="shrink-0" />
             </div>
             <div class="flex items-center gap-2">
                 <flux:dropdown position="bottom" align="end">
@@ -564,6 +577,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 <flux:table.column>Typ</flux:table.column>
                 <flux:table.column>Hersteller</flux:table.column>
                 <flux:table.column>Besitzer</flux:table.column>
+                <flux:table.column>Standort</flux:table.column>
                 <flux:table.column>Status</flux:table.column>
                 <flux:table.column
                     sortable
@@ -609,6 +623,18 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                             </flux:tooltip>
                         </flux:table.cell>
                         <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
+                        @php
+                            $locationValue = AssetLocationDisplayResolver::resolve($asset)['value'];
+                        @endphp
+                        <flux:table.cell class="max-w-[10rem]">
+                            @if(filled($locationValue))
+                                <flux:tooltip :content="$locationValue" position="top">
+                                    <span class="block truncate">{{ $locationValue }}</span>
+                                </flux:tooltip>
+                            @else
+                                <span>—</span>
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->is_missing)
@@ -664,7 +690,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="9" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="10" class="text-center text-zinc-500 py-8">
                             Keine Assets gefunden.
                         </flux:table.cell>
                     </flux:table.row>
