@@ -6,6 +6,24 @@
 ])
 
 @php
+    use Hwkdo\IntranetAppAssets\Support\AssetNavBadgeCounts;
+
+    $clarificationNavBadge = null;
+    $missingNavBadge = null;
+
+    if (auth()->user()?->can('manage-app-assets')) {
+        $clarificationCount = AssetNavBadgeCounts::clarificationCount();
+        $missingCount = AssetNavBadgeCounts::missingCount();
+
+        if ($clarificationCount > 0) {
+            $clarificationNavBadge = $clarificationCount;
+        }
+
+        if ($missingCount > 0) {
+            $missingNavBadge = $missingCount;
+        }
+    }
+
     $defaultNavItems = [
         ['label' => 'Übersicht', 'href' => route('apps.assets.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen', 'welcomeSection' => 'main'],
         ['label' => 'Meine Assets', 'href' => route('apps.assets.meine-assets'), 'icon' => 'user', 'description' => 'Ihre zugewiesenen Assets', 'buttonText' => 'Meine Assets anzeigen', 'welcomeSection' => 'main'],
@@ -27,7 +45,8 @@
         ['label' => 'Gelöschte Assets', 'href' => route('apps.assets.deleted'), 'icon' => 'archive-box', 'description' => 'Soft-gelöschte Assets einsehen und verwalten', 'buttonText' => 'Gelöschte Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Übergaben', 'href' => route('apps.assets.admin.handovers', ['filter' => 'open']), 'icon' => 'clock', 'description' => 'Offene und abgelehnte Übergaben adminseitig bearbeiten', 'buttonText' => 'Übergaben anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Offene Rückgaben', 'href' => route('apps.assets.admin.returns.pending'), 'icon' => 'arrow-uturn-left', 'description' => 'Rückgaben mit Empfangsbestätigung und Zuordnung abschließen', 'buttonText' => 'Rückgaben anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Assets in Klärung', 'href' => route('apps.assets.admin.clarifications'), 'icon' => 'question-mark-circle', 'description' => 'Vom Besitzer gemeldete Klärungsfälle bearbeiten', 'buttonText' => 'Klärfälle anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
+        ['label' => 'Assets in Klärung', 'href' => route('apps.assets.admin.clarifications'), 'icon' => 'question-mark-circle', 'description' => 'Vom Besitzer gemeldete Klärungsfälle bearbeiten', 'buttonText' => 'Klärfälle anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $clarificationNavBadge, 'badgeColor' => 'red'],
+        ['label' => 'Assets vermisst', 'href' => route('apps.assets.admin.missing'), 'icon' => 'exclamation-triangle', 'description' => 'Als vermisst markierte Assets einsehen und bearbeiten', 'buttonText' => 'Vermisste Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $missingNavBadge, 'badgeColor' => 'red'],
         ['label' => 'Admin-Settings', 'href' => route('apps.assets.admin.index'), 'icon' => 'shield-check', 'description' => 'Typen, Hersteller und Seventhings-Zuordnung', 'buttonText' => 'Admin-Settings öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'settings'],
         
     ];

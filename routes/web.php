@@ -179,6 +179,10 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.clarifications');
 
+    Route::livewire('apps/assets/admin/vermisst', 'intranet-app-assets::apps.assets.missing-assets-overview')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.missing');
+
     Route::livewire('apps/assets/admin/klarung/{asset}/bearbeiten', 'intranet-app-assets::apps.assets.clarification-resolve')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.clarification.resolve');

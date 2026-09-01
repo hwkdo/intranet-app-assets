@@ -80,12 +80,7 @@ new class extends Component
 
     @if($this->hasMore)
         <div class="pt-1">
-            <flux:button
-                variant="ghost"
-                size="sm"
-                :href="route('apps.assets.liste', ['statusFilter' => 'missing'])"
-                wire:navigate
-            >
+            <flux:button variant="ghost" size="sm" :href="route('apps.assets.admin.missing')" wire:navigate>
                 Weitere anzeigen
             </flux:button>
         </div>
