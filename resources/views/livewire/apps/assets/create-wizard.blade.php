@@ -70,6 +70,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'domain_connection' => null,
             'is_clarification' => false,
             'is_missing' => false,
+            'is_in_stock' => false,
         ];
     }
 
@@ -410,6 +411,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.domain_connection' => 'nullable|string|in:default,schulung',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
+            'units.*.is_in_stock' => 'boolean',
             'unit_images' => 'array',
             'unit_images.*' => 'nullable|image|max:10240',
         ];
@@ -493,6 +495,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'domain_connection' => $this->showDomainConnectionField ? (($unit['domain_connection'] ?? null) ?: null) : null,
                 'is_clarification' => $unit['is_clarification'] ?? false,
                 'is_missing' => $unit['is_missing'] ?? false,
+                'is_in_stock' => $unit['is_in_stock'] ?? false,
             ];
 
             $asset = Asset::create($attributes);
@@ -800,7 +803,10 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             @endif
                         </div>
 
-                        <div class="flex gap-4 pt-2">
+                        <div class="flex flex-wrap gap-4 pt-2">
+                            @if(empty($unit['user_id']))
+                                <flux:checkbox wire:model="units.{{ $index }}.is_in_stock" label="Auf Lager" />
+                            @endif
                             <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                             <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                         </div>

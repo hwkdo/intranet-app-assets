@@ -65,6 +65,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
     public bool $is_clarification = false;
     public bool $is_missing = false;
+    public bool $is_in_stock = false;
 
     #[Validate('nullable|string|in:default,schulung')]
     public ?string $domain_connection = null;
@@ -90,6 +91,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         $this->invoice_number = $asset->invoice_number;
         $this->is_clarification = $asset->is_clarification;
         $this->is_missing = $asset->is_missing;
+        $this->is_in_stock = $asset->is_in_stock;
         $this->domain_connection = $asset->domain_connection;
         $this->intune_device_id = $asset->intune_device_id;
     }
@@ -222,6 +224,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         if ($this->asset->user_id === null) {
             $baseRules['user_id'] = 'nullable|exists:users,id';
             $baseRules['location'] = 'nullable|string|max:255';
+            $baseRules['is_in_stock'] = 'boolean';
         }
 
         $data = [
@@ -239,6 +242,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         if ($this->asset->user_id === null) {
             $data['user_id'] = $this->user_id;
             $data['location'] = $this->location;
+            $data['is_in_stock'] = $this->is_in_stock;
         }
 
         $validated = Validator::make($data, $baseRules)->validate();
@@ -373,6 +377,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 </flux:field>
 
                 <flux:field>
+                    <flux:checkbox wire:model="is_in_stock" label="Auf Lager" />
+                    <flux:text class="text-xs text-zinc-500">Nur für Assets ohne persönlichen Besitzer (z. B. IT-Lager). Gemeinschaftsgeräte bleiben ohne Häkchen.</flux:text>
+                    <flux:error name="is_in_stock" />
+                </flux:field>
+
+                <flux:field>
                     <flux:label>Besitzer (Erstzuweisung)</flux:label>
                     <flux:select variant="listbox" searchable clearable wire:model="user_id" placeholder="Kein Besitzer">
                         <flux:select.option value="">Kein Besitzer</flux:select.option>
@@ -401,6 +411,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                             @endif
                             · <strong>Vermisst:</strong> {{ $asset->is_missing ? 'Ja' : 'Nein' }}
                             · <strong>In Klärung:</strong> {{ $asset->is_clarification ? 'Ja' : 'Nein' }}
+                            · <strong>Auf Lager:</strong> {{ $asset->is_in_stock ? 'Ja' : 'Nein' }}
                             @if($this->ownerChangeAction)
                                 <br>
                                 <a href="{{ $this->ownerChangeAction['href'] }}" wire:navigate class="text-primary-600 underline hover:no-underline dark:text-primary-400">

@@ -471,7 +471,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @if($asset->is_clarification)
                             <flux:badge color="amber" size="lg" icon="question-mark-circle">In Klärung</flux:badge>
                         @endif
-                        @if(!$asset->is_missing && !$asset->is_clarification)
+                        @if($asset->is_in_stock)
+                            <flux:badge color="blue" size="lg" icon="archive-box">Auf Lager</flux:badge>
+                        @endif
+                        @if(!$asset->is_missing && !$asset->is_clarification && !$asset->is_in_stock)
                             <flux:badge color="green" size="lg" icon="check-circle">Aktiv</flux:badge>
                         @endif
                     </div>

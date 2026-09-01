@@ -76,8 +76,8 @@
                         />
                         <flux:radio
                             value="{{ AssetClarificationAdminResolutionService::ResolutionSetLocation }}"
-                            label="Besitzer entfernen und Standort setzen"
-                            description="Alle Übergaben entfernen; Standort ist Pflicht."
+                            label="Besitzer entfernen und Standort setzen (Auf Lager)"
+                            description="Alle Übergaben entfernen; Standort ist Pflicht. Asset wird als Auf Lager markiert."
                         />
                         <flux:radio
                             value="{{ AssetClarificationAdminResolutionService::ResolutionMarkMissing }}"

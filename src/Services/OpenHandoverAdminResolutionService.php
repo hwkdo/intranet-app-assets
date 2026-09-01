@@ -83,6 +83,7 @@ class OpenHandoverAdminResolutionService
             'user_id' => $newOwnerUserId,
             'is_missing' => false,
             'is_clarification' => false,
+            'is_in_stock' => false,
         ]);
 
         $asset->historyEntries()->create([
@@ -109,6 +110,7 @@ class OpenHandoverAdminResolutionService
             'location' => $location,
             'is_missing' => false,
             'is_clarification' => false,
+            'is_in_stock' => true,
         ]);
 
         $asset->historyEntries()->create([

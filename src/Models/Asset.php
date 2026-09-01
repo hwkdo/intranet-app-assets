@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
 use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
+use Hwkdo\IntranetAppAssets\Support\AssetStockState;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -73,6 +74,7 @@ class Asset extends Model implements HasMedia
             'invoice_number_pending' => 'boolean',
             'is_clarification' => 'boolean',
             'is_missing' => 'boolean',
+            'is_in_stock' => 'boolean',
             'domain_last_seen' => 'datetime',
             'domain_last_checked' => 'datetime',
             'last_logon' => 'datetime',
@@ -118,6 +120,15 @@ class Asset extends Model implements HasMedia
             ->where(function ($q) {
                 $q->whereNull('invoice_number')->orWhere('invoice_number', '');
             });
+    }
+
+    /**
+     * @param  Builder<Asset>  $query
+     * @return Builder<Asset>
+     */
+    public function scopeInStock($query)
+    {
+        return $query->where('is_in_stock', true);
     }
 
     /**
@@ -167,6 +178,10 @@ class Asset extends Model implements HasMedia
 
     protected static function booted(): void
     {
+        static::saving(function (self $asset): void {
+            AssetStockState::enforceInvariants($asset);
+        });
+
         static::forceDeleting(function (self $asset): void {
             app(AssetPermanentDeletionArchiveRecorder::class)->record($asset);
         });
@@ -218,6 +233,10 @@ class Asset extends Model implements HasMedia
 
         if ($this->is_clarification) {
             $tokens[] = 'clarification';
+        }
+
+        if ($this->is_in_stock) {
+            $tokens[] = 'in_stock';
         }
 
         if ($this->invoice_number_pending) {

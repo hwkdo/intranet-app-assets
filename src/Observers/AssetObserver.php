@@ -33,6 +33,7 @@ class AssetObserver
         'location',
         'is_clarification',
         'is_missing',
+        'is_in_stock',
         'itexia_id',
         'itexia_uuid',
         'order_number',

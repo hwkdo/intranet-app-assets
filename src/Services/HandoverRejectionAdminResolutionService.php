@@ -88,6 +88,7 @@ class HandoverRejectionAdminResolutionService
         $asset->update([
             'user_id' => $newOwnerUserId,
             'is_missing' => false,
+            'is_in_stock' => false,
         ]);
 
         $asset->historyEntries()->create([
@@ -116,6 +117,7 @@ class HandoverRejectionAdminResolutionService
             'user_id' => null,
             'location' => $location,
             'is_missing' => false,
+            'is_in_stock' => true,
         ]);
 
         $asset->historyEntries()->create([

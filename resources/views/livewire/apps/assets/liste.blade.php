@@ -217,6 +217,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
+            ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true))
             ->paginate(25);
     }
 
@@ -275,7 +276,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             })
             ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
-            ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true));
+            ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
+            ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true));
     }
 
     /**
@@ -296,6 +298,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 }
                 if ($a->is_clarification) {
                     $status[] = 'Klärung';
+                }
+                if ($a->is_in_stock) {
+                    $status[] = 'Auf Lager';
                 }
                 if (empty($status)) {
                     $status[] = 'OK';
@@ -515,6 +520,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     <flux:select.option value="">Alle Status</flux:select.option>
                     <flux:select.option value="missing">Vermisst</flux:select.option>
                     <flux:select.option value="clarification">In Klärung</flux:select.option>
+                    <flux:select.option value="in_stock">Auf Lager</flux:select.option>
                 </flux:select>
             </div>
             <div class="flex items-center gap-2">
@@ -611,7 +617,10 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 @if($asset->is_clarification)
                                     <flux:badge color="amber" size="sm">Klärung</flux:badge>
                                 @endif
-                                @if(!$asset->is_missing && !$asset->is_clarification)
+                                @if($asset->is_in_stock)
+                                    <flux:badge color="blue" size="sm">Auf Lager</flux:badge>
+                                @endif
+                                @if(!$asset->is_missing && !$asset->is_clarification && !$asset->is_in_stock)
                                     <flux:badge color="green" size="sm">OK</flux:badge>
                                 @endif
                             </div>

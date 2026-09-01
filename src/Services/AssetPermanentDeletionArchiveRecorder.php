@@ -48,6 +48,7 @@ class AssetPermanentDeletionArchiveRecorder
             'smbios_guid' => $attributes['smbios_guid'] ?? null,
             'is_clarification' => (bool) ($attributes['is_clarification'] ?? false),
             'is_missing' => (bool) ($attributes['is_missing'] ?? false),
+            'is_in_stock' => (bool) ($attributes['is_in_stock'] ?? false),
             'itexia_actual_room_id' => isset($attributes['itexia_actual_room_id']) ? (int) $attributes['itexia_actual_room_id'] : null,
             'itexia_target_room_id' => isset($attributes['itexia_target_room_id']) ? (int) $attributes['itexia_target_room_id'] : null,
             'soft_deleted_at' => $asset->getAttribute($asset->getDeletedAtColumn())?->toIso8601String(),

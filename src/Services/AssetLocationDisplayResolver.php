@@ -62,7 +62,9 @@ class AssetLocationDisplayResolver
             return [
                 'value' => $location,
                 'label' => 'Standort',
-                'hint' => 'Pool-Standort (Asset ohne Besitzer)',
+                'hint' => $asset->is_in_stock
+                    ? 'Auf Lager — Pool-Standort (Asset ohne Besitzer)'
+                    : 'Pool-Standort (Asset ohne Besitzer)',
                 'source' => self::SOURCE_POOL,
             ];
         }

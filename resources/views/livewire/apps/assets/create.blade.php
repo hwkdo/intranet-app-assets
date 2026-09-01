@@ -52,6 +52,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'intune_device_id' => null,
             'is_clarification' => false,
             'is_missing' => false,
+            'is_in_stock' => false,
         ];
     }
 
@@ -164,6 +165,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units.*.intune_device_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
+            'units.*.is_in_stock' => 'boolean',
             'unit_images' => 'array',
             'unit_images.*' => 'nullable|image|max:10240',
         ];
@@ -216,6 +218,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                 'intune_device_id' => $unit['intune_device_id'] ?: null,
                 'is_clarification' => $unit['is_clarification'] ?? false,
                 'is_missing' => $unit['is_missing'] ?? false,
+                'is_in_stock' => $unit['is_in_stock'] ?? false,
             ];
 
             $asset = Asset::create($attributes);
@@ -375,7 +378,10 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                         @endif
                     </div>
 
-                    <div class="flex gap-4 pt-2">
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        @if(empty($unit['user_id']))
+                            <flux:checkbox wire:model="units.{{ $index }}.is_in_stock" label="Auf Lager" />
+                        @endif
                         <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                         <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                     </div>

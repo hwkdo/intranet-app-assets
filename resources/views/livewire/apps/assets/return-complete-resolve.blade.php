@@ -61,8 +61,8 @@
                         />
                         <flux:radio
                             value="{{ AssetReturnAdminCompletionService::ResolutionSetLocation }}"
-                            label="Kein neuer Besitzer — Standort setzen"
-                            description="Besitzer wird entfernt; Standort ist Pflicht (z. B. Lager)."
+                            label="Kein neuer Besitzer — Standort setzen (Auf Lager)"
+                            description="Besitzer wird entfernt; Standort ist Pflicht (z. B. Lager). Asset wird als Auf Lager markiert."
                         />
                     </flux:radio.group>
                     @error('resolution')

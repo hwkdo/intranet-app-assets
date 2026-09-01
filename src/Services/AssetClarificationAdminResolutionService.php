@@ -88,6 +88,7 @@ class AssetClarificationAdminResolutionService
             'user_id' => $newOwnerUserId,
             'is_clarification' => false,
             'is_missing' => false,
+            'is_in_stock' => false,
         ]);
 
         $asset->historyEntries()->create([
@@ -117,6 +118,7 @@ class AssetClarificationAdminResolutionService
             'location' => $location,
             'is_clarification' => false,
             'is_missing' => false,
+            'is_in_stock' => true,
         ]);
 
         $asset->historyEntries()->create([
