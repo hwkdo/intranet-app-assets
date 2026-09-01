@@ -136,6 +136,28 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
             ->values();
     }
 
+    /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */
+    #[Computed]
+    public function returnInitiatableHandoversByAssetId(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return Handover::query()
+            ->where('recipient_user_id', auth()->id())
+            ->whereIn('asset_id', $assetIds)
+            ->whereNotNull('confirmed_at')
+            ->whereNull('rejected_at')
+            ->whereDoesntHave('assetReturns')
+            ->orderByDesc('confirmed_at')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('asset_id')
+            ->keyBy('asset_id');
+    }
+
     /**
      * @param  array<int|string>  $ids
      * @return list<int>
@@ -362,9 +384,23 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                             ></flux:button>
                                         </flux:tooltip>
                                     @endif
+                                    @php $returnHandover = $this->returnInitiatableHandoversByAssetId->get($asset->id); @endphp
+                                    @if(! $pendingHandover && $returnHandover)
+                                        <flux:tooltip content="Rückgabe einleiten — Gerät an die IT zurückgeben" position="top">
+                                            <flux:button
+                                                href="{{ route('apps.assets.handover.return.initiate', $returnHandover) }}"
+                                                variant="primary"
+                                                size="sm"
+                                                icon="arrow-uturn-left"
+                                                class="!px-2"
+                                                aria-label="Rückgabe einleiten"
+                                            ></flux:button>
+                                        </flux:tooltip>
+                                    @endif
                                     @if(
                                         ! $asset->is_clarification
                                         && ! $pendingHandover
+                                        && ! $returnHandover
                                         && $this->assetIdsWithConfirmedRecipientHandover->contains((int) $asset->id)
                                     )
                                         <flux:tooltip content="Klärung anfordern — wenn der Bestand nicht stimmt (wird protokolliert)" position="top">
