@@ -849,11 +849,18 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             @endif
                                             <flux:text inline class="text-zinc-400"> · {{ $return->completed_at->format('d.m.Y H:i') }}</flux:text>
                                         @else
-                                            Rückgabe eingeleitet
+                                            @if($return->isScheduled())
+                                                Geplante Rückgabe eingeleitet
+                                            @else
+                                                Rückgabe eingeleitet
+                                            @endif
                                             @if($return->initiatedBy)
                                                 <flux:text inline> von {{ $return->initiatedBy->name }}</flux:text>
                                             @endif
                                             <flux:text inline class="text-zinc-400"> · {{ $return->created_at->format('d.m.Y H:i') }}</flux:text>
+                                            @if($return->isScheduled())
+                                                <flux:text inline class="text-zinc-400"> · Termin {{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) }}</flux:text>
+                                            @endif
                                         @endif
                                     </flux:heading>
                                 </flux:timeline.content>

@@ -27,6 +27,37 @@
             </flux:card>
 
             <form wire:submit="submit" class="space-y-4">
+                <flux:radio.group wire:model.live="scheduleType" label="Art der Rückgabe">
+                    <flux:radio value="{{ \Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType::Immediate->value }}" label="Sofort" description="Rückgabe wird unmittelbar eingeleitet." />
+                    <flux:radio value="{{ \Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType::Scheduled->value }}" label="Geplant" description="Termin mit Erinnerungen vor der Rückgabe." />
+                </flux:radio.group>
+
+                @if($scheduleType === \Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType::Scheduled->value)
+                    <flux:callout variant="subtle" icon="information-circle">
+                        <flux:callout.text>
+                            Der Termin muss mindestens {{ $this->reminder2Hours() }} Stunden in der Zukunft liegen. Sie erhalten Erinnerungen vor dem Termin.
+                        </flux:callout.text>
+                    </flux:callout>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <flux:input
+                            wire:model="scheduledDate"
+                            type="date"
+                            label="Datum"
+                            :min="$this->minScheduleDate()"
+                            :max="$this->maxScheduleDate()"
+                            required
+                        />
+                        <flux:input
+                            wire:model="scheduledTime"
+                            type="time"
+                            label="Uhrzeit"
+                            required
+                        />
+                    </div>
+                    <flux:error name="scheduledDate" />
+                @endif
+
                 <flux:textarea
                     wire:model="note"
                     label="Hinweis (optional)"

@@ -200,6 +200,26 @@ class Handover extends Model
         }
 
         if ($this->hasPendingReturn()) {
+            $pendingReturn = $this->relationLoaded('assetReturns')
+                ? $this->assetReturns->first(fn (AssetReturn $return): bool => $return->completed_at === null)
+                : $this->assetReturns()->whereNull('completed_at')->first();
+
+            if ($pendingReturn?->isScheduled()) {
+                if ($pendingReturn->isOverdue()) {
+                    return [
+                        'label' => 'Rückgabe überfällig',
+                        'color' => 'red',
+                        'hint' => $pendingReturn->scheduled_at?->format('d.m.Y H:i'),
+                    ];
+                }
+
+                return [
+                    'label' => 'Rückgabe geplant',
+                    'color' => 'blue',
+                    'hint' => $pendingReturn->scheduled_at?->format('d.m.Y H:i'),
+                ];
+            }
+
             return [
                 'label' => 'Rückgabe offen',
                 'color' => 'amber',

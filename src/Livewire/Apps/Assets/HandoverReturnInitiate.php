@@ -1,10 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Services\ScheduledReturnReminderService;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -15,6 +21,12 @@ use Livewire\Component;
 class HandoverReturnInitiate extends Component
 {
     public Handover $handover;
+
+    public string $scheduleType = ReturnScheduleType::Immediate->value;
+
+    public string $scheduledDate = '';
+
+    public string $scheduledTime = '';
 
     #[Validate('nullable|string|max:5000')]
     public string $note = '';
@@ -51,18 +63,49 @@ class HandoverReturnInitiate extends Component
             session()->flash('message', 'Diese Übergabe ist bereits zurückgegeben worden.');
             $this->redirect(route('apps.assets.handover.show', $handover), navigate: true);
         }
+
+        $window = app(ScheduledReturnReminderService::class)->allowedScheduleWindow();
+        $defaultScheduled = $window['min']->copy();
+        $this->scheduledDate = $defaultScheduled->format('Y-m-d');
+        $this->scheduledTime = $defaultScheduled->format('H:i');
     }
 
     public function submit(): void
     {
-        $this->validate();
+        $this->validate([
+            'note' => ['nullable', 'string', 'max:5000'],
+            'scheduleType' => ['required', 'in:'.ReturnScheduleType::Immediate->value.','.ReturnScheduleType::Scheduled->value],
+        ]);
 
         $userId = auth()->id();
         $noteText = trim($this->note);
+        $scheduleType = ReturnScheduleType::from($this->scheduleType);
+        $scheduledAt = null;
+
+        if ($scheduleType === ReturnScheduleType::Scheduled) {
+            $this->validate([
+                'scheduledDate' => ['required', 'date'],
+                'scheduledTime' => ['required', 'date_format:H:i'],
+            ]);
+
+            $scheduledAt = Carbon::parse(
+                $this->scheduledDate.' '.$this->scheduledTime,
+                config('app.timezone'),
+            );
+
+            $validationMessage = app(ScheduledReturnReminderService::class)->validateScheduledAt($scheduledAt);
+            if ($validationMessage !== null) {
+                $this->addError('scheduledDate', $validationMessage);
+
+                return;
+            }
+        }
 
         $return = AssetReturn::create([
             'handover_id' => $this->handover->id,
             'initiated_by_user_id' => $userId,
+            'schedule_type' => $scheduleType,
+            'scheduled_at' => $scheduledAt,
         ]);
 
         if ($noteText !== '') {
@@ -74,20 +117,54 @@ class HandoverReturnInitiate extends Component
 
         $asset = $this->handover->asset;
         if ($asset !== null) {
+            $reason = $noteText !== '' ? $noteText : 'Rückgabe eingeleitet.';
+            if ($scheduleType === ReturnScheduleType::Scheduled && $scheduledAt !== null) {
+                $reason = 'Geplante Rückgabe für '.$scheduledAt->format('d.m.Y H:i').'.'.($noteText !== '' ? ' '.$noteText : '');
+            }
+
             $asset->historyEntries()->create([
                 'event' => AssetHistory::EventReturnInitiatedByHolder,
                 'user_id' => $userId,
-                'reason' => $noteText !== '' ? $noteText : 'Rückgabe eingeleitet.',
+                'reason' => $reason,
                 'meta' => [
                     'asset_return_id' => $return->id,
                     'handover_id' => $this->handover->id,
                     'initiated_by_admin' => $this->initiatedByAdmin,
+                    'schedule_type' => $scheduleType->value,
+                    'scheduled_at' => $scheduledAt?->toIso8601String(),
                 ],
             ]);
         }
 
-        session()->flash('message', 'Die Rückgabe wurde eingeleitet. Die IT bearbeitet den Vorgang und bestätigt den physischen Empfang.');
+        $flashMessage = $scheduleType === ReturnScheduleType::Scheduled
+            ? 'Die geplante Rückgabe wurde eingeleitet. Sie erhalten Erinnerungen vor dem Termin.'
+            : 'Die Rückgabe wurde eingeleitet. Die IT bearbeitet den Vorgang und bestätigt den physischen Empfang.';
+
+        session()->flash('message', $flashMessage);
         $this->redirect(route('apps.assets.handover.show', $this->handover), navigate: true);
+    }
+
+    public function minScheduleDate(): string
+    {
+        return app(ScheduledReturnReminderService::class)
+            ->allowedScheduleWindow()
+            ['min']
+            ->format('Y-m-d');
+    }
+
+    public function maxScheduleDate(): string
+    {
+        return app(ScheduledReturnReminderService::class)
+            ->allowedScheduleWindow()
+            ['max']
+            ->format('Y-m-d');
+    }
+
+    public function reminder2Hours(): int
+    {
+        $settings = IntranetAppAssetsSettings::resolvedAppSettings();
+
+        return $settings->returnReminder2Hours;
     }
 
     public function render(): \Illuminate\Contracts\View\View

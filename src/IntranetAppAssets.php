@@ -2,17 +2,20 @@
 
 namespace Hwkdo\IntranetAppAssets;
 
+use Hwkdo\IntranetAppBase\Data\NotificationTypeDefinition;
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesNotificationsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
 use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
 use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
 use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
+use Hwkdo\IntranetAppAssets\Tasks\ScheduledAssetReturnsAdminTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
 use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
 use Illuminate\Support\Collection;
 
-class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface
+class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface
 {
     public static function app_name(): string
     {
@@ -65,6 +68,21 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface,
             OffeneUebergabenTaskProvider::class,
             FehlendeRechnungsnrTaskProvider::class,
             PendingAssetReturnsAdminTaskProvider::class,
+            ScheduledAssetReturnsAdminTaskProvider::class,
+        ];
+    }
+
+    public static function notificationTypes(): array
+    {
+        return [
+            new NotificationTypeDefinition(
+                key: 'assets.return_reminder',
+                label: 'Geplante Rückgabe – Erinnerung',
+                appIdentifier: self::identifier(),
+                appName: self::app_name(),
+                description: 'Erinnerungen vor und nach dem geplanten Rückgabe-Termin.',
+                mandatory: true,
+            ),
         ];
     }
 

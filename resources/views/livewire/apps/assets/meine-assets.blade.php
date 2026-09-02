@@ -2,6 +2,7 @@
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter;
 use Hwkdo\IntranetAppAssets\Support\BulkRecipientHandoverSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Illuminate\Support\Facades\Session;
@@ -155,6 +156,24 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
             ->orderByDesc('id')
             ->get()
             ->unique('asset_id')
+            ->keyBy('asset_id');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */
+    #[Computed]
+    public function pendingReturnHandoversByAssetId(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return Handover::query()
+            ->where('recipient_user_id', auth()->id())
+            ->whereIn('asset_id', $assetIds)
+            ->whereHas('assetReturns', fn ($query) => $query->whereNull('completed_at'))
+            ->with(['assetReturns' => fn ($query) => $query->whereNull('completed_at')])
+            ->get()
             ->keyBy('asset_id');
     }
 
@@ -349,6 +368,21 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                 @endif
                                 @if($asset->is_clarification && ! $this->pendingHandoversByAssetId->has($asset->id))
                                     <flux:badge color="amber" size="sm" class="mt-1">In Klärung</flux:badge>
+                                @endif
+                                @php
+                                    $pendingReturnHandover = $this->pendingReturnHandoversByAssetId->get($asset->id);
+                                    $pendingReturn = $pendingReturnHandover?->assetReturns?->first();
+                                    $returnScheduleBadge = $pendingReturn ? AssetReturnSchedulePresenter::scheduleBadge($pendingReturn) : null;
+                                @endphp
+                                @if($returnScheduleBadge)
+                                    <flux:badge :color="$returnScheduleBadge['color']" size="sm" class="mt-1">{{ $returnScheduleBadge['label'] }}</flux:badge>
+                                @elseif($pendingReturn)
+                                    <flux:badge color="amber" size="sm" class="mt-1">Rückgabe offen</flux:badge>
+                                @endif
+                                @if($pendingReturn?->isScheduled())
+                                    <div class="mt-1 text-xs text-zinc-500">
+                                        Termin {{ AssetReturnSchedulePresenter::formattedScheduledAt($pendingReturn->scheduled_at) }}
+                                    </div>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>

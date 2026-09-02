@@ -128,6 +128,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
+                Commands\ProcessScheduledReturnRemindersCommand::class,
                 BackfillOwnerHandoversCommand::class,
                 ClearStaleAssetLocationsCommand::class,
                 EnsureAssetHandoversCommand::class,

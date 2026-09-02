@@ -85,6 +85,18 @@ class AppSettings extends BaseAppSettings implements HasAiSettings
 
         #[Description('Quelle für die BEN-Existenzprüfung: legacy = Legacy-Intranet, intranet_v3 = lokale Bestellungen (Intranet V3), beides = beide Systeme (BEN muss in mind. einem existieren)')]
         public BenPruefungsQuelle $benPruefungsQuelle = BenPruefungsQuelle::Legacy,
+
+        #[Description('Erste Erinnerung vor geplanter Rückgabe (Stunden)')]
+        public int $returnReminder1Hours = 24,
+
+        #[Description('Zweite Erinnerung vor geplanter Rückgabe (Stunden); Mindest-Vorlauf für Terminwahl')]
+        public int $returnReminder2Hours = 4,
+
+        #[Description('Intervall für Erinnerungen nach überfälligem Rückgabe-Termin (Stunden)')]
+        public int $returnReminder3Hours = 2,
+
+        #[Description('Maximaler Planungshorizont für geplante Rückgaben (Tage)')]
+        public int $scheduledReturnMaxDays = 28,
     ) {}
 
     public function textProviderOverride(): ?AiProvider

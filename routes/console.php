@@ -41,3 +41,9 @@ Schedule::command('intranet-app-assets:itexia-image-sync --limit=60')
     ->withoutOverlapping(30)
     ->runInBackground()
     ->when(fn () => config('app.env') === 'production');
+
+Schedule::command('intranet-app-assets:return-reminders')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(15)
+    ->runInBackground()
+    ->when(fn () => config('app.env') === 'production');

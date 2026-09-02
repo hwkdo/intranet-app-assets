@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
@@ -120,6 +121,12 @@ class PendingReturnsOverview extends Component
                 'handover.recipient',
                 'initiatedBy',
             ])
+            ->orderByRaw('CASE WHEN schedule_type = ? AND scheduled_at IS NOT NULL AND scheduled_at <= ? THEN 0 WHEN schedule_type = ? AND scheduled_at IS NOT NULL THEN 1 ELSE 2 END', [
+                ReturnScheduleType::Scheduled->value,
+                now(),
+                ReturnScheduleType::Scheduled->value,
+            ])
+            ->orderBy('scheduled_at')
             ->orderByDesc('created_at')
             ->paginate(25);
     }

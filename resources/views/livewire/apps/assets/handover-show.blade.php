@@ -67,11 +67,32 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
             @endphp
 
             @if($pendingReturn)
+                @php $scheduleBadge = \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::scheduleBadge($pendingReturn); @endphp
                 <flux:callout variant="warning" icon="clock">
-                    <flux:callout.heading>Rückgabe eingeleitet</flux:callout.heading>
+                    <flux:callout.heading>
+                        @if($pendingReturn->isScheduled())
+                            Geplante Rückgabe eingeleitet
+                        @else
+                            Rückgabe eingeleitet
+                        @endif
+                    </flux:callout.heading>
                     <flux:callout.text>
-                        Die IT bearbeitet den Vorgang. Sie werden informiert, sobald der physische Empfang bestätigt und das Asset neu zugeordnet ist.
+                        @if($pendingReturn->isScheduled())
+                            Termin: <strong>{{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($pendingReturn->scheduled_at) }}</strong>.
+                            @if($pendingReturn->isOverdue())
+                                Die geplante Rückgabe ist überfällig. Bitte geben Sie das Gerät umgehend zurück.
+                            @else
+                                Sie erhalten Erinnerungen vor dem Termin. Die IT kann den Vorgang auch vorher bearbeiten.
+                            @endif
+                        @else
+                            Die IT bearbeitet den Vorgang. Sie werden informiert, sobald der physische Empfang bestätigt und das Asset neu zugeordnet ist.
+                        @endif
                     </flux:callout.text>
+                    @if($scheduleBadge)
+                        <div class="mt-2">
+                            <flux:badge :color="$scheduleBadge['color']">{{ $scheduleBadge['label'] }}</flux:badge>
+                        </div>
+                    @endif
                 </flux:callout>
             @endif
 

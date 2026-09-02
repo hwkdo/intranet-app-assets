@@ -122,6 +122,7 @@
                     </flux:table.column>
                     <flux:table.column>Asset</flux:table.column>
                     <flux:table.column>Zurückgegeben von</flux:table.column>
+                    <flux:table.column>Termin</flux:table.column>
                     <flux:table.column>Eingeleitet</flux:table.column>
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
@@ -151,6 +152,17 @@
                                 {{ $return->initiatedBy?->name ?? $h?->recipient?->name ?? '—' }}
                             </flux:table.cell>
                             <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
+                                @if($return->isScheduled())
+                                    <div>{{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) }}</div>
+                                    @php $badge = \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::scheduleBadge($return); @endphp
+                                    @if($badge)
+                                        <flux:badge size="sm" :color="$badge['color']">{{ $badge['label'] }}</flux:badge>
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
                                 {{ $return->created_at?->format('d.m.Y H:i') ?? '—' }}
                             </flux:table.cell>
                             <flux:table.cell>
@@ -166,7 +178,7 @@
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="5" class="py-8 text-center text-zinc-500">
+                            <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
                                 Keine offenen Rückgaben.
                             </flux:table.cell>
                         </flux:table.row>
