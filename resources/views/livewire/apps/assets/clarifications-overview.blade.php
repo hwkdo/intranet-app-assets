@@ -108,6 +108,15 @@
                 </flux:accordion>
             </flux:card>
 
+            <div class="min-w-64 max-w-sm">
+                <flux:input
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Suchen nach SN, Modell, Name, Typ, Hersteller, Besitzer, Standort…"
+                    icon="magnifying-glass"
+                    clearable
+                />
+            </div>
+
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column>

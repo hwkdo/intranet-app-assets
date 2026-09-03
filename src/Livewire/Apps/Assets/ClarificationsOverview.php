@@ -21,6 +21,8 @@ class ClarificationsOverview extends Component
 {
     use WithPagination;
 
+    public string $search = '';
+
     /** @var list<int> */
     public array $selectedAssetIds = [];
 
@@ -43,6 +45,11 @@ class ClarificationsOverview extends Component
         $stored = Session::get(self::SELECTION_SESSION_KEY, []);
         $this->selectedAssetIds = $this->sanitizeIds(is_array($stored) ? $stored : []);
         $this->pruneStaleSelection();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedSelectedAssetIds(): void
@@ -121,6 +128,7 @@ class ClarificationsOverview extends Component
         return Asset::query()
             ->where('is_clarification', true)
             ->with(['type', 'vendor', 'owner.standort'])
+            ->when(filled($this->search), fn ($query) => $query->matchingListeSearch($this->search))
             ->orderByDesc('updated_at')
             ->paginate(25);
     }
