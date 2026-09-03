@@ -18,6 +18,8 @@ use Livewire\Component;
 #[Title('Assets – Zentrale')]
 class Zentrale extends Component
 {
+    public bool $embedded = false;
+
     public bool $showConfirmModal = false;
 
     public ?int $selectedHandoverId = null;
