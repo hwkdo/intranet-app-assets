@@ -1,15 +1,20 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
+use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Models\AssetHistory;
+use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\AssetAdminMarkClarificationService;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
+use Hwkdo\IntranetAppAssets\Support\AssetListeAdminActions;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -221,9 +226,63 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             return;
         }
 
-        unset($this->assets);
+        unset($this->assets, $this->pendingReturnsByAssetId);
 
         Flux::toast('Asset wurde als „In Klärung“ markiert.', variant: 'success');
+    }
+
+    public function initiateReturn(int $assetId): void
+    {
+        $this->authorize('manage-app-assets');
+
+        $asset = Asset::query()->findOrFail($assetId);
+        $adminId = (int) auth()->id();
+
+        $handover = Handover::query()
+            ->where('asset_id', $asset->id)
+            ->whereNotNull('confirmed_at')
+            ->whereNull('rejected_at')
+            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
+            ->orderByDesc('confirmed_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($handover === null) {
+            Flux::toast('Für dieses Asset ist keine bestätigte Übergabe ohne offene Rückgabe vorhanden.', variant: 'danger');
+
+            return;
+        }
+
+        DB::transaction(function () use ($handover, $asset, $adminId): void {
+            $return = AssetReturn::query()->create([
+                'handover_id' => $handover->id,
+                'initiated_by_user_id' => $adminId,
+                'schedule_type' => ReturnScheduleType::Immediate,
+            ]);
+
+            $asset->historyEntries()->create([
+                'event' => AssetHistory::EventReturnInitiatedByHolder,
+                'user_id' => $adminId,
+                'reason' => 'Rückgabe eingeleitet (Alle Assets).',
+                'meta' => [
+                    'asset_return_id' => $return->id,
+                    'handover_id' => $handover->id,
+                    'initiated_by_admin' => true,
+                    'schedule_type' => ReturnScheduleType::Immediate->value,
+                    'from_liste' => true,
+                ],
+            ]);
+        });
+
+        unset(
+            $this->assets,
+            $this->returnInitiatableHandoversByAssetId,
+            $this->pendingReturnsByAssetId,
+            $this->openHandoversByAssetId,
+            $this->rejectedHandoversByAssetId,
+        );
+
+        Flux::toast('Rückgabe wurde eingeleitet.', variant: 'success');
     }
 
     /**
@@ -324,8 +383,65 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->whereIn('asset_id', $assetIds)
             ->whereNotNull('confirmed_at')
             ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns')
+            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
             ->orderByDesc('confirmed_at')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('asset_id')
+            ->keyBy('asset_id');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, AssetReturn> keyed by asset_id */
+    #[Computed]
+    public function pendingReturnsByAssetId(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->getCollection()->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return AssetReturn::query()
+            ->open()
+            ->whereHas('handover', fn ($q) => $q->whereIn('asset_id', $assetIds)->whereNull('superseded_at'))
+            ->with('handover')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(fn (AssetReturn $assetReturn): bool => $assetReturn->handover !== null)
+            ->unique(fn (AssetReturn $assetReturn): int => (int) $assetReturn->handover->asset_id)
+            ->keyBy(fn (AssetReturn $assetReturn): int => (int) $assetReturn->handover->asset_id);
+    }
+
+    /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */
+    #[Computed]
+    public function openHandoversByAssetId(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->getCollection()->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return Handover::query()
+            ->open()
+            ->whereIn('asset_id', $assetIds)
+            ->orderByDesc('id')
+            ->get()
+            ->unique('asset_id')
+            ->keyBy('asset_id');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */
+    #[Computed]
+    public function rejectedHandoversByAssetId(): \Illuminate\Support\Collection
+    {
+        $assetIds = $this->assets->getCollection()->pluck('id');
+        if ($assetIds->isEmpty()) {
+            return collect();
+        }
+
+        return Handover::query()
+            ->rejectedPendingAdmin()
+            ->whereIn('asset_id', $assetIds)
+            ->orderByDesc('rejected_at')
             ->orderByDesc('id')
             ->get()
             ->unique('asset_id')
@@ -778,14 +894,31 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         <flux:table.cell>
                             <div class="flex flex-wrap items-center gap-1">
                                 @php
-                                    $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
-                                    $canInitiateReturn = (($asset->user_id !== null && (int) $asset->user_id === (int) auth()->id()) || $isAdmin);
-                                    $returnHandover = $canInitiateReturn ? $this->returnInitiatableHandoversByAssetId->get($asset->id) : null;
+                                    $adminResolveActions = AssetListeAdminActions::resolveLinks($asset, [
+                                        'pending_return' => $this->pendingReturnsByAssetId->get($asset->id),
+                                        'open_handover' => $this->openHandoversByAssetId->get($asset->id),
+                                        'rejected_handover' => $this->rejectedHandoversByAssetId->get($asset->id),
+                                    ]);
+                                    $returnHandover = $this->returnInitiatableHandoversByAssetId->get($asset->id);
                                 @endphp
+                                @foreach($adminResolveActions as $action)
+                                    <flux:tooltip :content="$action['label']" position="top">
+                                        <flux:button
+                                            :href="$action['href']"
+                                            variant="ghost"
+                                            size="sm"
+                                            :icon="$action['icon']"
+                                            class="!px-2"
+                                            :aria-label="$action['label']"
+                                        ></flux:button>
+                                    </flux:tooltip>
+                                @endforeach
                                 @if($returnHandover)
                                     <flux:tooltip content="Rückgabe einleiten" position="top">
                                         <flux:button
-                                            href="{{ route('apps.assets.handover.return.initiate', $returnHandover) }}"
+                                            type="button"
+                                            wire:click="initiateReturn({{ (int) $asset->id }})"
+                                            wire:confirm="Rückgabe für „{{ $asset->display_name }}“ wirklich einleiten?"
                                             variant="ghost"
                                             size="sm"
                                             icon="arrow-uturn-left"
