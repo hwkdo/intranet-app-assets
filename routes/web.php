@@ -151,6 +151,18 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.handovers');
 
+    Route::livewire('apps/assets/admin/uebergeben/{asset}', 'intranet-app-assets::apps.assets.admin-handover-start')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.handover.start');
+
+    Route::livewire('apps/assets/admin/uebergeben/{handover}/passwort', 'intranet-app-assets::apps.assets.admin-handover-confirm-password')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.handover.confirm-password');
+
+    Route::livewire('apps/assets/zentrale', 'intranet-app-assets::apps.assets.zentrale')
+        ->middleware('can:see-app-assets-zentrale')
+        ->name('apps.assets.zentrale');
+
     Route::get('apps/assets/admin/offene-uebergaben', fn () => redirect()->route('apps.assets.admin.handovers', ['filter' => 'open']))
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.open-handovers');

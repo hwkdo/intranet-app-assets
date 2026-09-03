@@ -152,6 +152,13 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
             $this->app->bind(IntuneDeviceLookupInterface::class, MsGraphIntuneDeviceLookup::class);
         }
 
+        if (! $this->app->bound(\Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface::class)) {
+            $this->app->bind(
+                \Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface::class,
+                \Hwkdo\IntranetAppAssets\Services\LdapRecordPasswordVerifier::class,
+            );
+        }
+
         Livewire::addNamespace(
             namespace: 'intranet-app-assets',
             viewPath: __DIR__.'/../resources/views/livewire',

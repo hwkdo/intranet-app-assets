@@ -11,7 +11,14 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
 
     public function mount(Handover $handover): void
     {
-        $this->handover = $handover->load('asset.type', 'asset.vendor', 'recipient', 'issuer', 'assetReturns');
+        $this->handover = $handover->load(
+            'asset.type',
+            'asset.vendor',
+            'recipient',
+            'issuer',
+            'confirmedAssistedBy',
+            'assetReturns',
+        );
     }
 
     public function confirmationMethodLabel(): ?string
@@ -21,6 +28,16 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
             'touchscreen' => 'Touchscreen-Unterschrift',
             'formwerk' => 'Formwerk-Formular',
             'password' => 'Passwort-Bestätigung',
+            default => null,
+        };
+    }
+
+    public function pendingChannelLabel(): ?string
+    {
+        return match ($this->handover->pending_confirmation_channel) {
+            'signopad_zentrale' => 'Warteschlange Zentrale (Signopad)',
+            'password_now' => 'Passwort vor Ort',
+            'self' => 'Empfänger bestätigt selbst',
             default => null,
         };
     }
@@ -43,6 +60,9 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                         @endif
                     @else
                         <flux:badge color="amber" size="lg" icon="clock">Offen</flux:badge>
+                        @if($this->pendingChannelLabel())
+                            <flux:badge color="zinc" size="lg">{{ $this->pendingChannelLabel() }}</flux:badge>
+                        @endif
                     @endif
                 </div>
             </flux:card>
@@ -119,8 +139,13 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     <dt class="font-semibold text-zinc-500 dark:text-white">Empfänger</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Ausgestellt von</dt>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Ausgegeben / übergeben von</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
+
+                    @if($handover->confirmedAssistedBy)
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Bestätigt an der Zentrale durch</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
+                    @endif
 
                     <dt class="font-semibold text-zinc-500 dark:text-white">Erstellt am</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $handover->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
@@ -138,6 +163,16 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
             @if($handover->signature)
                 <flux:card>
                     <flux:heading size="lg" class="mb-4">Unterschrift</flux:heading>
+                    <dl class="mb-4 grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Unterschrieben von</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Ausgegeben / übergeben von</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
+                        @if($handover->confirmedAssistedBy)
+                            <dt class="font-semibold text-zinc-500 dark:text-white">Zentrale / Assistenz</dt>
+                            <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
+                        @endif
+                    </dl>
                     @php
                         $src = $handover->signature;
                         if (!str_starts_with($src, 'data:')) {
@@ -146,7 +181,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     @endphp
                     <img
                         src="{{ $src }}"
-                        alt="Unterschrift"
+                        alt="Unterschrift von {{ $handover->recipient?->name ?? 'Empfänger' }}"
                         class="max-h-48 rounded border border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
                     />
                 </flux:card>

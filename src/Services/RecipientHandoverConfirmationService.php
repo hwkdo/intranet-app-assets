@@ -25,6 +25,7 @@ class RecipientHandoverConfirmationService
         int $recipientUserId,
         string $confirmationMethod,
         ?string $signatureBase64 = null,
+        ?int $assistedByAdminUserId = null,
     ): void {
         if ((int) $handover->recipient_user_id !== $recipientUserId) {
             throw new \InvalidArgumentException('Keine Berechtigung für diese Übergabe.');
@@ -47,19 +48,29 @@ class RecipientHandoverConfirmationService
             }
         }
 
-        AssetAuditContext::runWith('assets.handover.confirm', function () use ($handover, $recipientUserId, $confirmationMethod, $signatureBase64): void {
+        AssetAuditContext::runWith('assets.handover.confirm', function () use ($handover, $recipientUserId, $confirmationMethod, $signatureBase64, $assistedByAdminUserId): void {
             $attributes = [
                 'confirmed_at' => now(),
                 'confirmation_method' => $confirmationMethod,
+                'pending_confirmation_channel' => null,
             ];
             if ($confirmationMethod === self::METHOD_TOUCHSCREEN || $confirmationMethod === self::METHOD_SIGNOPAD) {
                 $attributes['signature'] = $signatureBase64;
+            }
+            if ($assistedByAdminUserId !== null) {
+                $attributes['confirmed_assisted_by_user_id'] = $assistedByAdminUserId;
             }
             $handover->update($attributes);
 
             $asset = $handover->asset;
             if ($asset instanceof Asset) {
-                $this->clearAssetFlagsAfterConfirm($asset, $handover, $recipientUserId, $confirmationMethod);
+                $this->clearAssetFlagsAfterConfirm(
+                    $asset,
+                    $handover,
+                    $recipientUserId,
+                    $confirmationMethod,
+                    $assistedByAdminUserId,
+                );
             }
         });
     }
@@ -115,6 +126,7 @@ class RecipientHandoverConfirmationService
         Handover $handover,
         int $recipientUserId,
         string $confirmationMethod,
+        ?int $assistedByAdminUserId = null,
     ): void {
         $clearedFlags = [];
         if ($asset->is_clarification) {
@@ -130,15 +142,20 @@ class RecipientHandoverConfirmationService
         ]);
 
         if ($clearedFlags !== []) {
+            $meta = [
+                'handover_id' => $handover->id,
+                'confirmation_method' => $confirmationMethod,
+                'cleared_flags' => $clearedFlags,
+            ];
+            if ($assistedByAdminUserId !== null) {
+                $meta['assisted_by_admin_id'] = $assistedByAdminUserId;
+            }
+
             $asset->historyEntries()->create([
                 'event' => AssetHistory::EventHandoverConfirmedStatusCleared,
                 'user_id' => $recipientUserId,
                 'reason' => 'Bei Bestätigung der Übergabe wurden Status-Flags zurückgesetzt.',
-                'meta' => [
-                    'handover_id' => $handover->id,
-                    'confirmation_method' => $confirmationMethod,
-                    'cleared_flags' => $clearedFlags,
-                ],
+                'meta' => $meta,
             ]);
         }
     }

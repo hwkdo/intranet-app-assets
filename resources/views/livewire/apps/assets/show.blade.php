@@ -701,6 +701,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histReturnInitiated = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnInitiatedByHolder;
                                 $histReturnCompleted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventReturnCompletedByAdmin;
                                 $histHandoverConfirmCleared = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedStatusCleared;
+                                $histHandoverAssisted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedAssistedByAdmin;
+                                $histAdminHandoverStarted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventAdminHandoverStarted;
                                 $histIndicatorColor = match ($histEvent) {
                                     $histDeleted => 'red',
                                     $histRestored => 'green',
@@ -716,7 +718,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histMissingClear, $histMissingNewOwner, $histMissingLocation => 'green',
                                     $histReturnInitiated => 'amber',
                                     $histReturnCompleted => 'green',
-                                    $histHandoverConfirmCleared => 'green',
+                                    $histHandoverConfirmCleared, $histHandoverAssisted => 'green',
+                                    $histAdminHandoverStarted => 'blue',
                                     default => 'zinc',
                                 };
                             @endphp
@@ -752,6 +755,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:icon.arrow-uturn-left variant="micro" />
                                     @elseif($histEvent === $histReturnCompleted)
                                         <flux:icon.arrow-path variant="micro" />
+                                    @elseif($histEvent === $histAdminHandoverStarted)
+                                        <flux:icon.hand-raised variant="micro" />
+                                    @elseif($histEvent === $histHandoverAssisted)
+                                        <flux:icon.key variant="micro" />
                                     @elseif($histEvent === $histHandoverConfirmCleared)
                                         <flux:icon.check-circle variant="micro" />
                                     @else
@@ -784,6 +791,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             Abgelehnte Übergabe: Besitzer entfernt, Standort gesetzt
                                         @elseif($histEvent === $histRejectionMissing)
                                             Abgelehnte Übergabe: Als vermisst markiert
+                                        @elseif($histEvent === $histAdminHandoverStarted)
+                                            Admin: Übergabe gestartet
+                                        @elseif($histEvent === $histHandoverAssisted)
+                                            Übergabe vor Ort per Empfänger-Passwort bestätigt
                                         @elseif($histEvent === $histOwnerClarification)
                                             Klärung vom Besitzer angefordert
                                         @elseif($histEvent === $histAdminClarification)
@@ -829,6 +840,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     @elseif(in_array($histEvent, [$histReturnInitiated, $histReturnCompleted], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif($histEvent === $histHandoverConfirmCleared && filled($historyEntry->reason))
+                                        <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
+                                    @elseif(in_array($histEvent, [$histAdminHandoverStarted, $histHandoverAssisted], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @endif
                                     @if(filled($historyEntry->meta))

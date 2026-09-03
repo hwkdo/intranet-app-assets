@@ -13,6 +13,7 @@
     $pendingReturnsNavBadge = null;
     $openHandoversNavBadge = null;
     $rejectedHandoversNavBadge = null;
+    $zentraleNavBadge = null;
 
     if (auth()->user()?->can('manage-app-assets')) {
         $clarificationCount = AssetNavBadgeCounts::clarificationCount();
@@ -42,9 +43,17 @@
         }
     }
 
+    if (auth()->user()?->can('see-app-assets-zentrale')) {
+        $zentraleCount = AssetNavBadgeCounts::zentraleHandoversCount();
+        if ($zentraleCount > 0) {
+            $zentraleNavBadge = $zentraleCount;
+        }
+    }
+
     $defaultNavItems = [
         ['label' => 'Übersicht', 'href' => route('apps.assets.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen', 'welcomeSection' => 'main'],
         ['label' => 'Meine Assets', 'href' => route('apps.assets.meine-assets'), 'icon' => 'user', 'description' => 'Ihre zugewiesenen Assets', 'buttonText' => 'Meine Assets anzeigen', 'welcomeSection' => 'main'],
+        ['label' => 'Zentrale', 'href' => route('apps.assets.zentrale'), 'icon' => 'building-office', 'description' => 'Übergaben an der Zentrale per Signopad bestätigen', 'buttonText' => 'Zentrale öffnen', 'permission' => 'see-app-assets-zentrale', 'welcomeSection' => 'main', 'badge' => $zentraleNavBadge, 'badgeColor' => 'amber'],
         ['label' => 'App-Info', 'href' => route('apps.assets.info'), 'icon' => 'information-circle', 'description' => 'Installierte Version und Release-Historie', 'buttonText' => 'App-Info anzeigen', 'welcomeSection' => 'settings'],
         ['type' => 'separator', 'label' => 'Tools', 'permission' => 'manage-app-assets'],
         ['label' => 'Suche', 'href' => route('apps.assets.search'), 'icon' => 'magnifying-glass', 'description' => 'Asset-Suche über Stammdaten, Verlauf und Notizen', 'buttonText' => 'Suche öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
@@ -67,7 +76,6 @@
         ['label' => 'Assets in Klärung', 'href' => route('apps.assets.admin.clarifications'), 'icon' => 'question-mark-circle', 'description' => 'Vom Besitzer gemeldete Klärungsfälle bearbeiten', 'buttonText' => 'Klärfälle anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $clarificationNavBadge, 'badgeColor' => 'red'],
         ['label' => 'Assets vermisst', 'href' => route('apps.assets.admin.missing'), 'icon' => 'exclamation-triangle', 'description' => 'Als vermisst markierte Assets einsehen und bearbeiten', 'buttonText' => 'Vermisste Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $missingNavBadge, 'badgeColor' => 'red'],
         ['label' => 'Admin-Settings', 'href' => route('apps.assets.admin.index'), 'icon' => 'shield-check', 'description' => 'Typen, Hersteller und Seventhings-Zuordnung', 'buttonText' => 'Admin-Settings öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'settings'],
-        
     ];
 
     $navItems = !empty($navItems) ? $navItems : $defaultNavItems;

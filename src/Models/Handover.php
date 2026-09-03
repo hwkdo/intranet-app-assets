@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
+use Hwkdo\IntranetAppAssets\Support\AdminHandoverChannel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -93,9 +94,28 @@ class Handover extends Model
     }
 
     /** @return BelongsTo<User, $this> */
+    public function confirmedAssistedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_assisted_by_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
     public function rejectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by_user_id');
+    }
+
+    /**
+     * Offene Übergaben, die an der Zentrale per Signopad bestätigt werden sollen.
+     *
+     * @param  Builder<Handover>  $query
+     * @return Builder<Handover>
+     */
+    public function scopePendingSignopadZentrale(Builder $query): Builder
+    {
+        return $query
+            ->open()
+            ->where('pending_confirmation_channel', AdminHandoverChannel::SignopadZentrale);
     }
 
     /** @return BelongsTo<User, $this> */

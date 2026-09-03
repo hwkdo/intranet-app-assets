@@ -900,7 +900,24 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                         'rejected_handover' => $this->rejectedHandoversByAssetId->get($asset->id),
                                     ]);
                                     $returnHandover = $this->returnInitiatableHandoversByAssetId->get($asset->id);
+                                    $canAdminHandover = \Hwkdo\IntranetAppAssets\Support\AdminHandoverEligibility::isEligibleForListeRow(
+                                        $asset,
+                                        $this->pendingReturnsByAssetId,
+                                        $this->openHandoversByAssetId,
+                                    );
                                 @endphp
+                                @if($canAdminHandover)
+                                    <flux:tooltip content="Übergeben" position="top">
+                                        <flux:button
+                                            :href="route('apps.assets.admin.handover.start', $asset)"
+                                            variant="ghost"
+                                            size="sm"
+                                            icon="hand-raised"
+                                            class="!px-2"
+                                            aria-label="Übergeben"
+                                        ></flux:button>
+                                    </flux:tooltip>
+                                @endif
                                 @foreach($adminResolveActions as $action)
                                     <flux:tooltip :content="$action['label']" position="top">
                                         <flux:button
@@ -943,7 +960,16 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                         </flux:tooltip>
                                     @endif
                                 @endcan
-                                <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'liste']) }}" variant="ghost" size="sm" icon="eye" />
+                                <flux:tooltip content="Detail" position="top">
+                                    <flux:button
+                                        href="{{ route('apps.assets.show', [$asset, 'from' => 'liste']) }}"
+                                        variant="ghost"
+                                        size="sm"
+                                        icon="eye"
+                                        class="!px-2"
+                                        aria-label="Detail"
+                                    />
+                                </flux:tooltip>
                             </div>
                         </flux:table.cell>
                     </flux:table.row>

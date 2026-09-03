@@ -19,7 +19,18 @@ return [
     'roles' => [
         'admin' => [
             'name' => 'App-Assets-Admin',
-            'permissions' => ['see-app-assets', 'manage-app-assets'],
+            'permissions' => [
+                'see-app-assets',
+                'manage-app-assets',
+                'see-app-assets-zentrale',
+            ],
+        ],
+        'zentrale' => [
+            'name' => 'App-Assets-Zentrale',
+            'permissions' => [
+                'see-app-assets',
+                'see-app-assets-zentrale',
+            ],
         ],
         'user' => [
             'name' => 'App-Assets-Benutzer',

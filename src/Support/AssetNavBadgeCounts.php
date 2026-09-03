@@ -41,4 +41,9 @@ final class AssetNavBadgeCounts
     {
         return Handover::query()->rejectedPendingAdmin()->count();
     }
+
+    public static function zentraleHandoversCount(): int
+    {
+        return Handover::query()->pendingSignopadZentrale()->count();
+    }
 }

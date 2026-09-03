@@ -52,6 +52,10 @@ class AssetHistory extends Model
 
     public const EventHandoverConfirmedStatusCleared = 'handover_confirmed_status_cleared';
 
+    public const EventHandoverConfirmedAssistedByAdmin = 'handover_confirmed_assisted_by_admin';
+
+    public const EventAdminHandoverStarted = 'admin_handover_started';
+
     public const EventPendingHandoverAdminAcknowledged = 'pending_handover_admin_acknowledged';
 
     public const EventPendingHandoverAdminResolvedNewOwner = 'pending_handover_admin_resolved_new_owner';
