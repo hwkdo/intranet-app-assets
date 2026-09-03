@@ -24,7 +24,9 @@
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>{{ filled($asset->location) ? $asset->location : '—' }}</flux:table.cell>
+                        <flux:table.cell>
+                            <x-intranet-app-assets::asset-location-display :asset="$asset" tag="div" :show-hint="false" class="text-sm" />
+                        </flux:table.cell>
                         <flux:table.cell>
                             <div class="flex flex-wrap gap-1">
                                 <flux:button

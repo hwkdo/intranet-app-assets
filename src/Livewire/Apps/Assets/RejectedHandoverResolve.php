@@ -44,7 +44,7 @@ class RejectedHandoverResolve extends Component
         if ($handover->asset_id !== null) {
             $asset = Asset::query()
                 ->withTrashed()
-                ->with(['type', 'vendor'])
+                ->with(['type', 'vendor', 'owner.standort'])
                 ->find($handover->asset_id);
         }
         $handover->setRelation('asset', $asset);

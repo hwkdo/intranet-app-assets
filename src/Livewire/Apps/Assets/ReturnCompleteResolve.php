@@ -35,6 +35,7 @@ class ReturnCompleteResolve extends Component
         $assetReturn->load([
             'handover.asset.type',
             'handover.asset.vendor',
+            'handover.asset.owner.standort',
             'handover.recipient',
             'initiatedBy',
         ]);

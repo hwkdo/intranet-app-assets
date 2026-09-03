@@ -1,6 +1,7 @@
 @props([
     'asset',
     'tag' => 'dd',
+    'showHint' => true,
 ])
 
 @php
@@ -15,7 +16,7 @@
     @else
         <span class="opacity-70">—</span>
     @endif
-    @if(filled($display['hint']))
+    @if($showHint && filled($display['hint']))
         <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ $display['hint'] }}</flux:text>
     @endif
 </{{ $tag }}>

@@ -34,7 +34,7 @@ class MissingAssetsOverview extends Component
     {
         return Asset::query()
             ->where('is_missing', true)
-            ->with(['type', 'vendor', 'owner'])
+            ->with(['type', 'vendor', 'owner.standort'])
             ->orderByDesc('updated_at')
             ->paginate(25);
     }

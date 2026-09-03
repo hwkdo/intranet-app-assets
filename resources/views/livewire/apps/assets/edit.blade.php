@@ -244,10 +244,15 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         if ($this->asset->user_id === null) {
             $data['user_id'] = $this->user_id;
             $data['location'] = $this->location;
-            $data['is_in_stock'] = AssetUnownedDeviceType::toIsInStock($this->device_type);
+            $data['device_type'] = $this->device_type;
         }
 
-        $validated = Validator::make($data, $baseRules)->validate();
+        $validated = Validator::make(
+            $data,
+            $baseRules,
+            [],
+            ['device_type' => 'Gerätetyp'],
+        )->validate();
 
         $invoiceValidator = Validator::make(
             ['invoice_number' => $validated['invoice_number'] ?? null],
@@ -281,9 +286,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
             $validated['is_missing'] = $this->asset->is_missing;
             $validated['is_clarification'] = $this->asset->is_clarification;
         } else {
+            unset($validated['device_type']);
             $validated['user_id'] = isset($validated['user_id']) && $validated['user_id'] !== '' && $validated['user_id'] !== null
                 ? (int) $validated['user_id']
                 : null;
+            $validated['is_in_stock'] = AssetUnownedDeviceType::toIsInStock($this->device_type);
             $validated['is_missing'] = $this->asset->is_missing;
             $validated['is_clarification'] = $this->asset->is_clarification;
         }

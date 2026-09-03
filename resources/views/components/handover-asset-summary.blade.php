@@ -26,6 +26,15 @@
             <dt class="font-semibold text-zinc-500 dark:text-white">Typ</dt>
             <dd class="text-zinc-900 dark:text-white">{{ $handover->asset->type?->name ?? '—' }}</dd>
 
+            <dt class="font-semibold text-zinc-500 dark:text-white">Besitzer (laut System)</dt>
+            <dd class="text-zinc-900 dark:text-white">{{ $handover->asset->owner?->name ?? '—' }}</dd>
+
+            @php
+                $locationDisplay = \Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver::resolve($handover->asset);
+            @endphp
+            <dt class="font-semibold text-zinc-500 dark:text-white">{{ $locationDisplay['label'] }}</dt>
+            <x-intranet-app-assets::asset-location-display :asset="$handover->asset" class="text-zinc-900 dark:text-white" />
+
             <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
             <dd class="font-mono text-zinc-900 dark:text-white">{{ filled($handover->asset->serial_number) ? $handover->asset->serial_number : '—' }}</dd>
 

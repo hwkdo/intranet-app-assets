@@ -36,6 +36,8 @@ class AssetHistory extends Model
 
     public const EventOwnerRequestedClarification = 'owner_requested_clarification';
 
+    public const EventAdminMarkedClarification = 'admin_marked_clarification';
+
     public const EventClarificationAdminResolvedCleared = 'clarification_admin_resolved_cleared';
 
     public const EventClarificationAdminResolvedNewOwner = 'clarification_admin_resolved_new_owner';

@@ -40,7 +40,7 @@ class ClarificationResolve extends Component
             $this->redirect(route('apps.assets.admin.clarifications'), navigate: true);
         }
 
-        $asset->load(['type', 'vendor', 'owner']);
+        $asset->load(['type', 'vendor', 'owner.standort']);
         $this->asset = $asset;
         $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
             $asset->user_id !== null ? (int) $asset->user_id : null,

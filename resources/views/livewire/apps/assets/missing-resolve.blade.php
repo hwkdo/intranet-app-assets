@@ -1,5 +1,8 @@
 @php
     use Hwkdo\IntranetAppAssets\Services\AssetMissingAdminResolutionService;
+    use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
+
+    $locationDisplay = AssetLocationDisplayResolver::resolve($asset);
 @endphp
 <div>
     <x-intranet-app-assets::assets-layout
@@ -14,8 +17,8 @@
                     <dd class="text-zinc-900 dark:text-white">{{ $asset->display_name }}</dd>
                     <dt class="font-semibold text-zinc-500 dark:text-white">Besitzer (laut System)</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $asset->owner?->name ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Standort</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ filled($asset->location) ? $asset->location : '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">{{ $locationDisplay['label'] }}</dt>
+                    <x-intranet-app-assets::asset-location-display :asset="$asset" class="text-zinc-900 dark:text-white" />
                     <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
                     <dd class="font-mono text-zinc-900 dark:text-white">{{ $asset->serial_number }}</dd>
                 </dl>

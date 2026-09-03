@@ -5,9 +5,11 @@ use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Services\AssetAdminMarkClarificationService;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
+use Flux\Flux;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -140,6 +142,88 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         );
 
         $this->redirect(route('apps.assets.admin.bulk.review'), navigate: true);
+    }
+
+    public function submitBulkMarkClarification(): void
+    {
+        $this->authorize('manage-app-assets');
+
+        $this->validate([
+            'selectedAssetIds' => ['required', 'array', 'min:1'],
+            'selectedAssetIds.*' => ['integer', 'min:1'],
+            'bulkReason' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $service = app(AssetAdminMarkClarificationService::class);
+        $adminId = (int) auth()->id();
+        $note = trim($this->bulkReason);
+        $note = $note !== '' ? $note : null;
+
+        $assets = Asset::query()
+            ->whereIn('id', $this->selectedAssetIds)
+            ->where('is_clarification', false)
+            ->get()
+            ->keyBy('id');
+
+        $processed = 0;
+        $failed = 0;
+
+        foreach ($this->selectedAssetIds as $assetId) {
+            $asset = $assets->get($assetId);
+            if ($asset === null) {
+                $failed++;
+
+                continue;
+            }
+
+            try {
+                $service->mark($asset, $adminId, $note);
+                $processed++;
+            } catch (\InvalidArgumentException) {
+                $failed++;
+            }
+        }
+
+        $this->selectedAssetIds = [];
+        $this->selectPage = false;
+        Session::forget(self::SELECTION_SESSION_KEY);
+        $this->js(BulkSelectionUi::livewireClearSelectionJs());
+        unset($this->assets);
+
+        if ($processed > 0 && $failed === 0) {
+            Flux::toast($processed === 1
+                ? '1 Asset wurde als „In Klärung“ markiert.'
+                : $processed.' Assets wurden als „In Klärung“ markiert.', variant: 'success');
+
+            return;
+        }
+
+        if ($processed > 0) {
+            Flux::toast($processed.' markiert, '.$failed.' übersprungen.', variant: 'warning');
+
+            return;
+        }
+
+        Flux::toast('Keine der ausgewählten Assets konnte in Klärung gesetzt werden.', variant: 'danger');
+    }
+
+    public function markAsClarification(int $assetId): void
+    {
+        $this->authorize('manage-app-assets');
+
+        $asset = Asset::query()->findOrFail($assetId);
+
+        try {
+            app(AssetAdminMarkClarificationService::class)->mark($asset, (int) auth()->id());
+        } catch (\InvalidArgumentException $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        unset($this->assets);
+
+        Flux::toast('Asset wurde als „In Klärung“ markiert.', variant: 'success');
     }
 
     /**
@@ -341,7 +425,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     }
 
     /**
-     * Asset-IDs der aktuellen Seite, für die die Bulk-Checkbox „Rückgabe“ angezeigt wird.
+     * Asset-IDs der aktuellen Seite, für die die Bulk-Checkbox angezeigt wird
+     * (Rückgabe einleitbar und/oder noch nicht in Klärung).
      *
      * @return list<int>
      */
@@ -352,7 +437,10 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         foreach ($this->assets->getCollection() as $asset) {
             $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
             $canInitiate = (($asset->user_id !== null && (int) $asset->user_id === (int) auth()->id()) || $isAdmin);
-            if ($canInitiate && $handovers->get($asset->id) !== null) {
+            $returnHandover = $canInitiate ? $handovers->get($asset->id) : null;
+            $clarificationEligible = $isAdmin && ! $asset->is_clarification;
+
+            if ($returnHandover !== null || $clarificationEligible) {
                 $ids[] = (int) $asset->id;
             }
         }
@@ -376,7 +464,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             return;
         }
 
-        $eligible = Handover::query()
+        $returnEligible = Handover::query()
             ->whereIn('asset_id', $this->selectedAssetIds)
             ->whereNotNull('confirmed_at')
             ->whereNull('rejected_at')
@@ -389,6 +477,14 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
 
+        $clarificationEligible = Asset::query()
+            ->whereIn('id', $this->selectedAssetIds)
+            ->where('is_clarification', false)
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+
+        $eligible = array_values(array_unique([...$returnEligible, ...$clarificationEligible]));
         $pruned = array_values(array_intersect($this->selectedAssetIds, $eligible));
         if ($pruned !== $this->selectedAssetIds) {
             $this->selectedAssetIds = $pruned;
@@ -472,13 +568,21 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                             <div x-show="selectedIds.length === 0" x-cloak class="mb-0">
                                 <flux:callout variant="subtle" icon="information-circle" class="mb-0">
                                     <flux:callout.text>
-                                        Wählen Sie einen oder mehrere Datensätze über die Checkbox in der ersten Tabellenspalte aus, um anschließend eine Mehrfachaktion auf mehrere Assets anwenden zu können.
+                                        Wählen Sie einen oder mehrere Datensätze über die Checkbox in der ersten Tabellenspalte aus, um anschließend eine Mehrfachaktion anzuwenden (z. B. In Klärung setzen oder Rückgabe einleiten).
                                     </flux:callout.text>
                                 </flux:callout>
                             </div>
                             <div x-show="selectedIds.length > 0" x-cloak class="space-y-4">
-                                <flux:textarea wire:model="bulkReason" label="Grund / Notiz (für alle ausgewählten)" rows="3" />
+                                <flux:textarea wire:model="bulkReason" label="Grund / Notiz (optional für Klärung, Pflicht für Rückgabe)" rows="3" />
                                 <div class="flex flex-wrap gap-2">
+                                    <flux:button
+                                        wire:click="submitBulkMarkClarification"
+                                        wire:confirm="Ausgewählte Assets wirklich als In Klärung markieren?"
+                                        variant="outline"
+                                        icon="question-mark-circle"
+                                    >
+                                        In Klärung setzen
+                                    </flux:button>
                                     <flux:button wire:click="submitBulkMarkReturn" variant="primary" icon="arrow-uturn-left">Für Rückgabe markieren</flux:button>
                                     <flux:button wire:click="clearSelection" variant="ghost">Auswahl leeren</flux:button>
                                 </div>
@@ -586,8 +690,10 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
                                 $canInitiateReturn = (($asset->user_id !== null && (int) $asset->user_id === (int) auth()->id()) || $isAdmin);
                                 $returnHandover = $canInitiateReturn ? $this->returnInitiatableHandoversByAssetId->get($asset->id) : null;
+                                $clarificationEligible = $isAdmin && ! $asset->is_clarification;
+                                $isBulkSelectable = $returnHandover !== null || $clarificationEligible;
                             @endphp
-                            @if($returnHandover)
+                            @if($isBulkSelectable)
                                 <label class="inline-flex cursor-pointer items-center">
                                     <input
                                         type="checkbox"
@@ -688,6 +794,22 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                         ></flux:button>
                                     </flux:tooltip>
                                 @endif
+                                @can('manage-app-assets')
+                                    @if(! $asset->is_clarification)
+                                        <flux:tooltip content="Als In Klärung markieren" position="top">
+                                            <flux:button
+                                                type="button"
+                                                wire:click="markAsClarification({{ (int) $asset->id }})"
+                                                wire:confirm="Asset „{{ $asset->display_name }}“ wirklich als In Klärung markieren?"
+                                                variant="ghost"
+                                                size="sm"
+                                                icon="question-mark-circle"
+                                                class="!px-2"
+                                                aria-label="Als In Klärung markieren"
+                                            ></flux:button>
+                                        </flux:tooltip>
+                                    @endif
+                                @endcan
                                 <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'liste']) }}" variant="ghost" size="sm" icon="eye" />
                             </div>
                         </flux:table.cell>

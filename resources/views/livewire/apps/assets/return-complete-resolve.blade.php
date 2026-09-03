@@ -1,7 +1,10 @@
 @php
     use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
+    use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
+
     $h = $assetReturn->handover;
     $asset = $h?->asset;
+    $locationDisplay = $asset ? AssetLocationDisplayResolver::resolve($asset) : null;
 @endphp
 <div>
     <x-intranet-app-assets::assets-layout
@@ -16,6 +19,14 @@
                     <dd class="text-zinc-900 dark:text-white">{{ $asset?->display_name ?? '—' }}</dd>
                     <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
                     <dd class="font-mono text-zinc-900 dark:text-white">{{ $asset?->serial_number ?? '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">Besitzer (laut System)</dt>
+                    <dd class="text-zinc-900 dark:text-white">{{ $asset?->owner?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-zinc-500 dark:text-white">{{ $locationDisplay['label'] ?? 'Standort' }}</dt>
+                    @if($asset)
+                        <x-intranet-app-assets::asset-location-display :asset="$asset" class="text-zinc-900 dark:text-white" />
+                    @else
+                        <dd class="text-zinc-900 dark:text-white">—</dd>
+                    @endif
                     <dt class="font-semibold text-zinc-500 dark:text-white">Zurückgegeben von</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $assetReturn->initiatedBy?->name ?? $h?->recipient?->name ?? '—' }}</dd>
                     <dt class="font-semibold text-zinc-500 dark:text-white">Eingeleitet am</dt>

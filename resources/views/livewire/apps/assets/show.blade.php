@@ -5,6 +5,7 @@ use Hwkdo\IntranetAppAssets\Contracts\LdapComputerServiceInterface;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Services\AssetAdminMarkClarificationService;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
@@ -204,6 +205,23 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
         Flux::toast('Notiz wurde hinzugefügt.', variant: 'success');
     }
 
+    public function markAsClarification(): void
+    {
+        $this->authorize('manage-app-assets');
+
+        try {
+            app(AssetAdminMarkClarificationService::class)->mark($this->asset, (int) auth()->id());
+        } catch (\InvalidArgumentException $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $this->refreshAsset();
+
+        Flux::toast('Asset wurde als „In Klärung“ markiert.', variant: 'success');
+    }
+
     public function openD3InvoiceModal(): void
     {
         $this->showD3InvoiceModal = true;
@@ -315,6 +333,19 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                 <flux:button href="{{ route('apps.assets.edit', array_filter(['asset' => $asset, 'from' => $this->assetShowBack['key'], 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="primary" icon="pencil" size="sm">
                     Bearbeiten
                 </flux:button>
+
+                @if(! $asset->trashed() && ! $asset->is_clarification)
+                    <flux:button
+                        type="button"
+                        wire:click="markAsClarification"
+                        wire:confirm="Asset „{{ $asset->display_name }}“ wirklich als In Klärung markieren?"
+                        variant="outline"
+                        icon="question-mark-circle"
+                        size="sm"
+                    >
+                        In Klärung setzen
+                    </flux:button>
+                @endif
 
                 @if(! $asset->trashed())
                     <flux:button href="{{ route('apps.assets.delete', array_filter(['asset' => $asset, 'from' => $this->assetShowBack['key'], 'sq' => $this->searchReturnQuery], fn ($v) => $v !== null && $v !== '')) }}" variant="danger" icon="trash" size="sm">
@@ -659,6 +690,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histRejectionLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminResolvedLocation;
                                 $histRejectionMissing = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverRejectionAdminResolvedMissing;
                                 $histOwnerClarification = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventOwnerRequestedClarification;
+                                $histAdminClarification = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventAdminMarkedClarification;
                                 $histClarClear = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedCleared;
                                 $histClarNewOwner = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedNewOwner;
                                 $histClarLocation = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventClarificationAdminResolvedLocation;
@@ -679,7 +711,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histHandoverRejected => 'red',
                                     $histRejectionAck => 'blue',
                                     $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing => 'green',
-                                    $histOwnerClarification => 'amber',
+                                    $histOwnerClarification, $histAdminClarification => 'amber',
                                     $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing => 'green',
                                     $histMissingClear, $histMissingNewOwner, $histMissingLocation => 'green',
                                     $histReturnInitiated => 'amber',
@@ -710,7 +742,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:icon.shield-check variant="micro" />
                                     @elseif(in_array($histEvent, [$histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing], true))
                                         <flux:icon.arrow-path variant="micro" />
-                                    @elseif($histEvent === $histOwnerClarification)
+                                    @elseif(in_array($histEvent, [$histOwnerClarification, $histAdminClarification], true))
                                         <flux:icon.question-mark-circle variant="micro" />
                                     @elseif(in_array($histEvent, [$histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true))
                                         <flux:icon.arrow-path variant="micro" />
@@ -754,6 +786,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             Abgelehnte Übergabe: Als vermisst markiert
                                         @elseif($histEvent === $histOwnerClarification)
                                             Klärung vom Besitzer angefordert
+                                        @elseif($histEvent === $histAdminClarification)
+                                            Klärung vom Admin gesetzt
                                         @elseif($histEvent === $histClarClear)
                                             Klärung: ohne Änderung abgeschlossen
                                         @elseif($histEvent === $histClarNewOwner)
@@ -788,7 +822,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif(in_array($histEvent, [$histHandoverRejected, $histRejectionAck, $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
-                                    @elseif(in_array($histEvent, [$histOwnerClarification, $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true) && filled($historyEntry->reason))
+                                    @elseif(in_array($histEvent, [$histOwnerClarification, $histAdminClarification, $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @elseif(in_array($histEvent, [$histMissingClear, $histMissingNewOwner, $histMissingLocation], true) && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>

@@ -34,7 +34,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
         if ($handover->asset_id !== null) {
             $asset = Asset::query()
                 ->withTrashed()
-                ->with(['type', 'vendor'])
+                ->with(['type', 'vendor', 'owner.standort'])
                 ->find($handover->asset_id);
         }
         $handover->setRelation('asset', $asset);

@@ -14,8 +14,7 @@
             @endif
         </flux:label>
     @endif
-    <flux:select variant="listbox" wire:model="{{ $wireModel }}" placeholder="Bitte wählen…">
-        <flux:select.option value="">Bitte wählen…</flux:select.option>
+    <flux:select variant="listbox" wire:model.live="{{ $wireModel }}" placeholder="Bitte wählen…">
         <flux:select.option
             value="{{ \Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType::Pool }}"
             label="Auf Lager (Pool-Gerät)"
