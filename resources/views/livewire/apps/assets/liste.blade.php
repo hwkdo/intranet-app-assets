@@ -4,6 +4,7 @@ use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
@@ -29,9 +30,6 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
 
     #[Url]
     public string $statusFilter = '';
-
-    #[Url(as: 'ohneBesitzer')]
-    public bool $onlyWithoutOwner = false;
 
     /** @var 'model'|'created_at' */
     #[Url(as: 'sort')]
@@ -102,11 +100,6 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     }
 
     public function updatedStatusFilter(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedOnlyWithoutOwner(): void
     {
         $this->resetPage();
     }
@@ -208,6 +201,12 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     }
 
     #[Computed]
+    public function allowAssetDirectCreate(): bool
+    {
+        return IntranetAppAssetsSettings::resolvedAppSettings()->allowAssetDirectCreate;
+    }
+
+    #[Computed]
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
         $typeIds = $this->validatedTypeIdsForQuery();
@@ -218,7 +217,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
             ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true))
-            ->when($this->onlyWithoutOwner, fn ($q) => $q->whereNull('user_id'))
+            ->when($this->statusFilter === 'shared', fn ($q) => $q->whereNull('user_id')->where('is_in_stock', false))
             ->paginate(25);
     }
 
@@ -270,7 +269,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->when($this->statusFilter === 'missing', fn ($q) => $q->where('is_missing', true))
             ->when($this->statusFilter === 'clarification', fn ($q) => $q->where('is_clarification', true))
             ->when($this->statusFilter === 'in_stock', fn ($q) => $q->where('is_in_stock', true))
-            ->when($this->onlyWithoutOwner, fn ($q) => $q->whereNull('user_id'));
+            ->when($this->statusFilter === 'shared', fn ($q) => $q->whereNull('user_id')->where('is_in_stock', false));
     }
 
     /**
@@ -295,10 +294,13 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                 }
                 if ($a->is_in_stock) {
                     $status[] = 'Auf Lager';
+                } elseif ($a->user_id === null) {
+                    $status[] = 'Gemeinschaftsgerät';
                 }
-                if (empty($status)) {
+                if ($status === []) {
                     $status[] = 'OK';
                 }
+
                 return implode(', ', $status);
             }],
             ['heading' => 'Angelegt', 'value' => fn (Asset $a) => $a->created_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
@@ -510,13 +512,13 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
                     @endforeach
                 </flux:pillbox>
-                <flux:select wire:model.live="statusFilter" placeholder="Alle Status" class="w-44 shrink-0">
+                <flux:select wire:model.live="statusFilter" placeholder="Alle Status" class="w-52 shrink-0">
                     <flux:select.option value="">Alle Status</flux:select.option>
                     <flux:select.option value="missing">Vermisst</flux:select.option>
                     <flux:select.option value="clarification">In Klärung</flux:select.option>
                     <flux:select.option value="in_stock">Auf Lager</flux:select.option>
+                    <flux:select.option value="shared">Gemeinschaftsgerät</flux:select.option>
                 </flux:select>
-                <flux:checkbox wire:model.live="onlyWithoutOwner" label="Nur ohne Besitzer" class="shrink-0" />
             </div>
             <div class="flex items-center gap-2">
                 <flux:dropdown position="bottom" align="end">
@@ -529,15 +531,21 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:menu>
                 </flux:dropdown>
                 @can('manage-app-assets')
-                    <flux:dropdown position="bottom" align="end">
-                        <flux:button variant="primary" icon="plus" icon-trailing="chevron-down">
+                    @if($this->allowAssetDirectCreate)
+                        <flux:dropdown position="bottom" align="end">
+                            <flux:button variant="primary" icon="plus" icon-trailing="chevron-down">
+                                Neues Asset
+                            </flux:button>
+                            <flux:menu>
+                                <flux:menu.item href="{{ route('apps.assets.create') }}" icon="pencil-square">Direkteingabe</flux:menu.item>
+                                <flux:menu.item href="{{ route('apps.assets.create.wizard') }}" icon="cursor-arrow-rays">Assistent</flux:menu.item>
+                            </flux:menu>
+                        </flux:dropdown>
+                    @else
+                        <flux:button href="{{ route('apps.assets.create.wizard') }}" variant="primary" icon="plus">
                             Neues Asset
                         </flux:button>
-                        <flux:menu>
-                            <flux:menu.item href="{{ route('apps.assets.create') }}" icon="pencil-square">Direkteingabe</flux:menu.item>
-                            <flux:menu.item href="{{ route('apps.assets.create.wizard') }}" icon="cursor-arrow-rays">Assistent</flux:menu.item>
-                        </flux:menu>
-                    </flux:dropdown>
+                    @endif
                 @endcan
             </div>
         </div>
@@ -640,8 +648,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 @endif
                                 @if($asset->is_in_stock)
                                     <flux:badge color="blue" size="sm">Auf Lager</flux:badge>
-                                @endif
-                                @if(!$asset->is_missing && !$asset->is_clarification && !$asset->is_in_stock)
+                                @elseif($asset->user_id === null)
+                                    <flux:badge color="zinc" size="sm">Gemeinschaftsgerät</flux:badge>
+                                @elseif(! $asset->is_missing && ! $asset->is_clarification)
                                     <flux:badge color="green" size="sm">OK</flux:badge>
                                 @endif
                             </div>

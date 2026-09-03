@@ -20,6 +20,9 @@ class AppSettings extends BaseAppSettings implements HasAiSettings
         #[Description('Assets mit Rechnungsnr. dürfen in Itexia/Seventhings angelegt werden')]
         public bool $allowCreateInItexiaWithInvoiceNumber = false,
 
+        #[Description('Asset anlegen – Direkteingabe erlauben')]
+        public bool $allowAssetDirectCreate = false,
+
         #[Description('Maximale Anzahl von Elementen pro Seite')]
         public int $maxItemsPerPage = 25,
 

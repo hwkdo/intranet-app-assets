@@ -6,6 +6,12 @@ use Hwkdo\IntranetAppAssets\Data\AppSettings;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppBase\Enums\AiProvider;
 
+it('defaults allowAssetDirectCreate to false', function (): void {
+    $settings = new AppSettings;
+
+    expect($settings->allowAssetDirectCreate)->toBeFalse();
+});
+
 it('returns null text provider override when not explicitly set', function (): void {
     $settings = new AppSettings(
         d3InvoiceVisionLlmProvider: D3InvoiceVisionLlmProvider::Langdock,

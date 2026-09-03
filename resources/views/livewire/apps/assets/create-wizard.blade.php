@@ -13,8 +13,11 @@ use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
+use Hwkdo\IntranetAppAssets\Support\AssetOwnerChoice;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -62,7 +65,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'serial_number' => '',
             'name' => null,
             'location' => null,
-            'user_id' => null,
+            'user_id' => '',
             'itexia_id' => null,
             'order_number' => null,
             'invoice_number' => null,
@@ -70,7 +73,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'domain_connection' => null,
             'is_clarification' => false,
             'is_missing' => false,
-            'is_in_stock' => false,
+            'device_type' => '',
         ];
     }
 
@@ -403,7 +406,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units' => 'required|array|min:1',
             'units.*.serial_number' => 'required|string|max:255',
             'units.*.name' => 'nullable|string|max:255',
-            'units.*.user_id' => 'nullable|exists:users,id',
             'units.*.order_number' => ['nullable', 'string', 'max:255', new ValidOrderNumber],
             'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
             'units.*.invoice_number_unknown' => 'boolean',
@@ -411,13 +413,32 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             'units.*.domain_connection' => 'nullable|string|in:default,schulung',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
-            'units.*.is_in_stock' => 'boolean',
             'unit_images' => 'array',
             'unit_images.*' => 'nullable|image|max:10240',
         ];
 
         foreach (array_keys($this->units) as $i) {
-            $rules["units.{$i}.location"] = "required_if:units.{$i}.user_id,null|nullable|string|max:255";
+            $rules["units.{$i}.user_id"] = [
+                'required',
+                'string',
+                Rule::when(
+                    filled($this->units[$i]['user_id'] ?? null)
+                        && ! AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null),
+                    ['exists:users,id'],
+                ),
+            ];
+            $rules["units.{$i}.location"] = [
+                Rule::requiredIf(AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null)),
+                'nullable',
+                'string',
+                'max:255',
+            ];
+            $rules["units.{$i}.device_type"] = [
+                Rule::requiredIf(AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null)),
+                'nullable',
+                'string',
+                Rule::in(AssetUnownedDeviceType::values()),
+            ];
         }
 
         if ($this->orderNumberRequired) {
@@ -437,8 +458,26 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
         return $rules;
     }
 
-    public function updatedUnits(): void
+    protected function messages(): array
     {
+        return [
+            'units.*.user_id.required' => 'Bitte Besitzer wählen oder „Kein Besitzer“.',
+            'units.*.location.required' => 'Standort ist bei Assets ohne Besitzer Pflicht.',
+            'units.*.device_type.required' => 'Bitte Gerätetyp wählen (Pool oder Gemeinschaftsgerät).',
+            'units.*.device_type.in' => 'Bitte einen gültigen Gerätetyp wählen.',
+        ];
+    }
+
+    public function updatedUnits(mixed $value = null, ?string $key = null): void
+    {
+        if (is_string($key) && preg_match('/^(\d+)\.user_id$/', $key, $matches) === 1) {
+            $index = (int) $matches[1];
+            if (! AssetOwnerChoice::isNone($this->units[$index]['user_id'] ?? null)) {
+                $this->units[$index]['device_type'] = '';
+                $this->units[$index]['location'] = '';
+            }
+        }
+
         $invoiceService = app(D3InvoiceValidationService::class);
         $orderNumberService = app(OrderNumberValidationServiceInterface::class);
         foreach ($this->units as $i => $unit) {
@@ -446,8 +485,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             if (! $this->showInvoiceNumber || ($unit['invoice_number_unknown'] ?? false)) {
                 $this->clearValidation($attr);
             } else {
-                $value = $unit['invoice_number'] ?? '';
-                $error = $invoiceService->getValidationError(is_string($value) ? $value : '');
+                $invoiceValue = $unit['invoice_number'] ?? '';
+                $error = $invoiceService->getValidationError(is_string($invoiceValue) ? $invoiceValue : '');
                 if ($error !== null) {
                     $this->addError($attr, $error);
                 } else {
@@ -479,6 +518,9 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 ? (isset($unit['invoice_number']) && trim((string) $unit['invoice_number']) !== '' ? trim((string) $unit['invoice_number']) : null)
                 : null;
 
+            $userId = AssetOwnerChoice::toUserId($unit['user_id'] ?? '');
+            $isInStock = $userId === null && AssetUnownedDeviceType::toIsInStock($unit['device_type'] ?? '');
+
             $attributes = [
                 'model' => $validated['model'],
                 'asset_type_id' => $validated['asset_type_id'],
@@ -486,7 +528,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'serial_number' => $unit['serial_number'],
                 'name' => $unit['name'] ?: null,
                 'location' => $unit['location'] ?: null,
-                'user_id' => $unit['user_id'] ?: null,
+                'user_id' => $userId,
                 'order_number' => $this->showOrderNumber ? ($unit['order_number'] ?? null) : null,
                 'invoice_number' => $invoiceNumber,
                 'invoice_number_pending' => $invoiceNumberUnknown,
@@ -495,7 +537,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                 'domain_connection' => $this->showDomainConnectionField ? (($unit['domain_connection'] ?? null) ?: null) : null,
                 'is_clarification' => $unit['is_clarification'] ?? false,
                 'is_missing' => $unit['is_missing'] ?? false,
-                'is_in_stock' => $unit['is_in_stock'] ?? false,
+                'is_in_stock' => $isInStock,
             ];
 
             $asset = Asset::create($attributes);
@@ -736,27 +778,23 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                 <flux:input wire:model="units.{{ $index }}.name" placeholder="z. B. Device01 – wird beim Hinzufügen hochgezählt" />
                                 <flux:error name="units.{{ $index }}.name" />
                             </flux:field>
-                            <flux:field>
-                                <flux:label>Standort <flux:badge size="sm" color="red">Pflicht wenn kein Besitzer</flux:badge></flux:label>
-                                <flux:input wire:model="units.{{ $index }}.location" placeholder="z.B. Büro 2.13" />
-                                <flux:error name="units.{{ $index }}.location" />
-                            </flux:field>
                             <flux:field class="sm:col-span-2">
                                 <flux:label>Bild</flux:label>
                                 <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
                                 <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
                                 <flux:error name="unit_images.{{ $index }}" />
                             </flux:field>
-                            <flux:field>
-                                <flux:label>Besitzer</flux:label>
-                                <flux:select variant="listbox" searchable clearable wire:model="units.{{ $index }}.user_id" placeholder="Kein Besitzer">
-                                    <flux:select.option value="">Kein Besitzer</flux:select.option>
-                                    @foreach($this->users as $user)
-                                        <flux:select.option value="{{ $user->id }}">{{ $user->name }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                <flux:error name="units.{{ $index }}.user_id" />
-                            </flux:field>
+                            <x-intranet-app-assets::owner-choice-fields
+                                :users="$this->users"
+                                user-id-wire-model="units.{{ $index }}.user_id"
+                                device-type-wire-model="units.{{ $index }}.device_type"
+                                location-wire-model="units.{{ $index }}.location"
+                                user-id-error-name="units.{{ $index }}.user_id"
+                                device-type-error-name="units.{{ $index }}.device_type"
+                                location-error-name="units.{{ $index }}.location"
+                                :user-id="$unit['user_id'] ?? ''"
+                            />
+
                             @if($this->showDomainConnectionField)
                                 <flux:field>
                                     <flux:label>Domain Connection</flux:label>
@@ -776,12 +814,19 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                     :required="$this->orderNumberRequired"
                                 />
                             @endif
-                            @if($this->showInvoiceNumber)
-                                <flux:field>
-                                    @if($this->invoiceNumberRequired)
-                                        <flux:checkbox wire:model.live="units.{{ $index }}.invoice_number_unknown" label="Rechnungsnr. noch nicht bekannt" class="mb-2" />
-                                    @endif
-                                    @if(!($unit['invoice_number_unknown'] ?? false))
+
+                            @if($this->showInvoiceNumber && $this->invoiceNumberRequired)
+                                <flux:field class="sm:col-span-2">
+                                    <flux:checkbox wire:model.live="units.{{ $index }}.invoice_number_unknown" label="Rechnungsnr. noch nicht bekannt" />
+                                </flux:field>
+                            @endif
+
+                            @if($this->showInvoiceNumber || $this->showItexiaId)
+                                <div @class([
+                                    'grid gap-6 sm:col-span-2',
+                                    'grid-cols-1 sm:grid-cols-2' => $this->showInvoiceNumber && $this->showItexiaId,
+                                ])>
+                                    @if($this->showInvoiceNumber && ! ($unit['invoice_number_unknown'] ?? false))
                                         <x-intranet-app-assets::invoice-number-input
                                             name="units.{{ $index }}.invoice_number"
                                             wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
@@ -789,24 +834,23 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                             :required="$this->invoiceNumberRequired"
                                         />
                                     @endif
-                                </flux:field>
-                            @endif
-                            @if($this->showItexiaId)
-                                <flux:field>
-                                    <flux:label>Itexia-ID @if($this->itexiaIdRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
-                                    <flux:input wire:model="units.{{ $index }}.itexia_id" placeholder="{{ $this->itexiaIdRequired ? 'Pflicht' : 'Optional' }}" />
-                                    @if($variant === 'mobilfunkvertrag' && !$valueOver250)
-                                        <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-200">Unter {{ $this->wertgrenzeItexia }} €: Itexia-ID Pflicht, Anlage in Itexia erfolgt automatisch nach Speichern.</flux:text>
+                                    @if($this->showItexiaId)
+                                        <flux:field>
+                                            <flux:label>Itexia-ID @if($this->itexiaIdRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
+                                            <flux:input wire:model="units.{{ $index }}.itexia_id" placeholder="{{ $this->itexiaIdRequired ? 'Pflicht' : 'Optional' }}" />
+                                            @if($variant === 'mobilfunkvertrag' && ! $valueOver250)
+                                                <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
+                                                    Unter {{ $this->wertgrenzeItexia }} €: Itexia-ID Pflicht, Anlage in Itexia erfolgt automatisch nach Speichern.
+                                                </flux:description>
+                                            @endif
+                                            <flux:error name="units.{{ $index }}.itexia_id" />
+                                        </flux:field>
                                     @endif
-                                    <flux:error name="units.{{ $index }}.itexia_id" />
-                                </flux:field>
+                                </div>
                             @endif
                         </div>
 
                         <div class="flex flex-wrap gap-4 pt-2">
-                            @if(empty($unit['user_id']))
-                                <flux:checkbox wire:model="units.{{ $index }}.is_in_stock" label="Auf Lager" />
-                            @endif
                             <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                             <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                         </div>

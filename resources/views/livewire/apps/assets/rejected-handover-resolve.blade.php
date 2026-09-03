@@ -52,17 +52,17 @@
                         <flux:radio
                             value="{{ HandoverRejectionAdminResolutionService::ResolutionNewOwner }}"
                             label="Neuen Besitzer zuweisen"
-                            description="Aktueller Besitzer und Übergabe werden entfernt, neuer Besitzer wird gesetzt (neue Übergabe wird erzeugt)."
+                            description="Abgelehnte Übergabe wird als ersetzt markiert und bleibt in der Historie; neuer Besitzer wird gesetzt (neue Übergabe)."
                         />
                         <flux:radio
                             value="{{ HandoverRejectionAdminResolutionService::ResolutionSetLocation }}"
                             label="Besitzer entfernen und Standort setzen (Auf Lager)"
-                            description="Besitzer und Übergabe werden entfernt; Standort des Assets ist Pflicht. Asset wird als Auf Lager markiert."
+                            description="Besitzer wird entfernt; abgelehnte Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort ist Pflicht. Asset wird als Auf Lager markiert."
                         />
                         <flux:radio
                             value="{{ HandoverRejectionAdminResolutionService::ResolutionMarkMissing }}"
                             label="Als vermisst markieren"
-                            description="Besitzer und Übergabe werden entfernt; Asset wird als vermisst gekennzeichnet."
+                            description="Besitzer wird entfernt; abgelehnte Übergabe wird als ersetzt markiert und bleibt in der Historie. Asset wird als vermisst gekennzeichnet."
                         />
                     </flux:radio.group>
                     @error('resolution')

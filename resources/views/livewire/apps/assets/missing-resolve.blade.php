@@ -72,12 +72,12 @@
                         <flux:radio
                             value="{{ AssetMissingAdminResolutionService::ResolutionNewOwner }}"
                             label="Wieder aufgetaucht — neuer Besitzer"
-                            description="Alle Übergaben zu diesem Asset werden entfernt; neuer Besitzer, neue Übergabe wird erzeugt."
+                            description="Aktive Übergaben werden als ersetzt markiert und bleiben in der Historie; neuer Besitzer, neue Übergabe wird erzeugt."
                         />
                         <flux:radio
                             value="{{ AssetMissingAdminResolutionService::ResolutionSetLocation }}"
-                            label="Wieder aufgetaucht — auf Lager legen"
-                            description="Besitzer und Übergaben entfernen; Standort ist Pflicht. Asset wird als Auf Lager markiert."
+                            label="Wieder aufgetaucht — Besitzer entfernen, Standort setzen"
+                            description="Besitzer wird entfernt; aktive Übergaben werden als ersetzt markiert und bleiben in der Historie. Standort ist Pflicht. Optional als Lager-/Pool-Gerät markieren."
                         />
                     </flux:radio.group>
                     @error('resolution')
@@ -107,6 +107,11 @@
                         @error('location')
                             <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                         @enderror
+                        <x-intranet-app-assets::unowned-device-type-select
+                            class="mt-4"
+                            wire-model="deviceType"
+                            error-name="deviceType"
+                        />
                     @endif
 
                     <flux:textarea

@@ -85,6 +85,7 @@ class BulkAdminWorkflowExecutor
         $resolution = (string) ($p['resolution'] ?? '');
         $newOwner = isset($p['new_owner_user_id']) ? (int) $p['new_owner_user_id'] : null;
         $location = isset($p['location']) ? trim((string) $p['location']) : null;
+        $markInStock = (bool) ($p['mark_in_stock'] ?? true);
         $reason = trim((string) ($p['bulk_reason'] ?? ''));
 
         $service = app(AssetClarificationAdminResolutionService::class);
@@ -111,6 +112,7 @@ class BulkAdminWorkflowExecutor
                     $resolution === AssetClarificationAdminResolutionService::ResolutionNewOwner ? $newOwner : null,
                     $resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation ? $location : null,
                     $reason,
+                    $resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation ? $markInStock : true,
                 );
                 $processed++;
             } catch (\InvalidArgumentException) {

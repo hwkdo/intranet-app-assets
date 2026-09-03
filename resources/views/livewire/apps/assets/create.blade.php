@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
@@ -8,7 +9,10 @@ use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Rules\ValidD3InvoiceNumber;
 use Hwkdo\IntranetAppAssets\Rules\ValidOrderNumber;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
+use Hwkdo\IntranetAppAssets\Support\AssetOwnerChoice;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -34,6 +38,12 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
     public function mount(): void
     {
+        abort_unless(
+            IntranetAppAssetsSettings::resolvedAppSettings()->allowAssetDirectCreate,
+            403,
+            'Direkteingabe ist deaktiviert. Bitte den Assistenten nutzen.',
+        );
+
         $this->units = [$this->defaultUnit()];
         $this->unit_images = [null];
     }
@@ -44,7 +54,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'serial_number' => '',
             'name' => null,
             'location' => null,
-            'user_id' => null,
+            'user_id' => '',
             'itexia_id' => null,
             'order_number' => null,
             'invoice_number' => null,
@@ -52,7 +62,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'intune_device_id' => null,
             'is_clarification' => false,
             'is_missing' => false,
-            'is_in_stock' => false,
+            'device_type' => '',
         ];
     }
 
@@ -156,8 +166,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units' => 'required|array|min:1',
             'units.*.serial_number' => 'required|string|max:255',
             'units.*.name' => 'nullable|string|max:255',
-            'units.*.location' => 'nullable|string|max:255',
-            'units.*.user_id' => 'nullable|exists:users,id',
             'units.*.itexia_id' => 'nullable|string|max:255',
             'units.*.order_number' => ['nullable', 'string', 'max:255', new ValidOrderNumber],
             'units.*.invoice_number' => ['nullable', 'string', 'max:255', new ValidD3InvoiceNumber],
@@ -165,22 +173,63 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             'units.*.intune_device_id' => 'nullable|string|max:255',
             'units.*.is_clarification' => 'boolean',
             'units.*.is_missing' => 'boolean',
-            'units.*.is_in_stock' => 'boolean',
             'unit_images' => 'array',
             'unit_images.*' => 'nullable|image|max:10240',
         ];
 
+        foreach (array_keys($this->units) as $i) {
+            $rules["units.{$i}.user_id"] = [
+                'required',
+                'string',
+                Rule::when(
+                    filled($this->units[$i]['user_id'] ?? null)
+                        && ! AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null),
+                    ['exists:users,id'],
+                ),
+            ];
+            $rules["units.{$i}.location"] = [
+                Rule::requiredIf(AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null)),
+                'nullable',
+                'string',
+                'max:255',
+            ];
+            $rules["units.{$i}.device_type"] = [
+                Rule::requiredIf(AssetOwnerChoice::isNone($this->units[$i]['user_id'] ?? null)),
+                'nullable',
+                'string',
+                Rule::in(AssetUnownedDeviceType::values()),
+            ];
+        }
+
         return $rules;
     }
 
-    public function updatedUnits(): void
+    protected function messages(): array
     {
+        return [
+            'units.*.user_id.required' => 'Bitte Besitzer wählen oder „Kein Besitzer“.',
+            'units.*.location.required' => 'Standort ist bei Assets ohne Besitzer Pflicht.',
+            'units.*.device_type.required' => 'Bitte Gerätetyp wählen (Pool oder Gemeinschaftsgerät).',
+            'units.*.device_type.in' => 'Bitte einen gültigen Gerätetyp wählen.',
+        ];
+    }
+
+    public function updatedUnits(mixed $value = null, ?string $key = null): void
+    {
+        if (is_string($key) && preg_match('/^(\d+)\.user_id$/', $key, $matches) === 1) {
+            $index = (int) $matches[1];
+            if (! AssetOwnerChoice::isNone($this->units[$index]['user_id'] ?? null)) {
+                $this->units[$index]['device_type'] = '';
+                $this->units[$index]['location'] = '';
+            }
+        }
+
         $invoiceService = app(D3InvoiceValidationService::class);
         $orderNumberService = app(OrderNumberValidationServiceInterface::class);
         foreach ($this->units as $i => $unit) {
             $invoiceAttr = 'units.'.$i.'.invoice_number';
-            $value = $unit['invoice_number'] ?? '';
-            $error = $invoiceService->getValidationError(is_string($value) ? $value : '');
+            $invoiceValue = $unit['invoice_number'] ?? '';
+            $error = $invoiceService->getValidationError(is_string($invoiceValue) ? $invoiceValue : '');
             if ($error !== null) {
                 $this->addError($invoiceAttr, $error);
             } else {
@@ -203,6 +252,9 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
         $created = [];
         foreach ($validated['units'] as $index => $unit) {
+            $userId = AssetOwnerChoice::toUserId($unit['user_id'] ?? '');
+            $isInStock = $userId === null && AssetUnownedDeviceType::toIsInStock($unit['device_type'] ?? '');
+
             $attributes = [
                 'model' => $validated['model'],
                 'asset_type_id' => $validated['asset_type_id'],
@@ -210,7 +262,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                 'serial_number' => $unit['serial_number'],
                 'name' => $unit['name'] ?: null,
                 'location' => $unit['location'] ?: null,
-                'user_id' => $unit['user_id'] ?: null,
+                'user_id' => $userId,
                 'itexia_id' => $unit['itexia_id'] ?: null,
                 'order_number' => $unit['order_number'] ?: null,
                 'invoice_number' => $unit['invoice_number'] ?: null,
@@ -218,7 +270,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                 'intune_device_id' => $unit['intune_device_id'] ?: null,
                 'is_clarification' => $unit['is_clarification'] ?? false,
                 'is_missing' => $unit['is_missing'] ?? false,
-                'is_in_stock' => $unit['is_in_stock'] ?? false,
+                'is_in_stock' => $isInStock,
             ];
 
             $asset = Asset::create($attributes);
@@ -315,12 +367,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             <flux:error name="units.{{ $index }}.name" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label>Standort</flux:label>
-                            <flux:input wire:model="units.{{ $index }}.location" placeholder="z.B. Büro 2.13" />
-                            <flux:error name="units.{{ $index }}.location" />
-                        </flux:field>
-
                         <flux:field class="sm:col-span-2">
                             <flux:label>Bild</flux:label>
                             <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
@@ -328,22 +374,16 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             <flux:error name="unit_images.{{ $index }}" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label>Besitzer</flux:label>
-                            <flux:select variant="listbox" searchable clearable wire:model="units.{{ $index }}.user_id" placeholder="Kein Besitzer">
-                                <flux:select.option value="">Kein Besitzer</flux:select.option>
-                                @foreach($this->users as $user)
-                                    <flux:select.option value="{{ $user->id }}">{{ $user->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:error name="units.{{ $index }}.user_id" />
-                        </flux:field>
-
-                        <flux:field>
-                            <flux:label>Itexia-ID</flux:label>
-                            <flux:input wire:model="units.{{ $index }}.itexia_id" placeholder="Optional" />
-                            <flux:error name="units.{{ $index }}.itexia_id" />
-                        </flux:field>
+                        <x-intranet-app-assets::owner-choice-fields
+                            :users="$this->users"
+                            user-id-wire-model="units.{{ $index }}.user_id"
+                            device-type-wire-model="units.{{ $index }}.device_type"
+                            location-wire-model="units.{{ $index }}.location"
+                            user-id-error-name="units.{{ $index }}.user_id"
+                            device-type-error-name="units.{{ $index }}.device_type"
+                            location-error-name="units.{{ $index }}.location"
+                            :user-id="$unit['user_id'] ?? ''"
+                        />
 
                         <x-intranet-app-assets::order-number-input
                             name="units.{{ $index }}.order_number"
@@ -351,11 +391,19 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                             placeholder="Optional"
                         />
 
-                        <x-intranet-app-assets::invoice-number-input
-                            name="units.{{ $index }}.invoice_number"
-                            wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
-                            placeholder="Optional"
-                        />
+                        <div class="grid grid-cols-1 gap-6 sm:col-span-2 sm:grid-cols-2">
+                            <x-intranet-app-assets::invoice-number-input
+                                name="units.{{ $index }}.invoice_number"
+                                wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
+                                placeholder="Optional"
+                            />
+
+                            <flux:field>
+                                <flux:label>Itexia-ID</flux:label>
+                                <flux:input wire:model="units.{{ $index }}.itexia_id" placeholder="Optional" />
+                                <flux:error name="units.{{ $index }}.itexia_id" />
+                            </flux:field>
+                        </div>
 
                         @if($this->showDomainConnectionField)
                             <flux:field>
@@ -379,9 +427,6 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                     </div>
 
                     <div class="flex flex-wrap gap-4 pt-2">
-                        @if(empty($unit['user_id']))
-                            <flux:checkbox wire:model="units.{{ $index }}.is_in_stock" label="Auf Lager" />
-                        @endif
                         <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                         <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                     </div>

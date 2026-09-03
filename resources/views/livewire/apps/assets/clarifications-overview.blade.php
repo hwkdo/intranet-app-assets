@@ -90,6 +90,11 @@
 
                                     @if($resolution === \Hwkdo\IntranetAppAssets\Services\AssetClarificationAdminResolutionService::ResolutionSetLocation)
                                         <flux:input wire:model="location" label="Standort" placeholder="z. B. Lager IT, Raum …" />
+                                        <x-intranet-app-assets::unowned-device-type-select
+                                            class="mt-3"
+                                            wire-model="deviceType"
+                                            error-name="deviceType"
+                                        />
                                     @endif
 
                                     <div class="flex flex-wrap gap-2">

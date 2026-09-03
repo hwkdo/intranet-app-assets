@@ -32,6 +32,20 @@
             <dt class="font-semibold text-zinc-500 dark:text-white">Itexia-ID</dt>
             <dd class="font-mono text-zinc-900 dark:text-white">{{ filled($handover->asset->itexia_id) ? $handover->asset->itexia_id : '—' }}</dd>
         </dl>
+        @unless($handover->asset->trashed())
+            <div class="mt-4">
+                <flux:button
+                    href="{{ route('apps.assets.show', $handover->asset) }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="ghost"
+                    icon="eye"
+                    size="sm"
+                >
+                    Asset-Detail öffnen
+                </flux:button>
+            </div>
+        @endunless
     @else
         <flux:text class="text-zinc-500 dark:text-white">
             Kein Asset mit dieser Übergabe verknüpft (asset_id fehlt oder Datensatz existiert nicht).

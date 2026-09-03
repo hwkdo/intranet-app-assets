@@ -26,6 +26,7 @@ class AssetMissingAdminResolutionService
         ?int $newOwnerUserId,
         ?string $location,
         ?string $note = null,
+        bool $markInStock = true,
     ): void {
         if (! $asset->is_missing) {
             throw new \InvalidArgumentException('Dieses Asset ist nicht als vermisst markiert.');
@@ -36,8 +37,8 @@ class AssetMissingAdminResolutionService
             throw new \InvalidArgumentException('Eine Dokumentation (mindestens 3 Zeichen) ist erforderlich.');
         }
 
-        AssetAuditContext::runWith('assets.missing.resolve', function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
-            DB::transaction(function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note): void {
+        AssetAuditContext::runWith('assets.missing.resolve', function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note, $markInStock): void {
+            DB::transaction(function () use ($asset, $adminUserId, $resolution, $newOwnerUserId, $location, $note, $markInStock): void {
                 $baseMeta = [
                     'resolution' => $resolution,
                     'former_user_id' => $asset->user_id,
@@ -48,7 +49,7 @@ class AssetMissingAdminResolutionService
                 match ($resolution) {
                     self::ResolutionClearOnly => $this->applyClearOnly($asset, $adminUserId, $baseMeta, $note),
                     self::ResolutionNewOwner => $this->applyNewOwner($asset, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                    self::ResolutionSetLocation => $this->applySetLocation($asset, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $adminUserId, $location, $baseMeta, $note, $markInStock),
                     default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
                 };
             });
@@ -106,8 +107,14 @@ class AssetMissingAdminResolutionService
     /**
      * @param  array<string, mixed>  $baseMeta
      */
-    private function applySetLocation(Asset $asset, int $adminUserId, ?string $location, array $baseMeta, string $note): void
-    {
+    private function applySetLocation(
+        Asset $asset,
+        int $adminUserId,
+        ?string $location,
+        array $baseMeta,
+        string $note,
+        bool $markInStock,
+    ): void {
         $location = $location !== null ? trim($location) : '';
         if ($location === '') {
             throw new \InvalidArgumentException('Standort erforderlich.');
@@ -123,7 +130,7 @@ class AssetMissingAdminResolutionService
             'user_id' => null,
             'location' => $location,
             'is_missing' => false,
-            'is_in_stock' => true,
+            'is_in_stock' => $markInStock,
         ]);
 
         $asset->historyEntries()->create([
@@ -132,6 +139,7 @@ class AssetMissingAdminResolutionService
             'reason' => $note,
             'meta' => array_merge($baseMeta, [
                 'location' => $location,
+                'mark_in_stock' => $markInStock,
             ]),
         ]);
     }

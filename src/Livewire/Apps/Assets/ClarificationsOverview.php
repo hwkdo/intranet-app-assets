@@ -4,10 +4,12 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Services\AssetClarificationAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -29,6 +31,8 @@ class ClarificationsOverview extends Component
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = AssetUnownedDeviceType::Pool;
 
     public string $bulkReason = '';
 
@@ -74,6 +78,7 @@ class ClarificationsOverview extends Component
         }
         if ($this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -85,6 +90,9 @@ class ClarificationsOverview extends Component
                 'resolution' => $this->resolution,
                 'new_owner_user_id' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionNewOwner ? (int) $this->newOwnerUserId : null,
                 'location' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+                'mark_in_stock' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation
+                    ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                    : null,
                 'bulk_reason' => trim($this->bulkReason),
             ],
         );

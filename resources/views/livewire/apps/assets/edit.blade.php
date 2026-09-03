@@ -12,6 +12,7 @@ use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Hwkdo\IntranetAppAssets\Support\AssetShowBackOrigin;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Hwkdo\IntranetAppAssets\Support\OwnerChangeActionResolver;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -65,7 +66,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
 
     public bool $is_clarification = false;
     public bool $is_missing = false;
-    public bool $is_in_stock = false;
+    public string $device_type = '';
 
     #[Validate('nullable|string|in:default,schulung')]
     public ?string $domain_connection = null;
@@ -91,7 +92,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         $this->invoice_number = $asset->invoice_number;
         $this->is_clarification = $asset->is_clarification;
         $this->is_missing = $asset->is_missing;
-        $this->is_in_stock = $asset->is_in_stock;
+        $this->device_type = AssetUnownedDeviceType::fromIsInStock((bool) $asset->is_in_stock);
         $this->domain_connection = $asset->domain_connection;
         $this->intune_device_id = $asset->intune_device_id;
     }
@@ -225,7 +226,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         if ($this->asset->user_id === null) {
             $baseRules['user_id'] = 'nullable|exists:users,id';
             $baseRules['location'] = 'nullable|string|max:255';
-            $baseRules['is_in_stock'] = 'boolean';
+            $baseRules['device_type'] = 'required|in:'.implode(',', AssetUnownedDeviceType::values());
         }
 
         $data = [
@@ -243,7 +244,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
         if ($this->asset->user_id === null) {
             $data['user_id'] = $this->user_id;
             $data['location'] = $this->location;
-            $data['is_in_stock'] = $this->is_in_stock;
+            $data['is_in_stock'] = AssetUnownedDeviceType::toIsInStock($this->device_type);
         }
 
         $validated = Validator::make($data, $baseRules)->validate();
@@ -377,11 +378,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                     <flux:error name="location" />
                 </flux:field>
 
-                <flux:field>
-                    <flux:checkbox wire:model="is_in_stock" label="Auf Lager" />
-                    <flux:text class="text-xs text-zinc-500">Nur für Assets ohne persönlichen Besitzer (z. B. IT-Lager). Gemeinschaftsgeräte bleiben ohne Häkchen.</flux:text>
-                    <flux:error name="is_in_stock" />
-                </flux:field>
+                <x-intranet-app-assets::unowned-device-type-select
+                    wire-model="device_type"
+                    error-name="device_type"
+                />
 
                 <flux:field>
                     <flux:label>Besitzer (Erstzuweisung)</flux:label>
@@ -428,12 +428,6 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 </flux:field>
             @endif
 
-            <flux:field>
-                <flux:label>Itexia-ID</flux:label>
-                <flux:input wire:model="itexia_id" placeholder="Optional" />
-                <flux:error name="itexia_id" />
-            </flux:field>
-
             <x-intranet-app-assets::order-number-input name="order_number" wire:model.live.debounce.800ms="order_number" placeholder="Optional" />
 
             @if($asset->invoice_number_pending)
@@ -441,7 +435,16 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 Rechnungsnummer noch offen – bitte nachtragen.
             </flux:callout>
             @endif
-            <x-intranet-app-assets::invoice-number-input name="invoice_number" wire:model.live.debounce.800ms="invoice_number" placeholder="Optional" />
+
+            <div class="grid grid-cols-1 gap-6 sm:col-span-2 sm:grid-cols-2">
+                <x-intranet-app-assets::invoice-number-input name="invoice_number" wire:model.live.debounce.800ms="invoice_number" placeholder="Optional" />
+
+                <flux:field>
+                    <flux:label>Itexia-ID</flux:label>
+                    <flux:input wire:model="itexia_id" placeholder="Optional" />
+                    <flux:error name="itexia_id" />
+                </flux:field>
+            </div>
 
             <flux:field class="col-span-full">
                 <flux:label>Bild</flux:label>

@@ -4,7 +4,9 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Services\AssetClarificationAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -23,6 +25,8 @@ class ClarificationResolve extends Component
 
     public string $location = '';
 
+    public string $deviceType = '';
+
     public function mount(Asset $asset): void
     {
         $this->authorize('manage-app-assets');
@@ -38,6 +42,10 @@ class ClarificationResolve extends Component
 
         $asset->load(['type', 'vendor', 'owner']);
         $this->asset = $asset;
+        $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
+            $asset->user_id !== null ? (int) $asset->user_id : null,
+            (bool) $asset->is_in_stock,
+        );
     }
 
     public function submit(): void
@@ -54,6 +62,7 @@ class ClarificationResolve extends Component
         }
         if ($this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -67,6 +76,9 @@ class ClarificationResolve extends Component
             'resolution' => $this->resolution,
             'new_owner_user_id' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionNewOwner ? $newOwnerId : null,
             'location' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+            'mark_in_stock' => $this->resolution === AssetClarificationAdminResolutionService::ResolutionSetLocation
+                ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                : null,
         ]);
 
         $this->redirect(route('apps.assets.admin.clarification.resolve-commit', $this->asset), navigate: false);

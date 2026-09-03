@@ -144,6 +144,9 @@ class AdminBulkWorkflowReview extends Component
                 if ($loc !== '') {
                     $lines[] = 'Standort: '.$loc;
                 }
+                if ($flow === BulkAdminWorkflowSession::FLOW_CLARIFICATION && array_key_exists('mark_in_stock', $p)) {
+                    $lines[] = 'Gerätetyp: '.((bool) $p['mark_in_stock'] ? 'Auf Lager (Pool)' : 'Gemeinschaftsgerät');
+                }
             }
         }
 

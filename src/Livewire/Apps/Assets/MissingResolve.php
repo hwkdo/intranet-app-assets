@@ -6,7 +6,9 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Services\AssetMissingAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -26,6 +28,8 @@ class MissingResolve extends Component
 
     public string $location = '';
 
+    public string $deviceType = '';
+
     #[Validate('required|string|min:3|max:5000')]
     public string $note = '';
 
@@ -44,6 +48,10 @@ class MissingResolve extends Component
 
         $asset->load(['type', 'vendor', 'owner']);
         $this->asset = $asset;
+        $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
+            $asset->user_id !== null ? (int) $asset->user_id : null,
+            (bool) $asset->is_in_stock,
+        );
     }
 
     public function submit(): void
@@ -61,6 +69,7 @@ class MissingResolve extends Component
         }
         if ($this->resolution === AssetMissingAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -74,6 +83,9 @@ class MissingResolve extends Component
             'resolution' => $this->resolution,
             'new_owner_user_id' => $this->resolution === AssetMissingAdminResolutionService::ResolutionNewOwner ? $newOwnerId : null,
             'location' => $this->resolution === AssetMissingAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+            'mark_in_stock' => $this->resolution === AssetMissingAdminResolutionService::ResolutionSetLocation
+                ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                : null,
             'note' => trim($this->note),
         ]);
 

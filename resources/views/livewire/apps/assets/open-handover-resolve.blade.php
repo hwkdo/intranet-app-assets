@@ -127,17 +127,17 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
                         <flux:radio
                             value="{{ OpenHandoverAdminResolutionService::ResolutionNewOwner }}"
                             label="Neuen Besitzer zuweisen"
-                            description="Offene Übergabe wird entfernt, neuer Besitzer wird gesetzt (neue Übergabe wird erzeugt)."
+                            description="Offene Übergabe wird als ersetzt markiert und bleibt in der Historie; neuer Besitzer wird gesetzt (neue Übergabe)."
                         />
                         <flux:radio
                             value="{{ OpenHandoverAdminResolutionService::ResolutionSetLocation }}"
                             label="Besitzer entfernen und Standort setzen (Auf Lager)"
-                            description="Offene Übergabe wird entfernt; Standort des Assets ist Pflicht. Asset wird als Auf Lager markiert."
+                            description="Besitzer wird entfernt; offene Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort ist Pflicht. Asset wird als Auf Lager markiert."
                         />
                         <flux:radio
                             value="{{ OpenHandoverAdminResolutionService::ResolutionMarkMissing }}"
                             label="Als vermisst markieren"
-                            description="Offene Übergabe wird entfernt; Asset wird als vermisst gekennzeichnet."
+                            description="Besitzer wird entfernt; offene Übergabe wird als ersetzt markiert und bleibt in der Historie. Asset wird als vermisst gekennzeichnet."
                         />
                     </flux:radio.group>
                     @error('resolution')

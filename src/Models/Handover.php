@@ -175,7 +175,7 @@ class Handover extends Model
     {
         if ($this->isSuperseded()) {
             return [
-                'label' => 'Admin beendet',
+                'label' => 'Ersetzt',
                 'color' => 'zinc',
                 'hint' => filled($this->superseded_reason) ? $this->superseded_reason : null,
             ];

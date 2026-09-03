@@ -57,6 +57,7 @@ class MissingResolveCommit extends Component
                 isset($pending['new_owner_user_id']) ? (int) $pending['new_owner_user_id'] : null,
                 isset($pending['location']) ? (string) $pending['location'] : null,
                 isset($pending['note']) ? (string) $pending['note'] : null,
+                (bool) ($pending['mark_in_stock'] ?? true),
             );
         } catch (\InvalidArgumentException $e) {
             session()->flash('error', $e->getMessage());

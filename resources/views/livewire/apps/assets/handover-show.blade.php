@@ -102,7 +102,12 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     <dt class="font-semibold text-zinc-500 dark:text-white">Asset</dt>
                     <dd class="text-zinc-900 dark:text-white">
                         @if($handover->asset)
-                            <a href="{{ route('apps.assets.show', [$handover->asset, 'from' => 'meine-assets']) }}" class="text-[var(--color-accent)] hover:underline">
+                            <a
+                                href="{{ route('apps.assets.show', [$handover->asset, 'from' => 'meine-assets']) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="text-[var(--color-accent)] hover:underline"
+                            >
                                 {{ $handover->asset->display_name }}
                             </a>
                             <span class="text-zinc-500 dark:text-zinc-300"> · {{ $handover->asset->serial_number }}</span>
@@ -162,7 +167,13 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     </flux:button>
                 @endif
                 @if($handover->asset)
-                    <flux:button href="{{ route('apps.assets.show', [$handover->asset, 'from' => 'meine-assets']) }}" variant="ghost" icon="eye">
+                    <flux:button
+                        href="{{ route('apps.assets.show', [$handover->asset, 'from' => 'meine-assets']) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="ghost"
+                        icon="eye"
+                    >
                         Zum Asset
                     </flux:button>
                 @endif

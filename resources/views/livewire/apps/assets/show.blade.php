@@ -477,8 +477,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @endif
                         @if($asset->is_in_stock)
                             <flux:badge color="blue" size="lg" icon="archive-box">Auf Lager</flux:badge>
-                        @endif
-                        @if(!$asset->is_missing && !$asset->is_clarification && !$asset->is_in_stock)
+                        @elseif($asset->user_id === null)
+                            <flux:badge color="zinc" size="lg" icon="building-office-2">Gemeinschaftsgerät</flux:badge>
+                        @elseif(! $asset->is_missing && ! $asset->is_clarification)
                             <flux:badge color="green" size="lg" icon="check-circle">Aktiv</flux:badge>
                         @endif
                     </div>
