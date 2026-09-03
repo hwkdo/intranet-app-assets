@@ -146,17 +146,8 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
             return collect();
         }
 
-        return Handover::query()
-            ->where('recipient_user_id', auth()->id())
-            ->whereIn('asset_id', $assetIds)
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns')
-            ->orderByDesc('confirmed_at')
-            ->orderByDesc('id')
-            ->get()
-            ->unique('asset_id')
-            ->keyBy('asset_id');
+        return app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAssetIds($assetIds);
     }
 
     /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */

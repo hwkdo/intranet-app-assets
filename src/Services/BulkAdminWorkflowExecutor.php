@@ -228,17 +228,8 @@ class BulkAdminWorkflowExecutor
         $processed = 0;
         $failed = 0;
 
-        $handovers = Handover::query()
-            ->whereIn('asset_id', $session['ids'])
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
-            ->with('asset')
-            ->orderByDesc('confirmed_at')
-            ->orderByDesc('id')
-            ->get()
-            ->unique('asset_id')
-            ->keyBy('asset_id');
+        $handovers = app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAssetIds($session['ids']);
 
         foreach ($session['ids'] as $assetId) {
             $handover = $handovers->get($assetId);

@@ -2,9 +2,11 @@
 
 namespace Hwkdo\IntranetAppAssets\Services;
 
+use Hwkdo\IntranetAppAssets\Events\AssetsZentraleHandoverQueueChanged;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AdminHandoverChannel;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 
 class RecipientHandoverConfirmationService
@@ -49,6 +51,8 @@ class RecipientHandoverConfirmationService
         }
 
         AssetAuditContext::runWith('assets.handover.confirm', function () use ($handover, $recipientUserId, $confirmationMethod, $signatureBase64, $assistedByAdminUserId): void {
+            $wasInZentraleQueue = $handover->pending_confirmation_channel === AdminHandoverChannel::SignopadZentrale;
+
             $attributes = [
                 'confirmed_at' => now(),
                 'confirmation_method' => $confirmationMethod,
@@ -61,6 +65,13 @@ class RecipientHandoverConfirmationService
                 $attributes['confirmed_assisted_by_user_id'] = $assistedByAdminUserId;
             }
             $handover->update($attributes);
+
+            if ($wasInZentraleQueue) {
+                AssetsZentraleHandoverQueueChanged::dispatch(
+                    $handover->fresh() ?? $handover,
+                    AssetsZentraleHandoverQueueChanged::ACTION_CONFIRMED,
+                );
+            }
 
             $asset = $handover->asset;
             if ($asset instanceof Asset) {
@@ -96,6 +107,8 @@ class RecipientHandoverConfirmationService
         }
 
         AssetAuditContext::runWith('assets.handover.reject', function () use ($handover, $recipientUserId, $reason): void {
+            $wasInZentraleQueue = $handover->pending_confirmation_channel === AdminHandoverChannel::SignopadZentrale;
+
             $handover->notes()->create([
                 'note' => 'Übergabe abgelehnt — Begründung des Empfängers:'."\n\n".$reason,
                 'user_id' => $recipientUserId,
@@ -104,7 +117,15 @@ class RecipientHandoverConfirmationService
             $handover->update([
                 'rejected_at' => now(),
                 'rejected_by_user_id' => $recipientUserId,
+                'pending_confirmation_channel' => null,
             ]);
+
+            if ($wasInZentraleQueue) {
+                AssetsZentraleHandoverQueueChanged::dispatch(
+                    $handover->fresh() ?? $handover,
+                    AssetsZentraleHandoverQueueChanged::ACTION_REMOVED,
+                );
+            }
 
             $asset = $handover->asset;
             if ($asset instanceof Asset) {

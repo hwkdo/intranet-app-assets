@@ -6,6 +6,7 @@ namespace Hwkdo\IntranetAppAssets\Services;
 
 use App\Models\User;
 use Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface;
+use Hwkdo\IntranetAppAssets\Events\AssetsZentraleHandoverQueueChanged;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
@@ -56,6 +57,12 @@ class AdminAssistedHandoverService
 
                 $asset->refresh();
             }
+
+            app(HandoverSupersessionService::class)->supersedeConfirmedAndRejectedForAsset(
+                $asset,
+                $adminUserId,
+                'admin_assisted_handover_prepare',
+            );
 
             $open = Handover::query()
                 ->where('asset_id', $asset->id)
@@ -161,6 +168,13 @@ class AdminAssistedHandoverService
         }
 
         $handover->update($attributes);
+
+        if ($channel === AdminHandoverChannel::SignopadZentrale) {
+            AssetsZentraleHandoverQueueChanged::dispatch(
+                $handover->fresh() ?? $handover,
+                AssetsZentraleHandoverQueueChanged::ACTION_QUEUED,
+            );
+        }
     }
 
     /**

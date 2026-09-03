@@ -10,6 +10,8 @@ use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\ClearStaleAssetLocationsCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
 use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
+use Hwkdo\IntranetAppAssets\Commands\ReportConflictingHandoverActionsCommand;
+use Hwkdo\IntranetAppAssets\Commands\CleanupStaleHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
@@ -132,6 +134,8 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 BackfillOwnerHandoversCommand::class,
                 ClearStaleAssetLocationsCommand::class,
                 EnsureAssetHandoversCommand::class,
+                ReportConflictingHandoverActionsCommand::class,
+                CleanupStaleHandoversCommand::class,
             ]);
     }
 
@@ -176,6 +180,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
             $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
             $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
             $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
+            $this->loadRoutesFrom(__DIR__.'/../routes/channels.php');
         });
 
         $this->app->resolving(Schedule::class, function () {

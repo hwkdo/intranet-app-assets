@@ -290,19 +290,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
     #[Computed]
     public function returnInitiatableHandover(): ?Handover
     {
-        if ($this->asset->user_id === null) {
-            return null;
-        }
-
-        return Handover::query()
-            ->where('asset_id', $this->asset->id)
-            ->where('recipient_user_id', $this->asset->user_id)
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns')
-            ->latest('confirmed_at')
-            ->latest('id')
-            ->first();
+        return app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAsset($this->asset);
     }
 
     /**

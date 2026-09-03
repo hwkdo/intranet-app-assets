@@ -238,17 +238,11 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         $asset = Asset::query()->findOrFail($assetId);
         $adminId = (int) auth()->id();
 
-        $handover = Handover::query()
-            ->where('asset_id', $asset->id)
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
-            ->orderByDesc('confirmed_at')
-            ->orderByDesc('id')
-            ->first();
+        $handover = app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAsset($asset);
 
         if ($handover === null) {
-            Flux::toast('Für dieses Asset ist keine bestätigte Übergabe ohne offene Rückgabe vorhanden.', variant: 'danger');
+            Flux::toast('Für dieses Asset ist keine rückgabefähige Übergabe im aktuellen Lifecycle vorhanden.', variant: 'danger');
 
             return;
         }
@@ -379,16 +373,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             return collect();
         }
 
-        return Handover::query()
-            ->whereIn('asset_id', $assetIds)
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
-            ->orderByDesc('confirmed_at')
-            ->orderByDesc('id')
-            ->get()
-            ->unique('asset_id')
-            ->keyBy('asset_id');
+        return app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAssetIds($assetIds);
     }
 
     /** @return \Illuminate\Support\Collection<int, AssetReturn> keyed by asset_id */
@@ -580,16 +566,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             return;
         }
 
-        $returnEligible = Handover::query()
-            ->whereIn('asset_id', $this->selectedAssetIds)
-            ->whereNotNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->whereDoesntHave('assetReturns', fn ($q) => $q->whereNull('completed_at'))
-            ->orderByDesc('confirmed_at')
-            ->orderByDesc('id')
-            ->get()
-            ->unique('asset_id')
-            ->pluck('asset_id')
+        $returnEligible = app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+            ->forAssetIds($this->selectedAssetIds)
+            ->keys()
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
 

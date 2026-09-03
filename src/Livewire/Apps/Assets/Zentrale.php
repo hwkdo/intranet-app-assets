@@ -31,6 +31,34 @@ class Zentrale extends Component
         $this->authorize('see-app-assets-zentrale');
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:assets-zentrale-channel,.handover-queue-changed' => 'refreshQueueFromBroadcast',
+        ];
+    }
+
+    public function refreshQueueFromBroadcast(?array $event = null): void
+    {
+        unset($this->pendingHandovers);
+
+        if ($this->selectedHandoverId === null) {
+            return;
+        }
+
+        $stillPending = Handover::query()
+            ->pendingSignopadZentrale()
+            ->whereKey($this->selectedHandoverId)
+            ->exists();
+
+        if (! $stillPending) {
+            $this->closeConfirm();
+        }
+    }
+
     #[Computed]
     public function pendingHandovers(): Collection
     {
