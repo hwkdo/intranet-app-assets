@@ -56,10 +56,41 @@ class AssetsSearchSource implements SearchSourceInterface
                 appIdentifier: $this->appIdentifier(),
                 appName: $this->appName(),
                 icon: $this->icon(),
+                favoriteKey: $this->key().':'.$asset->id,
                 subtitle: $this->subtitle($asset),
                 sourceKey: $this->key(),
             ))
             ->values();
+    }
+
+    public function resolveFavorite(string $entityId, Authenticatable $user): ?SearchResult
+    {
+        if (! $this->isAvailableFor($user)) {
+            return null;
+        }
+
+        $query = Asset::query()->with(['type', 'vendor', 'owner'])->whereKey($entityId);
+
+        if (! method_exists($user, 'can') || ! $user->can('manage-app-assets')) {
+            $query->where('user_id', $user->getAuthIdentifier());
+        }
+
+        $asset = $query->first();
+
+        if ($asset === null) {
+            return null;
+        }
+
+        return new SearchResult(
+            title: $asset->display_name,
+            url: route('apps.assets.show', $asset),
+            appIdentifier: $this->appIdentifier(),
+            appName: $this->appName(),
+            icon: $this->icon(),
+            favoriteKey: $this->key().':'.$asset->id,
+            subtitle: $this->subtitle($asset),
+            sourceKey: $this->key(),
+        );
     }
 
     private function subtitle(Asset $asset): ?string
