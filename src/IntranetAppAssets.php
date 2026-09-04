@@ -2,20 +2,23 @@
 
 namespace Hwkdo\IntranetAppAssets;
 
+use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
+use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
+use Hwkdo\IntranetAppAssets\Search\AssetsSearchSource;
+use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
+use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
+use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
+use Hwkdo\IntranetAppAssets\Tasks\ScheduledAssetReturnsAdminTaskProvider;
 use Hwkdo\IntranetAppBase\Data\NotificationTypeDefinition;
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesNotificationsInterface;
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesSearchInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
-use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
-use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
-use Hwkdo\IntranetAppAssets\Tasks\PendingAssetReturnsAdminTaskProvider;
-use Hwkdo\IntranetAppAssets\Tasks\ScheduledAssetReturnsAdminTaskProvider;
-use Hwkdo\IntranetAppAssets\Tasks\FehlendeRechnungsnrTaskProvider;
-use Hwkdo\IntranetAppAssets\Tasks\OffeneUebergabenTaskProvider;
+use Hwkdo\IntranetAppBase\Interfaces\SearchSourceInterface;
 use Illuminate\Support\Collection;
 
-class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface
+class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface, ProvidesSearchInterface
 {
     public static function app_name(): string
     {
@@ -90,6 +93,16 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface,
     {
         return [
             AssetsDashboardWidgetProvider::class,
+        ];
+    }
+
+    /**
+     * @return list<class-string<SearchSourceInterface>>
+     */
+    public static function searchSources(): array
+    {
+        return [
+            AssetsSearchSource::class,
         ];
     }
 }

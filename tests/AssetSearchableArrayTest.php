@@ -66,6 +66,7 @@ it('builds a searchable payload with core fields and aggregated note history tex
     $searchable = $asset->toSearchableArray();
 
     expect($searchable['id'])->toBe('42')
+        ->and($searchable['user_id'])->toBe(0)
         ->and($searchable['name'])->toBe('Arbeitsplatz Laptop')
         ->and($searchable['owner_name'])->toBe('Max Muster')
         ->and($searchable['owner_vorname'])->toBe('Max')
@@ -78,4 +79,19 @@ it('builds a searchable payload with core fields and aggregated note history tex
         ->and($searchable['notes_text'])->toContain('Übergabe-Notiz')
         ->and($searchable['notes_text'])->toContain('Rückgabe-Notiz')
         ->and($searchable['notes_text'])->toContain('Anhang-Notiz');
+});
+
+it('indexes owner user_id for scoped global search', function () {
+    $asset = new Asset([
+        'id' => 7,
+        'user_id' => 15,
+        'name' => 'Diensthandy',
+        'created_at' => now(),
+    ]);
+
+    $asset->setRelation('owner', new User(['vorname' => 'Eva', 'nachname' => 'Beispiel']));
+    $asset->setRelation('type', null);
+    $asset->setRelation('vendor', null);
+
+    expect($asset->toSearchableArray()['user_id'])->toBe(15);
 });

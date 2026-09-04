@@ -206,6 +206,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
             'collection-schema' => [
                 'fields' => [
                     ['name' => 'id', 'type' => 'string'],
+                    ['name' => 'user_id', 'type' => 'int64', 'optional' => true],
                     ['name' => 'name', 'type' => 'string', 'optional' => true, 'infix' => true],
                     ['name' => 'model', 'type' => 'string', 'optional' => true, 'infix' => true],
                     ['name' => 'location', 'type' => 'string', 'optional' => true, 'infix' => true],

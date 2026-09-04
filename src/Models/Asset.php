@@ -40,6 +40,7 @@ class Asset extends Model implements HasMedia
 
         return [
             'id' => (string) $this->id,
+            'user_id' => $this->user_id !== null ? (int) $this->user_id : 0,
             'name' => $this->normalizedString($this->name),
             'model' => $this->normalizedString($this->model),
             'location' => $this->normalizedString($this->location),
