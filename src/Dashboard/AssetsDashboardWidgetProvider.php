@@ -58,6 +58,18 @@ class AssetsDashboardWidgetProvider implements DashboardWidgetProviderInterface
                 defaultEnabled: true,
             ),
             new DashboardWidgetDefinition(
+                key: 'offene-rueckgaben',
+                title: 'Offene Rückgaben',
+                description: 'Rückgaben und Leihen, die auf Empfangsbestätigung warten',
+                component: 'intranet-app-assets::apps.assets.widgets.offene-rueckgaben',
+                permission: 'manage-app-assets',
+                defaultW: 6,
+                defaultH: 4,
+                minW: 4,
+                minH: 3,
+                defaultEnabled: true,
+            ),
+            new DashboardWidgetDefinition(
                 key: 'fehlende-rechnungsnr',
                 title: 'Fehlende Rechnungsnr',
                 description: 'Assets mit fehlender Rechnungsnummer',

@@ -25,7 +25,13 @@ class Handover extends Model
             'confirmed_at' => 'datetime',
             'rejected_at' => 'datetime',
             'superseded_at' => 'datetime',
+            'loan_due_at' => 'datetime',
         ];
+    }
+
+    public function isLoan(): bool
+    {
+        return $this->loan_due_at !== null;
     }
 
     public function isConfirmed(): bool
@@ -225,33 +231,51 @@ class Handover extends Model
                 : $this->assetReturns()->whereNull('completed_at')->first();
 
             if ($pendingReturn?->isScheduled()) {
+                $isLoanReturn = $pendingReturn->isLoan();
+
                 if ($pendingReturn->isOverdue()) {
                     return [
-                        'label' => 'Rückgabe überfällig',
+                        'label' => $isLoanReturn ? 'Leihe überfällig' : 'Rückgabe überfällig',
                         'color' => 'red',
                         'hint' => $pendingReturn->scheduled_at?->format('d.m.Y H:i'),
                     ];
                 }
 
                 return [
-                    'label' => 'Rückgabe geplant',
+                    'label' => $isLoanReturn ? 'Verliehen bis' : 'Rückgabe geplant',
                     'color' => 'blue',
                     'hint' => $pendingReturn->scheduled_at?->format('d.m.Y H:i'),
                 ];
             }
 
             return [
-                'label' => 'Rückgabe offen',
+                'label' => $pendingReturn?->isLoan() ? 'Leihe-Rückgabe offen' : 'Rückgabe offen',
                 'color' => 'amber',
                 'hint' => null,
             ];
         }
 
         if ($this->isConfirmed()) {
+            if ($this->isLoan()) {
+                return [
+                    'label' => 'Verliehen bis',
+                    'color' => 'blue',
+                    'hint' => $this->loan_due_at?->format('d.m.Y H:i'),
+                ];
+            }
+
             return [
                 'label' => 'Bestätigt',
                 'color' => 'green',
                 'hint' => $this->confirmed_at?->format('d.m.Y H:i'),
+            ];
+        }
+
+        if ($this->isLoan()) {
+            return [
+                'label' => 'Leihe offen',
+                'color' => 'amber',
+                'hint' => $this->loan_due_at?->format('d.m.Y H:i'),
             ];
         }
 

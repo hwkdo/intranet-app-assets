@@ -56,6 +56,10 @@ class AssetHistory extends Model
 
     public const EventAdminHandoverStarted = 'admin_handover_started';
 
+    public const EventAdminLoanStarted = 'admin_loan_started';
+
+    public const EventLoanReturnScheduledOnConfirm = 'loan_return_scheduled_on_confirm';
+
     public const EventPendingHandoverAdminAcknowledged = 'pending_handover_admin_acknowledged';
 
     public const EventPendingHandoverAdminResolvedNewOwner = 'pending_handover_admin_resolved_new_owner';

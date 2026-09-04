@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Enums\AssetReturnSource;
 use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\ScheduledReturnReminderService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -106,6 +108,7 @@ class HandoverReturnInitiate extends Component
             'initiated_by_user_id' => $userId,
             'schedule_type' => $scheduleType,
             'scheduled_at' => $scheduledAt,
+            'source' => AssetReturnSource::Holder,
         ]);
 
         if ($noteText !== '') {
@@ -147,17 +150,15 @@ class HandoverReturnInitiate extends Component
     public function minScheduleDate(): string
     {
         return app(ScheduledReturnReminderService::class)
-            ->allowedScheduleWindow()
-            ['min']
-            ->format('Y-m-d');
+            ->allowedScheduleWindow()['min']
+                ->format('Y-m-d');
     }
 
     public function maxScheduleDate(): string
     {
         return app(ScheduledReturnReminderService::class)
-            ->allowedScheduleWindow()
-            ['max']
-            ->format('Y-m-d');
+            ->allowedScheduleWindow()['max']
+                ->format('Y-m-d');
     }
 
     public function reminder2Hours(): int
@@ -167,7 +168,7 @@ class HandoverReturnInitiate extends Component
         return $settings->returnReminder2Hours;
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.handover-return-initiate');
     }

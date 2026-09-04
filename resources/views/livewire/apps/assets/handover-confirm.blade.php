@@ -3,6 +3,7 @@
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Services\AssetLoanService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -63,6 +64,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
             'signature' => $signatureBase64,
             'confirmed_at' => now(),
             'confirmation_method' => 'touchscreen',
+            'pending_confirmation_channel' => null,
         ]);
         $asset = $this->handover->asset;
         if ($asset !== null) {
@@ -92,6 +94,9 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe bestätigen')] class 
                 ]);
             }
         }
+
+        app(AssetLoanService::class)->ensureScheduledReturnAfterConfirm($this->handover->fresh() ?? $this->handover);
+
         session()->flash('message', 'Übergabe wurde per Touchscreen-Unterschrift bestätigt.');
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }

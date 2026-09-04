@@ -2,8 +2,10 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -46,11 +48,33 @@ class ReturnCompleteResolve extends Component
         }
 
         $this->assetReturn = $assetReturn;
+
+        if ($assetReturn->isLoan()) {
+            $this->resolution = AssetReturnAdminCompletionService::ResolutionReturnToStock;
+        }
     }
 
     public function submit(): void
     {
         $this->authorize('manage-app-assets');
+
+        if ($this->assetReturn->isLoan()) {
+            $this->validate([
+                'acknowledgeReceipt' => ['accepted'],
+            ]);
+
+            Session::put(AssetReturnAdminCompletionService::PENDING_SESSION_KEY, [
+                'asset_return_id' => $this->assetReturn->id,
+                'admin_user_id' => auth()->id(),
+                'resolution' => AssetReturnAdminCompletionService::ResolutionReturnToStock,
+                'new_owner_user_id' => null,
+                'location' => null,
+            ]);
+
+            $this->redirect(route('apps.assets.admin.return.complete-commit', $this->assetReturn), navigate: false);
+
+            return;
+        }
 
         $rules = [
             'acknowledgeReceipt' => ['accepted'],
@@ -80,9 +104,9 @@ class ReturnCompleteResolve extends Component
         $this->redirect(route('apps.assets.admin.return.complete-commit', $this->assetReturn), navigate: false);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
-        $users = \App\Models\User::query()
+        $users = User::query()
             ->orderBy('nachname')
             ->orderBy('vorname')
             ->get();

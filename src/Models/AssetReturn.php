@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use App\Models\User;
+use Hwkdo\IntranetAppAssets\Enums\AssetReturnSource;
 use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ class AssetReturn extends Model
     {
         return [
             'schedule_type' => ReturnScheduleType::class,
+            'source' => AssetReturnSource::class,
             'scheduled_at' => 'datetime',
             'reminder1_sent_at' => 'datetime',
             'reminder2_sent_at' => 'datetime',
@@ -33,6 +35,11 @@ class AssetReturn extends Model
     public function isCompleted(): bool
     {
         return $this->completed_at !== null;
+    }
+
+    public function isLoan(): bool
+    {
+        return ($this->source ?? AssetReturnSource::Holder)->isLoan();
     }
 
     public function isScheduled(): bool

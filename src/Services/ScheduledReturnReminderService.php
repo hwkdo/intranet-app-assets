@@ -8,7 +8,6 @@ use App\Models\User;
 use Carbon\CarbonInterface;
 use Hwkdo\IntranetAppAssets\Data\AppSettings;
 use Hwkdo\IntranetAppAssets\Enums\ReturnReminderPhase;
-use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Notifications\ReturnReminderNotification;
@@ -112,6 +111,36 @@ final class ScheduledReturnReminderService
 
         if ($scheduledAt->greaterThan($window['max'])) {
             return 'Der Termin darf maximal '.$settings->scheduledReturnMaxDays.' Tage in der Zukunft liegen.';
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{min: CarbonInterface, max: CarbonInterface}
+     */
+    public function allowedLoanScheduleWindow(?AppSettings $settings = null): array
+    {
+        $settings ??= $this->settings();
+        $now = now();
+
+        return [
+            'min' => $now->copy()->addHours($settings->returnReminder2Hours),
+            'max' => $now->copy()->addDays($settings->loanMaxDays),
+        ];
+    }
+
+    public function validateLoanDueAt(CarbonInterface $loanDueAt, ?AppSettings $settings = null): ?string
+    {
+        $settings ??= $this->settings();
+        $window = $this->allowedLoanScheduleWindow($settings);
+
+        if ($loanDueAt->lessThan($window['min'])) {
+            return 'Der Verleih-Termin muss mindestens '.$settings->returnReminder2Hours.' Stunden in der Zukunft liegen.';
+        }
+
+        if ($loanDueAt->greaterThan($window['max'])) {
+            return 'Der Verleih-Termin darf maximal '.$settings->loanMaxDays.' Tage in der Zukunft liegen.';
         }
 
         return null;

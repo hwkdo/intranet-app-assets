@@ -2,6 +2,7 @@
 
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Services\AssetLoanService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -26,6 +27,7 @@ new #[Layout('components.layouts.app')] class extends Component
         $handover->update([
             'confirmed_at' => now(),
             'confirmation_method' => 'password',
+            'pending_confirmation_channel' => null,
         ]);
         $asset = $handover->asset;
         if ($asset !== null) {
@@ -55,6 +57,9 @@ new #[Layout('components.layouts.app')] class extends Component
                 ]);
             }
         }
+
+        app(AssetLoanService::class)->ensureScheduledReturnAfterConfirm($handover->fresh() ?? $handover);
+
         session()->flash('message', 'Übergabe wurde per Passwort bestätigt.');
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }

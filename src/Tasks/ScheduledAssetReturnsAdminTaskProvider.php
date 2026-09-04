@@ -31,7 +31,7 @@ class ScheduledAssetReturnsAdminTaskProvider implements TaskProviderInterface
             ->get()
             ->filter(fn (AssetReturn $return) => $return->handover !== null)
             ->map(fn (AssetReturn $return) => new TaskItem(
-                title: 'Geplante Rückgabe',
+                title: $return->isLoan() ? 'Geplante Leihe-Rückgabe' : 'Geplante Rückgabe',
                 url: route('apps.assets.admin.return.complete', $return),
                 appIdentifier: IntranetAppAssets::identifier(),
                 appName: IntranetAppAssets::app_name(),
@@ -39,7 +39,7 @@ class ScheduledAssetReturnsAdminTaskProvider implements TaskProviderInterface
                 description: ($return->handover?->asset?->display_name ?? 'Asset')
                     .' · '.($return->handover?->asset?->serial_number ?? '—')
                     .' · Termin '.(AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) ?? '—'),
-                badge: 'Geplant',
+                badge: $return->isLoan() ? 'Leihe' : 'Geplant',
                 priority: 5,
             ));
     }

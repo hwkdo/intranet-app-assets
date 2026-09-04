@@ -323,6 +323,30 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     Bearbeiten
                 </flux:button>
 
+                @if($asset->is_in_stock && \Hwkdo\IntranetAppAssets\Support\AdminLoanEligibility::isEligible($asset))
+                    <flux:button
+                        href="{{ route('apps.assets.admin.loan.start', $asset) }}"
+                        variant="outline"
+                        icon="clock"
+                        size="sm"
+                        wire:navigate
+                    >
+                        Verleihen
+                    </flux:button>
+                @endif
+
+                @if(\Hwkdo\IntranetAppAssets\Support\AdminHandoverEligibility::isEligible($asset))
+                    <flux:button
+                        href="{{ route('apps.assets.admin.handover.start', $asset) }}"
+                        variant="outline"
+                        icon="hand-raised"
+                        size="sm"
+                        wire:navigate
+                    >
+                        Übergeben
+                    </flux:button>
+                @endif
+
                 @if(! $asset->trashed() && ! $asset->is_clarification)
                     <flux:button
                         type="button"
@@ -501,6 +525,17 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                             <flux:badge color="zinc" size="lg" icon="building-office-2">Gemeinschaftsgerät</flux:badge>
                         @elseif(! $asset->is_missing && ! $asset->is_clarification)
                             <flux:badge color="green" size="lg" icon="check-circle">Aktiv</flux:badge>
+                        @endif
+                        @php
+                            $activeLoanReturn = $asset->handovers
+                                ->filter(fn ($h) => $h->superseded_at === null)
+                                ->flatMap(fn ($h) => $h->assetReturns)
+                                ->first(fn ($r) => $r->completed_at === null && $r->isLoan());
+                        @endphp
+                        @if($activeLoanReturn)
+                            <flux:badge color="sky" size="lg" icon="clock">
+                                Verliehen bis {{ $activeLoanReturn->scheduled_at?->format('d.m.Y H:i') ?? '—' }}
+                            </flux:badge>
                         @endif
                     </div>
 
@@ -692,6 +727,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histHandoverConfirmCleared = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedStatusCleared;
                                 $histHandoverAssisted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventHandoverConfirmedAssistedByAdmin;
                                 $histAdminHandoverStarted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventAdminHandoverStarted;
+                                $histAdminLoanStarted = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventAdminLoanStarted;
+                                $histLoanReturnScheduled = \Hwkdo\IntranetAppAssets\Models\AssetHistory::EventLoanReturnScheduledOnConfirm;
                                 $histIndicatorColor = match ($histEvent) {
                                     $histDeleted => 'red',
                                     $histRestored => 'green',
@@ -708,7 +745,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histReturnInitiated => 'amber',
                                     $histReturnCompleted => 'green',
                                     $histHandoverConfirmCleared, $histHandoverAssisted => 'green',
-                                    $histAdminHandoverStarted => 'blue',
+                                    $histAdminHandoverStarted, $histAdminLoanStarted, $histLoanReturnScheduled => 'blue',
                                     default => 'zinc',
                                 };
                             @endphp
@@ -746,6 +783,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:icon.arrow-path variant="micro" />
                                     @elseif($histEvent === $histAdminHandoverStarted)
                                         <flux:icon.hand-raised variant="micro" />
+                                    @elseif($histEvent === $histAdminLoanStarted || $histEvent === $histLoanReturnScheduled)
+                                        <flux:icon.clock variant="micro" />
                                     @elseif($histEvent === $histHandoverAssisted)
                                         <flux:icon.key variant="micro" />
                                     @elseif($histEvent === $histHandoverConfirmCleared)
@@ -782,6 +821,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             Abgelehnte Übergabe: Als vermisst markiert
                                         @elseif($histEvent === $histAdminHandoverStarted)
                                             Admin: Übergabe gestartet
+                                        @elseif($histEvent === $histAdminLoanStarted)
+                                            Admin: Verleih gestartet
+                                        @elseif($histEvent === $histLoanReturnScheduled)
+                                            Verleih bestätigt: Rückgabe terminiert
                                         @elseif($histEvent === $histHandoverAssisted)
                                             Übergabe vor Ort per Empfänger-Passwort bestätigt
                                         @elseif($histEvent === $histOwnerClarification)

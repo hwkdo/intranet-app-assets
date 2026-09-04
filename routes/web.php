@@ -5,21 +5,17 @@ use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Illuminate\Support\Facades\Route;
 
-
 Route::bind('asset', function (string $value): Asset {
     return Asset::withTrashed()->findOrFail($value);
 });
-
 
 Route::bind('handover', function (string $value): Handover {
     return Handover::findOrFail($value);
 });
 
-
 Route::bind('assetReturn', function (string $value): AssetReturn {
     return AssetReturn::query()->findOrFail((int) $value);
 });
-
 
 Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets', 'intranet-app-assets::apps.assets.dashboard')->name('apps.assets.index');
@@ -154,6 +150,10 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/admin/uebergeben/{asset}', 'intranet-app-assets::apps.assets.admin-handover-start')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.handover.start');
+
+    Route::livewire('apps/assets/admin/verleihen/{asset}', 'intranet-app-assets::apps.assets.admin-loan-start')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.loan.start');
 
     Route::livewire('apps/assets/admin/uebergeben/{handover}/passwort', 'intranet-app-assets::apps.assets.admin-handover-confirm-password')
         ->middleware('can:manage-app-assets')

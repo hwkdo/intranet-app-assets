@@ -100,6 +100,9 @@ class AppSettings extends BaseAppSettings implements HasAiSettings
 
         #[Description('Maximaler Planungshorizont für geplante Rückgaben (Tage)')]
         public int $scheduledReturnMaxDays = 28,
+
+        #[Description('Maximaler Planungshorizont für Verleih-Rückgabe-Termine (Tage)')]
+        public int $loanMaxDays = 90,
     ) {}
 
     public function textProviderOverride(): ?AiProvider

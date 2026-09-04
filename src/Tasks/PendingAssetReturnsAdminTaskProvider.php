@@ -34,7 +34,7 @@ class PendingAssetReturnsAdminTaskProvider implements TaskProviderInterface
             ->limit(50)
             ->get()
             ->map(fn (AssetReturn $return) => new TaskItem(
-                title: 'Offene Rückgabe',
+                title: $return->isLoan() ? 'Offene Leihe-Rückgabe' : 'Offene Rückgabe',
                 url: route('apps.assets.admin.return.complete', $return),
                 appIdentifier: IntranetAppAssets::identifier(),
                 appName: IntranetAppAssets::app_name(),
@@ -42,7 +42,9 @@ class PendingAssetReturnsAdminTaskProvider implements TaskProviderInterface
                 description: ($return->handover?->asset?->display_name ?? 'Asset')
                     .' · '.($return->handover?->asset?->serial_number ?? '—')
                     .($return->isScheduled() ? ' · Termin '.(AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) ?? '—') : ''),
-                badge: $return->isOverdue() ? 'Überfällig' : 'Rückgabe',
+                badge: $return->isLoan()
+                    ? ($return->isOverdue() ? 'Leihe · Überfällig' : 'Leihe')
+                    : ($return->isOverdue() ? 'Überfällig' : 'Rückgabe'),
                 priority: $return->isOverdue() ? 7 : 6,
             ));
     }

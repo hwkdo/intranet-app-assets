@@ -23,16 +23,18 @@ final class AssetReturnSchedulePresenter
             return null;
         }
 
+        $isLoan = $return->isLoan();
+
         if ($return->isOverdue()) {
             return [
-                'label' => 'Überfällig',
+                'label' => $isLoan ? 'Leihe · Überfällig' : 'Überfällig',
                 'color' => 'red',
             ];
         }
 
         if ($return->scheduled_at?->isFuture()) {
             return [
-                'label' => 'Geplant',
+                'label' => $isLoan ? 'Leihe' : 'Geplant',
                 'color' => 'blue',
             ];
         }

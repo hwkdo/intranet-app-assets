@@ -2,11 +2,13 @@
 
 namespace Hwkdo\IntranetAppAssets\Services;
 
+use Hwkdo\IntranetAppAssets\Enums\AssetReturnSource;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
+use Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver;
 use Illuminate\Support\Facades\DB;
 
 class BulkAdminWorkflowExecutor
@@ -54,15 +56,20 @@ class BulkAdminWorkflowExecutor
             $assetReturn = $returns->get($id);
             if ($assetReturn === null) {
                 $failed++;
+
                 continue;
             }
             try {
+                $effectiveResolution = $assetReturn->isLoan()
+                    ? AssetReturnAdminCompletionService::ResolutionReturnToStock
+                    : $resolution;
+
                 $service->complete(
                     $assetReturn,
                     $adminId,
-                    $resolution,
-                    $resolution === AssetReturnAdminCompletionService::ResolutionNewOwner ? $newOwner : null,
-                    $resolution === AssetReturnAdminCompletionService::ResolutionSetLocation ? $location : null,
+                    $effectiveResolution,
+                    $effectiveResolution === AssetReturnAdminCompletionService::ResolutionNewOwner ? $newOwner : null,
+                    $effectiveResolution === AssetReturnAdminCompletionService::ResolutionSetLocation ? $location : null,
                     $reason,
                 );
                 $processed++;
@@ -102,6 +109,7 @@ class BulkAdminWorkflowExecutor
             $asset = $assets->get($id);
             if ($asset === null) {
                 $failed++;
+
                 continue;
             }
             try {
@@ -150,6 +158,7 @@ class BulkAdminWorkflowExecutor
             $handover = $handovers->get($id);
             if ($handover === null) {
                 $failed++;
+
                 continue;
             }
             try {
@@ -197,6 +206,7 @@ class BulkAdminWorkflowExecutor
             $handover = $handovers->get($id);
             if ($handover === null) {
                 $failed++;
+
                 continue;
             }
             try {
@@ -228,13 +238,14 @@ class BulkAdminWorkflowExecutor
         $processed = 0;
         $failed = 0;
 
-        $handovers = app(\Hwkdo\IntranetAppAssets\Support\ReturnInitiatableHandoverResolver::class)
+        $handovers = app(ReturnInitiatableHandoverResolver::class)
             ->forAssetIds($session['ids']);
 
         foreach ($session['ids'] as $assetId) {
             $handover = $handovers->get($assetId);
             if ($handover === null) {
                 $failed++;
+
                 continue;
             }
 
@@ -243,6 +254,7 @@ class BulkAdminWorkflowExecutor
                     $return = AssetReturn::query()->create([
                         'handover_id' => $handover->id,
                         'initiated_by_user_id' => $adminId,
+                        'source' => AssetReturnSource::Holder,
                     ]);
 
                     $return->notes()->create([

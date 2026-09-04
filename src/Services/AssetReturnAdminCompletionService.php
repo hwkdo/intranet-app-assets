@@ -16,9 +16,9 @@ class AssetReturnAdminCompletionService
 
     public const ResolutionSetLocation = 'set_location';
 
-    /**
-     * @param  array{resolution: string, new_owner_user_id?: int|null, location?: string|null}  $data
-     */
+    /** Leihe: Empfang bestätigt → ohne Besitzer, Auf Lager (ohne Standort-Eingabe). */
+    public const ResolutionReturnToStock = 'return_to_stock';
+
     public function complete(
         AssetReturn $assetReturn,
         int $adminUserId,
@@ -41,6 +41,12 @@ class AssetReturnAdminCompletionService
             throw new \InvalidArgumentException('Asset fehlt.');
         }
 
+        if ($assetReturn->isLoan()) {
+            $resolution = self::ResolutionReturnToStock;
+            $newOwnerUserId = null;
+            $location = null;
+        }
+
         $returnId = $assetReturn->id;
         $formerHolderUserId = $handover->recipient_user_id;
 
@@ -60,11 +66,13 @@ class AssetReturnAdminCompletionService
                     'former_holder_user_id' => $formerHolderUserId,
                     'resolution' => $resolution,
                     'bulk_note' => $note !== '' ? $note : null,
+                    'is_loan' => $assetReturn->isLoan(),
                 ];
 
                 match ($resolution) {
                     self::ResolutionNewOwner => $this->applyNewOwner($asset, $assetReturn, $adminUserId, $newOwnerUserId, $baseMeta, $note),
                     self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionReturnToStock => $this->applyReturnToStock($asset, $assetReturn, $adminUserId, $baseMeta, $note),
                     default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
                 };
             });
@@ -123,6 +131,29 @@ class AssetReturnAdminCompletionService
             'meta' => array_merge($baseMeta, [
                 'initiated_by_user_id' => $assetReturn->initiated_by_user_id,
                 'location' => $location,
+            ]),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $baseMeta
+     */
+    private function applyReturnToStock(Asset $asset, AssetReturn $assetReturn, int $adminUserId, array $baseMeta, string $note): void
+    {
+        $asset->refresh();
+        $asset->update([
+            'user_id' => null,
+            'is_missing' => false,
+            'is_clarification' => false,
+            'is_in_stock' => true,
+        ]);
+
+        $asset->historyEntries()->create([
+            'event' => AssetHistory::EventReturnCompletedByAdmin,
+            'user_id' => $adminUserId,
+            'reason' => $note !== '' ? $note : 'Leihe-Rückgabe: Empfang bestätigt, Asset wieder Auf Lager.',
+            'meta' => array_merge($baseMeta, [
+                'initiated_by_user_id' => $assetReturn->initiated_by_user_id,
             ]),
         ]);
     }

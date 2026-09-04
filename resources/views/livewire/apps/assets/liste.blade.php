@@ -897,6 +897,18 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                         ></flux:button>
                                     </flux:tooltip>
                                 @endif
+                                @if($asset->is_in_stock && \Hwkdo\IntranetAppAssets\Support\AdminLoanEligibility::isEligible($asset) && ! $this->pendingReturnsByAssetId->has($asset->id))
+                                    <flux:tooltip content="Verleihen" position="top">
+                                        <flux:button
+                                            :href="route('apps.assets.admin.loan.start', $asset)"
+                                            variant="ghost"
+                                            size="sm"
+                                            icon="clock"
+                                            class="!px-2"
+                                            aria-label="Verleihen"
+                                        ></flux:button>
+                                    </flux:tooltip>
+                                @endif
                                 @foreach($adminResolveActions as $action)
                                     <flux:tooltip :content="$action['label']" position="top">
                                         <flux:button

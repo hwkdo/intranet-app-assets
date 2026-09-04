@@ -83,6 +83,8 @@ class RecipientHandoverConfirmationService
                     $assistedByAdminUserId,
                 );
             }
+
+            app(AssetLoanService::class)->ensureScheduledReturnAfterConfirm($handover->fresh() ?? $handover);
         });
     }
 
@@ -91,6 +93,10 @@ class RecipientHandoverConfirmationService
      */
     public function rejectForRecipient(Handover $handover, int $recipientUserId, string $reason): void
     {
+        if ($handover->isLoan()) {
+            throw new \InvalidArgumentException('Verleih-Übergaben können nicht abgelehnt werden.');
+        }
+
         if ((int) $handover->recipient_user_id !== $recipientUserId) {
             throw new \InvalidArgumentException('Keine Berechtigung für diese Übergabe.');
         }

@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -63,12 +64,17 @@ class ReturnCompleteResolveCommit extends Component
             return;
         }
 
-        session()->flash('message', 'Rückgabe wurde abgeschlossen (Empfang bestätigt und Asset aktualisiert).');
+        session()->flash(
+            'message',
+            $assetReturn->isLoan()
+                ? 'Leihe-Rückgabe bestätigt: Asset ist wieder ohne Besitzer und Auf Lager.'
+                : 'Rückgabe wurde abgeschlossen (Empfang bestätigt und Asset aktualisiert).',
+        );
 
         $this->redirect(route('apps.assets.admin.returns.pending'), navigate: true);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.return-complete-resolve-commit');
     }

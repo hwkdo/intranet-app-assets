@@ -4,6 +4,7 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
@@ -21,6 +22,10 @@ class HandoverReject extends Component
     public function mount(Handover $handover): void
     {
         $this->handover = $handover->load('asset.type', 'asset.vendor', 'recipient', 'issuer');
+
+        if ($handover->isLoan()) {
+            abort(403, 'Verleih-Übergaben können nicht abgelehnt werden.');
+        }
 
         if ($handover->recipient_user_id !== auth()->id()) {
             abort(403);
@@ -73,7 +78,7 @@ class HandoverReject extends Component
         $this->redirect(route('apps.assets.meine-assets'), navigate: true);
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    public function render(): View
     {
         return view('intranet-app-assets::livewire.apps.assets.handover-reject');
     }

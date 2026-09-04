@@ -61,15 +61,25 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
         $this->validate($rules);
 
         $ids = $this->sanitizeIds($this->selectedHandoverIds);
-        $eligibleCount = Handover::query()
+        $eligibleQuery = Handover::query()
             ->whereIn('id', $ids)
             ->where('recipient_user_id', auth()->id())
             ->whereNull('confirmed_at')
-            ->whereNull('rejected_at')
-            ->count();
+            ->whereNull('rejected_at');
+
+        if ($this->bulkAction === 'reject') {
+            $eligibleQuery->whereNull('loan_due_at');
+        }
+
+        $eligibleCount = $eligibleQuery->count();
 
         if ($eligibleCount !== count($ids)) {
-            session()->flash('error', 'Mindestens eine ausgewählte Übergabe ist nicht mehr offen oder gehört nicht zu Ihrem Konto.');
+            session()->flash(
+                'error',
+                $this->bulkAction === 'reject'
+                    ? 'Mindestens eine ausgewählte Übergabe ist nicht ablehnbar (z. B. Verleih) oder nicht mehr offen.'
+                    : 'Mindestens eine ausgewählte Übergabe ist nicht mehr offen oder gehört nicht zu Ihrem Konto.',
+            );
 
             return;
         }
@@ -398,16 +408,18 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                                 aria-label="Übergabe bestätigen"
                                             ></flux:button>
                                         </flux:tooltip>
-                                        <flux:tooltip content="Übergabe ablehnen — mit Begründung (LDAP-Passwort erforderlich)" position="top">
-                                            <flux:button
-                                                href="{{ route('apps.assets.handover.reject', $pendingHandover) }}"
-                                                variant="danger"
-                                                size="sm"
-                                                icon="x-circle"
-                                                class="!px-2"
-                                                aria-label="Übergabe ablehnen"
-                                            ></flux:button>
-                                        </flux:tooltip>
+                                        @unless($pendingHandover->isLoan())
+                                            <flux:tooltip content="Übergabe ablehnen — mit Begründung (LDAP-Passwort erforderlich)" position="top">
+                                                <flux:button
+                                                    href="{{ route('apps.assets.handover.reject', $pendingHandover) }}"
+                                                    variant="danger"
+                                                    size="sm"
+                                                    icon="x-circle"
+                                                    class="!px-2"
+                                                    aria-label="Übergabe ablehnen"
+                                                ></flux:button>
+                                            </flux:tooltip>
+                                        @endunless
                                     @endif
                                     @php $returnHandover = $this->returnInitiatableHandoversByAssetId->get($asset->id); @endphp
                                     @if(! $pendingHandover && $returnHandover)

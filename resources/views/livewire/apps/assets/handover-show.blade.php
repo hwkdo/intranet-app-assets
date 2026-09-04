@@ -90,7 +90,9 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                 @php $scheduleBadge = \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::scheduleBadge($pendingReturn); @endphp
                 <flux:callout variant="warning" icon="clock">
                     <flux:callout.heading>
-                        @if($pendingReturn->isScheduled())
+                        @if($pendingReturn->isLoan() && $pendingReturn->isScheduled())
+                            Verleih – Rückgabe terminiert
+                        @elseif($pendingReturn->isScheduled())
                             Geplante Rückgabe eingeleitet
                         @else
                             Rückgabe eingeleitet
@@ -142,6 +144,11 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     <dt class="font-semibold text-zinc-500 dark:text-white">Ausgegeben / übergeben von</dt>
                     <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
 
+                    @if($handover->isLoan())
+                        <dt class="font-semibold text-zinc-500 dark:text-white">Verleih bis</dt>
+                        <dd class="text-zinc-900 dark:text-white">{{ $handover->loan_due_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    @endif
+
                     @if($handover->confirmedAssistedBy)
                         <dt class="font-semibold text-zinc-500 dark:text-white">Bestätigt an der Zentrale durch</dt>
                         <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
@@ -192,9 +199,11 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     <flux:button href="{{ route('apps.assets.handover.confirm', $handover) }}" variant="primary" icon="check-circle">
                         Übergabe bestätigen
                     </flux:button>
-                    <flux:button href="{{ route('apps.assets.handover.reject', $handover) }}" variant="danger" icon="x-circle">
-                        Übergabe ablehnen
-                    </flux:button>
+                    @unless($handover->isLoan())
+                        <flux:button href="{{ route('apps.assets.handover.reject', $handover) }}" variant="danger" icon="x-circle">
+                            Übergabe ablehnen
+                        </flux:button>
+                    @endunless
                 @endif
                 @if($canInitiateReturn)
                     <flux:button href="{{ route('apps.assets.handover.return.initiate', $handover) }}" variant="primary" icon="arrow-uturn-left">
