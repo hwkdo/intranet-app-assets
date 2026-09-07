@@ -74,6 +74,21 @@ class PendingReturnsOverview extends Component
             $rules['newOwnerUserId'] = ['required', 'exists:users,id'];
         }
 
+        $selectedHasLoan = AssetReturn::query()
+            ->whereIn('id', $this->selectedReturnIds)
+            ->whereNull('completed_at')
+            ->get()
+            ->contains(fn (AssetReturn $return): bool => $return->isLoan());
+
+        if ($selectedHasLoan && $this->resolution === AssetReturnAdminCompletionService::ResolutionNewOwner) {
+            $this->addError(
+                'resolution',
+                'Auswahl enthält Leihe-Rückgaben: bitte „Besitzer entfernen und Standort setzen“ wählen (Standort ist Pflicht).',
+            );
+
+            return;
+        }
+
         if ($this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
         }
@@ -86,7 +101,9 @@ class PendingReturnsOverview extends Component
             [
                 'resolution' => $this->resolution,
                 'new_owner_user_id' => $this->resolution === AssetReturnAdminCompletionService::ResolutionNewOwner ? (int) $this->newOwnerUserId : null,
-                'location' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation ? trim($this->location) : null,
+                'location' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation
+                    ? trim($this->location)
+                    : null,
                 'bulk_reason' => trim($this->bulkReason),
             ],
         );

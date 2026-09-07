@@ -61,7 +61,7 @@ class BulkAdminWorkflowExecutor
             }
             try {
                 $effectiveResolution = $assetReturn->isLoan()
-                    ? AssetReturnAdminCompletionService::ResolutionReturnToStock
+                    ? AssetReturnAdminCompletionService::ResolutionSetLocation
                     : $resolution;
 
                 $service->complete(

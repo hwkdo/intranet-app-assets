@@ -16,9 +16,6 @@ class AssetReturnAdminCompletionService
 
     public const ResolutionSetLocation = 'set_location';
 
-    /** Leihe: Empfang bestätigt → ohne Besitzer, Auf Lager (ohne Standort-Eingabe). */
-    public const ResolutionReturnToStock = 'return_to_stock';
-
     public function complete(
         AssetReturn $assetReturn,
         int $adminUserId,
@@ -41,10 +38,10 @@ class AssetReturnAdminCompletionService
             throw new \InvalidArgumentException('Asset fehlt.');
         }
 
+        // Leihe: immer zurück ins Lager ohne neuen Besitzer — Standort bleibt Pflicht.
         if ($assetReturn->isLoan()) {
-            $resolution = self::ResolutionReturnToStock;
+            $resolution = self::ResolutionSetLocation;
             $newOwnerUserId = null;
-            $location = null;
         }
 
         $returnId = $assetReturn->id;
@@ -72,7 +69,6 @@ class AssetReturnAdminCompletionService
                 match ($resolution) {
                     self::ResolutionNewOwner => $this->applyNewOwner($asset, $assetReturn, $adminUserId, $newOwnerUserId, $baseMeta, $note),
                     self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note),
-                    self::ResolutionReturnToStock => $this->applyReturnToStock($asset, $assetReturn, $adminUserId, $baseMeta, $note),
                     default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
                 };
             });
@@ -121,39 +117,21 @@ class AssetReturnAdminCompletionService
             'user_id' => null,
             'location' => $location,
             'is_missing' => false,
-            'is_in_stock' => true,
-        ]);
-
-        $asset->historyEntries()->create([
-            'event' => AssetHistory::EventReturnCompletedByAdmin,
-            'user_id' => $adminUserId,
-            'reason' => $note !== '' ? $note : 'Rückgabe: Empfang bestätigt, Besitzer entfernt, Standort gesetzt.',
-            'meta' => array_merge($baseMeta, [
-                'initiated_by_user_id' => $assetReturn->initiated_by_user_id,
-                'location' => $location,
-            ]),
-        ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $baseMeta
-     */
-    private function applyReturnToStock(Asset $asset, AssetReturn $assetReturn, int $adminUserId, array $baseMeta, string $note): void
-    {
-        $asset->refresh();
-        $asset->update([
-            'user_id' => null,
-            'is_missing' => false,
             'is_clarification' => false,
             'is_in_stock' => true,
         ]);
 
+        $defaultReason = ($baseMeta['is_loan'] ?? false)
+            ? 'Leihe-Rückgabe: Empfang bestätigt, Asset wieder Auf Lager mit Standort.'
+            : 'Rückgabe: Empfang bestätigt, Besitzer entfernt, Standort gesetzt.';
+
         $asset->historyEntries()->create([
             'event' => AssetHistory::EventReturnCompletedByAdmin,
             'user_id' => $adminUserId,
-            'reason' => $note !== '' ? $note : 'Leihe-Rückgabe: Empfang bestätigt, Asset wieder Auf Lager.',
+            'reason' => $note !== '' ? $note : $defaultReason,
             'meta' => array_merge($baseMeta, [
                 'initiated_by_user_id' => $assetReturn->initiated_by_user_id,
+                'location' => $location,
             ]),
         ]);
     }

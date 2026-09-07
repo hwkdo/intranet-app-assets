@@ -78,8 +78,9 @@
                 <flux:callout variant="subtle" icon="archive-box">
                     <flux:callout.heading>Leihe zurücknehmen</flux:callout.heading>
                     <flux:callout.text>
-                        Nach Bestätigung des physischen Empfangs wird das Asset automatisch
+                        Nach Bestätigung des physischen Empfangs wird das Asset
                         <strong>ohne Besitzer</strong> und wieder <strong>Auf Lager</strong> gesetzt.
+                        Der <strong>Standort ist Pflicht</strong>, damit klar ist, wo sich das Gerät befindet.
                     </flux:callout.text>
                 </flux:callout>
             @endif
@@ -106,7 +107,12 @@
                         <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                     @enderror
 
-                    @unless($isLoanReturn)
+                    @if($isLoanReturn)
+                        <flux:input wire:model="location" label="Standort" placeholder="z. B. Lager IT, Raum …" />
+                        @error('location')
+                            <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
+                        @enderror
+                    @else
                         <flux:radio.group wire:model.live="resolution" label="Weiteres Vorgehen">
                             <flux:radio
                                 value="{{ AssetReturnAdminCompletionService::ResolutionNewOwner }}"
@@ -147,7 +153,7 @@
                                 <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                             @enderror
                         @endif
-                    @endunless
+                    @endif
                 </flux:card>
 
                 <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">

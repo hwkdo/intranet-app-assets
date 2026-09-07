@@ -50,7 +50,7 @@ class ReturnCompleteResolve extends Component
         $this->assetReturn = $assetReturn;
 
         if ($assetReturn->isLoan()) {
-            $this->resolution = AssetReturnAdminCompletionService::ResolutionReturnToStock;
+            $this->resolution = AssetReturnAdminCompletionService::ResolutionSetLocation;
         }
     }
 
@@ -61,14 +61,15 @@ class ReturnCompleteResolve extends Component
         if ($this->assetReturn->isLoan()) {
             $this->validate([
                 'acknowledgeReceipt' => ['accepted'],
+                'location' => ['required', 'string', 'min:1', 'max:255'],
             ]);
 
             Session::put(AssetReturnAdminCompletionService::PENDING_SESSION_KEY, [
                 'asset_return_id' => $this->assetReturn->id,
                 'admin_user_id' => auth()->id(),
-                'resolution' => AssetReturnAdminCompletionService::ResolutionReturnToStock,
+                'resolution' => AssetReturnAdminCompletionService::ResolutionSetLocation,
                 'new_owner_user_id' => null,
-                'location' => null,
+                'location' => trim($this->location),
             ]);
 
             $this->redirect(route('apps.assets.admin.return.complete-commit', $this->assetReturn), navigate: false);

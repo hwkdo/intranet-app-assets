@@ -67,7 +67,7 @@ class ReturnCompleteResolveCommit extends Component
         session()->flash(
             'message',
             $assetReturn->isLoan()
-                ? 'Leihe-Rückgabe bestätigt: Asset ist wieder ohne Besitzer und Auf Lager.'
+                ? 'Leihe-Rückgabe bestätigt: Asset ist wieder ohne Besitzer, Auf Lager und mit Standort.'
                 : 'Rückgabe wurde abgeschlossen (Empfang bestätigt und Asset aktualisiert).',
         );
 
