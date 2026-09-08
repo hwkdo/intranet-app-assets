@@ -47,3 +47,9 @@ Schedule::command('intranet-app-assets:return-reminders')
     ->withoutOverlapping(15)
     ->runInBackground()
     ->when(fn () => config('app.env') === 'production');
+
+Schedule::command('intranet-app-assets:process-scheduled-owner-assignments')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(15)
+    ->runInBackground()
+    ->when(fn () => config('app.env') === 'production');

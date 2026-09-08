@@ -46,10 +46,6 @@ final class ScheduledReturnReminderService
         }
 
         $owner = $return->currentOwner();
-        if (! $owner instanceof User) {
-            return false;
-        }
-
         $scheduledAt = Carbon::instance($return->scheduled_at);
         $reminder1At = $scheduledAt->copy()->subHours($settings->returnReminder1Hours);
         $reminder2At = $scheduledAt->copy()->subHours($settings->returnReminder2Hours);
@@ -57,13 +53,22 @@ final class ScheduledReturnReminderService
         if ($now->greaterThanOrEqualTo($scheduledAt)) {
             if ($return->last_overdue_reminder_sent_at === null
                 || $now->greaterThanOrEqualTo(Carbon::instance($return->last_overdue_reminder_sent_at)->addHours($settings->returnReminder3Hours))) {
-                $this->sendReminder($return, $owner, ReturnReminderPhase::Overdue);
+                $notifyUser = $this->resolveOverdueNotifyUser($return, $owner, $now);
+                if (! $notifyUser instanceof User) {
+                    return false;
+                }
+
+                $this->sendReminder($return, $notifyUser, ReturnReminderPhase::Overdue);
 
                 $return->forceFill(['last_overdue_reminder_sent_at' => $now])->save();
 
                 return true;
             }
 
+            return false;
+        }
+
+        if (! $owner instanceof User) {
             return false;
         }
 
@@ -149,6 +154,30 @@ final class ScheduledReturnReminderService
     private function sendReminder(AssetReturn $return, User $owner, ReturnReminderPhase $phase): void
     {
         $owner->notify(new ReturnReminderNotification($return, $phase));
+    }
+
+    /**
+     * Overdue: nach Austritts-Cutoff an overdue_notify_user_id (VG), sonst aktueller Besitzer.
+     */
+    private function resolveOverdueNotifyUser(AssetReturn $return, ?User $owner, CarbonInterface $now): ?User
+    {
+        if ($return->austritt_cutoff_date !== null && $return->overdue_notify_user_id !== null) {
+            $cutoff = Carbon::instance($return->austritt_cutoff_date)->startOfDay();
+
+            if ($now->greaterThanOrEqualTo($cutoff)) {
+                $notifyUser = $return->overdueNotifyUser;
+                if ($notifyUser instanceof User) {
+                    return $notifyUser;
+                }
+
+                $notifyUser = User::query()->find($return->overdue_notify_user_id);
+                if ($notifyUser instanceof User) {
+                    return $notifyUser;
+                }
+            }
+        }
+
+        return $owner;
     }
 
     private function settings(): AppSettings

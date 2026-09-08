@@ -27,6 +27,7 @@ class AssetReturn extends Model
             'reminder1_sent_at' => 'datetime',
             'reminder2_sent_at' => 'datetime',
             'last_overdue_reminder_sent_at' => 'datetime',
+            'austritt_cutoff_date' => 'date',
             'received_confirmed_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
@@ -142,6 +143,13 @@ class AssetReturn extends Model
     public function initiatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'initiated_by_user_id');
+    }
+
+    /** Overdue-Empfänger bei Austritt (z. B. Vorgesetzter). */
+    /** @return BelongsTo<User, $this> */
+    public function overdueNotifyUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'overdue_notify_user_id');
     }
 
     /** @return MorphMany<AssetNote, $this> */

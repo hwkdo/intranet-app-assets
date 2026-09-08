@@ -74,6 +74,8 @@ class AssetHistory extends Model
 
     public const EventMissingAdminResolvedLocation = 'missing_admin_resolved_location';
 
+    public const EventAustrittDisposition = 'austritt_disposition';
+
     protected $table = 'intranet_app_assets_asset_histories';
 
     protected $guarded = [];

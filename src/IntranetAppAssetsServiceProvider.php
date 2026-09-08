@@ -7,15 +7,16 @@ use App\Services\LangdockCompletionService;
 use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
+use Hwkdo\IntranetAppAssets\Commands\CleanupStaleHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\ClearStaleAssetLocationsCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
 use Hwkdo\IntranetAppAssets\Commands\EnsureAssetHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\ReportConflictingHandoverActionsCommand;
-use Hwkdo\IntranetAppAssets\Commands\CleanupStaleHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
 use Hwkdo\IntranetAppAssets\Contracts\LangdockOpenAiChatPort;
+use Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
 use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Listeners\UpdateCachedItexiaActualRoom;
@@ -32,6 +33,7 @@ use Hwkdo\IntranetAppAssets\Services\CombinedOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
 use Hwkdo\IntranetAppAssets\Services\LangdockD3InvoiceVisionLlmClient;
+use Hwkdo\IntranetAppAssets\Services\LdapRecordPasswordVerifier;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\LocalOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
@@ -131,6 +133,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\InvoiceAutoResolveCommand::class,
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
                 Commands\ProcessScheduledReturnRemindersCommand::class,
+                Commands\ProcessScheduledOwnerAssignmentsCommand::class,
                 BackfillOwnerHandoversCommand::class,
                 ClearStaleAssetLocationsCommand::class,
                 EnsureAssetHandoversCommand::class,
@@ -156,10 +159,10 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
             $this->app->bind(IntuneDeviceLookupInterface::class, MsGraphIntuneDeviceLookup::class);
         }
 
-        if (! $this->app->bound(\Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface::class)) {
+        if (! $this->app->bound(LdapPasswordVerifierInterface::class)) {
             $this->app->bind(
-                \Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface::class,
-                \Hwkdo\IntranetAppAssets\Services\LdapRecordPasswordVerifier::class,
+                LdapPasswordVerifierInterface::class,
+                LdapRecordPasswordVerifier::class,
             );
         }
 
