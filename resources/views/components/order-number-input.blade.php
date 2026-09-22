@@ -1,7 +1,8 @@
 @props([
     'name' => 'order_number',
-    'placeholder' => 'Optional',
+    'placeholder' => 'z. B. 112345678',
     'required' => false,
+    'requirementHint' => null,
 ])
 
 <flux:field>
@@ -16,7 +17,10 @@
         {{ $attributes->merge(['placeholder' => $placeholder]) }}
     />
     <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
-        {{ \Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService::getFormatDescription() }} Wird gegen das Bestellsystem geprüft.
+        @if(filled($requirementHint))
+            {{ $requirementHint }}{{ ' ' }}
+        @endif
+        {{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::orderNumberFormatDescription() }}
     </flux:description>
     <flux:error :name="$name" />
 </flux:field>

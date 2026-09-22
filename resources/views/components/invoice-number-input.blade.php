@@ -1,7 +1,8 @@
 @props([
     'name' => 'invoice_number',
-    'placeholder' => 'Optional',
+    'placeholder' => 'z. B. T12345',
     'required' => false,
+    'requirementHint' => null,
 ])
 
 <flux:field>
@@ -16,6 +17,9 @@
         {{ $attributes->merge(['placeholder' => $placeholder]) }}
     />
     <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
+        @if(filled($requirementHint))
+            {{ $requirementHint }}{{ ' ' }}
+        @endif
         Format: T gefolgt von Ziffern (z. B. T12345). Wird in D3 geprüft (Zahlungsbeleg Typ Rechnung).
     </flux:description>
     <flux:error :name="$name" />

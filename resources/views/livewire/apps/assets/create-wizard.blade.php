@@ -623,7 +623,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Bestellung</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">BEN und Itexia-ID bei Wert ab {{ $this->wertgrenzeItexia }} € Pflicht. Rechnungsnr. optional.</flux:text>
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::bestellungCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -634,7 +634,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Beschaffung</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Rechnungsnr. und Itexia-ID bei Wert ab {{ $this->wertgrenzeItexia }} € Pflicht. Kein BEN.</flux:text>
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::beschaffungCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -645,7 +645,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Mobilfunkvertrag</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Rechnungsnr. + Itexia-ID bei &gt;250 €; unter 250 € nur Itexia-ID + Anlage in Itexia.</flux:text>
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::mobilfunkCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -654,7 +654,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
     @elseif($step === 2)
         <div class="space-y-6">
             <flux:heading size="lg" class="dark:text-white">Wert der Hardware laut Rechnung</flux:heading>
-            <flux:text class="text-zinc-500 dark:text-zinc-200">Über oder unter 250 Euro brutto?</flux:text>
+            <flux:text class="text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueStepQuestion($this->appSettings) }}</flux:text>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectValue(true)">
                     <div class="flex items-center gap-4">
@@ -662,8 +662,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             <flux:icon.currency-euro class="size-8 text-primary-600 dark:text-primary-400" />
                         </div>
                         <div>
-                            <flux:heading size="md" class="dark:text-white">Über 250 € brutto</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Wert der Hardware laut Rechnung ab {{ $this->wertgrenzeItexia }} Euro brutto</flux:text>
+                            <flux:heading size="md" class="dark:text-white">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueOverCardHeading($this->appSettings) }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueOverCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -673,8 +673,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             <flux:icon.banknotes class="size-8 text-primary-600 dark:text-primary-400" />
                         </div>
                         <div>
-                            <flux:heading size="md" class="dark:text-white">Unter 250 € brutto</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Wert der Hardware laut Rechnung unter {{ $this->wertgrenzeItexia }} Euro brutto</flux:text>
+                            <flux:heading size="md" class="dark:text-white">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueUnderCardHeading($this->appSettings) }}</flux:heading>
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueUnderCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -810,8 +810,9 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                 <x-intranet-app-assets::order-number-input
                                     name="units.{{ $index }}.order_number"
                                     wire:model.live.debounce.800ms="units.{{ $index }}.order_number"
-                                    :placeholder="$this->orderNumberRequired ? 'Pflicht bei Wert ab ' . $this->wertgrenzeItexia . ' €' : 'Optional'"
+                                    :placeholder="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::orderNumberPlaceholder()"
                                     :required="$this->orderNumberRequired"
+                                    :requirement-hint="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::orderNumberRequirementHint($this->orderNumberRequired, $this->appSettings)"
                                 />
                             @endif
 
@@ -830,19 +831,21 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                         <x-intranet-app-assets::invoice-number-input
                                             name="units.{{ $index }}.invoice_number"
                                             wire:model.live.debounce.800ms="units.{{ $index }}.invoice_number"
-                                            :placeholder="$this->invoiceNumberRequired ? 'Pflicht' : 'Optional'"
+                                            :placeholder="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::invoiceNumberPlaceholder()"
                                             :required="$this->invoiceNumberRequired"
+                                            :requirement-hint="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::invoiceNumberRequirementHint($this->invoiceNumberRequired, $this->appSettings)"
                                         />
                                     @endif
                                     @if($this->showItexiaId)
                                         <flux:field>
                                             <flux:label>Itexia-ID @if($this->itexiaIdRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
-                                            <flux:input wire:model="units.{{ $index }}.itexia_id" placeholder="{{ $this->itexiaIdRequired ? 'Pflicht' : 'Optional' }}" />
-                                            @if($variant === 'mobilfunkvertrag' && ! $valueOver250)
-                                                <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
-                                                    Unter {{ $this->wertgrenzeItexia }} €: Itexia-ID Pflicht, Anlage in Itexia erfolgt automatisch nach Speichern.
-                                                </flux:description>
-                                            @endif
+                                            <flux:input
+                                                wire:model="units.{{ $index }}.itexia_id"
+                                                :placeholder="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::itexiaIdPlaceholder()"
+                                            />
+                                            <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
+                                                {{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::itexiaIdRequirementHint($this->itexiaIdRequired, $variant, $valueOver250, $this->appSettings) }}
+                                            </flux:description>
                                             <flux:error name="units.{{ $index }}.itexia_id" />
                                         </flux:field>
                                     @endif
