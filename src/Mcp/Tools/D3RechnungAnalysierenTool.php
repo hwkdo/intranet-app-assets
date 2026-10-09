@@ -4,13 +4,11 @@ namespace Hwkdo\IntranetAppAssets\Mcp\Tools;
 
 use Hwkdo\D3RestLaravel\Client as D3Client;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
-use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
-use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
-use Hwkdo\IntranetAppAssets\Support\D3InvoiceVisionModelResolver;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Facades\Log;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -44,40 +42,11 @@ class D3RechnungAnalysierenTool extends Tool
         $includeRawOcr = (bool) ($validated['include_raw_ocr'] ?? false);
         $forceRefresh = (bool) ($validated['force_refresh'] ?? false);
 
-        $appSettings = IntranetAppAssetsSettings::resolvedAppSettings();
-        $provider = $appSettings->d3InvoiceVisionLlmProvider;
-
-        $visionModel = D3InvoiceVisionModelResolver::resolve(
-            $provider,
-            isset($validated['vision_model']) ? (string) $validated['vision_model'] : null,
-            $appSettings
-        );
-        if ($visionModel === '') {
-            return Response::error(
-                $provider === D3InvoiceVisionLlmProvider::Langdock
-                    ? 'Kein Vision-Modell für Langdock: vision_model im Tool, Assets-Admin „Vision-Modell … Langdock“, oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL_LANGDOCK.'
-                    : 'Kein Vision-Modell für Open Web UI: vision_model im Tool, Assets-Admin „Vision-Modell … Open Web UI“, oder INTRANET_APP_ASSETS_D3_INVOICE_VISION_MODEL / OPENWEBUI_DEFAULT_MODEL.'
-            );
-        }
-
-        $tokenOverride = $validated['vision_token'] ?? null;
-        $visionToken = $tokenOverride !== null && trim((string) $tokenOverride) !== ''
-            ? trim((string) $tokenOverride)
-            : match ($provider) {
-                D3InvoiceVisionLlmProvider::Langdock => trim((string) config('services.langdock.api_key', '')),
-                D3InvoiceVisionLlmProvider::OpenWebUi => trim((string) config('openwebui-api-laravel.api_key', '')),
-            };
-        if ($visionToken === '') {
-            return Response::error(
-                $provider === D3InvoiceVisionLlmProvider::Langdock
-                    ? 'Für die Vision-Analyse wird ein Langdock-API-Key benötigt (vision_token oder LANGDOCK_API_KEY).'
-                    : 'Für die Vision-Analyse wird ein OpenWebUI-API-Token benötigt (vision_token oder OPENWEBUI_API_KEY).'
-            );
-        }
+        $model = D3InvoiceAnalysis::resolvedGatewayModel();
 
         Log::info('d3_rechnung_analysieren called', [
             'id' => $documentId,
-            'vision_model' => $visionModel,
+            'model' => $model,
             'include_raw_ocr' => $includeRawOcr,
             'force_refresh' => $forceRefresh,
             'trace_id' => $traceId,
@@ -92,7 +61,7 @@ class D3RechnungAnalysierenTool extends Tool
             if ($cached !== null) {
                 $response = $this->applyAnalysisStatusAndSource($cached, 'completed', [
                     'method' => 'cached',
-                    'model' => $visionModel,
+                    'model' => $model,
                     'from_cache' => true,
                 ]);
                 unset($response['raw_ocr_markdown']);
@@ -104,34 +73,35 @@ class D3RechnungAnalysierenTool extends Tool
 
             $row = D3InvoiceAnalysis::query()->where('d3_document_id', D3InvoiceAnalysis::normalizeDocumentId($documentId))->first();
             if ($row?->status === D3InvoiceAnalysisStatus::Pending) {
-                return Response::structured($this->pendingPayload($documentId, $visionModel, 'Analyse läuft im Hintergrund oder steht noch aus. Erneut versuchen, sobald sie abgeschlossen ist.'));
+                return Response::structured($this->pendingPayload($documentId, $model, 'Analyse läuft im Hintergrund oder steht noch aus. Erneut versuchen, sobald sie abgeschlossen ist.'));
             }
             if ($row?->status === D3InvoiceAnalysisStatus::Failed) {
                 D3InvoiceAnalysis::requestAnalysis($documentId, false);
                 AnalyzeD3InvoiceJob::dispatch($documentId, false);
 
-                return Response::structured($this->pendingPayload($documentId, $visionModel, 'Vorherige Analyse fehlgeschlagen; erneuter Versuch wurde eingereiht.'));
+                return Response::structured($this->pendingPayload($documentId, $model, 'Vorherige Analyse fehlgeschlagen; erneuter Versuch wurde eingereiht.'));
             }
 
             D3InvoiceAnalysis::requestAnalysis($documentId, false);
             AnalyzeD3InvoiceJob::dispatch($documentId, false);
 
-            return Response::structured($this->pendingPayload($documentId, $visionModel, 'Analyse wurde in die Warteschlange gestellt. Bitte später erneut abfragen.'));
+            return Response::structured($this->pendingPayload($documentId, $model, 'Analyse wurde in die Warteschlange gestellt. Bitte später erneut abfragen.'));
         }
 
         $service = app(D3InvoiceVisionAnalysisService::class);
 
         try {
-            $response = $service->analyze($documentId, $visionModel, $visionToken, $includeRawOcr, $traceId);
+            $response = $service->analyze($documentId, $includeRawOcr, $traceId);
             $row = D3InvoiceAnalysis::query()->firstOrCreate(
                 ['d3_document_id' => D3InvoiceAnalysis::normalizeDocumentId($documentId)],
                 ['status' => D3InvoiceAnalysisStatus::Pending],
             );
-            $row->markCompleted($service->payloadForStorage($response), $visionModel);
+            $storedModel = (string) ($response['source']['model'] ?? $model);
+            $row->markCompleted($service->payloadForStorage($response), $storedModel);
 
             $response = $this->applyAnalysisStatusAndSource($response, 'completed', [
-                'method' => 'vision_ocr',
-                'model' => $visionModel,
+                'method' => (string) ($response['source']['method'] ?? 'structured'),
+                'model' => $storedModel,
                 'from_cache' => false,
             ]);
 
@@ -151,7 +121,7 @@ class D3RechnungAnalysierenTool extends Tool
     }
 
     /**
-     * @return array<string, \Illuminate\JsonSchema\Types\Type>
+     * @return array<string, Type>
      */
     public function schema(JsonSchema $schema): array
     {
@@ -160,13 +130,13 @@ class D3RechnungAnalysierenTool extends Tool
                 ->description('D3-Dokument-ID (T-Nummer), z. B. T12345.')
                 ->required(),
             'vision_model' => $schema->string()
-                ->description('Optionales Vision-Modell; sonst intranet-app-assets.d3_invoice_vision_model bzw. OPENWEBUI_DEFAULT_MODEL.')
+                ->description('Wird nicht mehr verwendet. Provider und Modell kommen aus dem KI-Gateway.')
                 ->nullable(),
             'include_raw_ocr' => $schema->boolean()
                 ->description('Wenn true, wird zusätzlich der kombinierte OCR-Markdowntext zurückgegeben (nur bei Live-Analyse mit force_refresh).')
                 ->nullable(),
             'vision_token' => $schema->string()
-                ->description('Optionales OpenWebUI API Token. Wenn leer, wird OPENWEBUI_API_KEY verwendet.')
+                ->description('Wird nicht mehr verwendet. Zugangsdaten kommen aus dem KI-Gateway.')
                 ->nullable(),
             'force_refresh' => $schema->boolean()
                 ->description('Wenn true: Cache ignorieren und sofortige Vision-Analyse (langsam). Standard false: Cache oder Warteschlange.')
@@ -175,7 +145,7 @@ class D3RechnungAnalysierenTool extends Tool
     }
 
     /**
-     * @return array<string, \Illuminate\JsonSchema\Types\Type>
+     * @return array<string, Type>
      */
     public function outputSchema(JsonSchema $schema): array
     {
@@ -270,7 +240,7 @@ class D3RechnungAnalysierenTool extends Tool
     /**
      * @return array<string, mixed>
      */
-    private function pendingPayload(string $documentId, string $visionModel, string $message): array
+    private function pendingPayload(string $documentId, string $model, string $message): array
     {
         return [
             'analysis_status' => 'pending',
@@ -307,7 +277,7 @@ class D3RechnungAnalysierenTool extends Tool
             'confidence' => null,
             'source' => [
                 'method' => 'pending',
-                'model' => $visionModel,
+                'model' => $model,
                 'processed_pages' => 0,
                 'total_pages' => 0,
                 'truncated' => false,

@@ -7,12 +7,17 @@ namespace Hwkdo\IntranetAppAssets\Data;
 use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
 use Hwkdo\IntranetAppBase\Contracts\HasAiSettings;
+use Hwkdo\IntranetAppBase\Contracts\HasDocumentParseSettings;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
 use Hwkdo\IntranetAppBase\Data\BaseAppSettings;
 use Hwkdo\IntranetAppBase\Enums\AiProvider;
+use Hwkdo\IntranetAppBase\Enums\DocumentParseEngine;
+use Hwkdo\IntranetAppBase\Traits\HasDocumentParseSettingsFields;
 
-class AppSettings extends BaseAppSettings implements HasAiSettings
+class AppSettings extends BaseAppSettings implements HasAiSettings, HasDocumentParseSettings
 {
+    use HasDocumentParseSettingsFields;
+
     public function __construct(
         #[Description('Aktiviert die Beispiel-Funktionalität')]
         public bool $enableExampleFeature = true,
@@ -85,6 +90,12 @@ class AppSettings extends BaseAppSettings implements HasAiSettings
 
         #[Description('KI-Bild-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
         public ?string $aiImageModelOverride = null,
+
+        #[Description('Document-Parsing-Motor überschreiben (leer = Intranet-Base-Default)')]
+        public ?DocumentParseEngine $documentParseEngineOverride = null,
+
+        #[Description('LlamaParse-Tier überschreiben (leer = Intranet-Base-Default)')]
+        public ?string $documentParseTierOverride = null,
 
         #[Description('Quelle für die BEN-Existenzprüfung: legacy = Legacy-Intranet, intranet_v3 = lokale Bestellungen (Intranet V3), beides = beide Systeme (BEN muss in mind. einem existieren)')]
         public BenPruefungsQuelle $benPruefungsQuelle = BenPruefungsQuelle::Legacy,

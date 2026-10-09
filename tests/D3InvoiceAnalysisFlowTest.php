@@ -4,12 +4,18 @@ use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
 use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
+use Hwkdo\IntranetAppBase\Contracts\AiConfigResolverInterface;
+use Hwkdo\IntranetAppBase\Data\ResolvedAiConfig;
+use Hwkdo\IntranetAppBase\Enums\AiCapability;
+use Hwkdo\IntranetAppBase\Enums\AiConfigSource;
+use Hwkdo\IntranetAppBase\Enums\AiProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 beforeEach(function () {
     Schema::dropIfExists('intranet_app_assets_d3_invoice_analyses');
@@ -40,7 +46,14 @@ afterEach(function () {
 
 it('findCompletedPayload liefert null wenn modellwechsel und reanalyze aktiv', function () {
     config(['intranet-app-assets.d3_invoice_analysis_reanalyze_on_model_change' => true]);
-    config(['intranet-app-assets.d3_invoice_vision_model' => 'new-model']);
+    $resolver = Mockery::mock(AiConfigResolverInterface::class);
+    $resolver->shouldReceive('resolve')->andReturn(new ResolvedAiConfig(
+        provider: AiProvider::Langdock,
+        model: 'new-model',
+        source: AiConfigSource::Base,
+        capability: AiCapability::Agent,
+    ));
+    app()->instance(AiConfigResolverInterface::class, $resolver);
     D3InvoiceAnalysis::create([
         'd3_document_id' => 'T999',
         'status' => D3InvoiceAnalysisStatus::Completed,
@@ -76,7 +89,7 @@ it('AnalyzeD3InvoiceJob speichert erfolgreiche analyse als completed', function 
     $mock = Mockery::mock(D3InvoiceVisionAnalysisService::class);
     $mock->shouldReceive('analyze')
         ->once()
-        ->with('T100', 'vision-m', 'test-token', false)
+        ->with('T100', false)
         ->andReturn($payload);
     $mock->shouldReceive('payloadForStorage')->once()->andReturnUsing(fn (array $r): array => $r);
     app()->instance(D3InvoiceVisionAnalysisService::class, $mock);
@@ -132,7 +145,7 @@ it('AnalyzeD3InvoiceJob mit force analysiert completed eintraege erneut', functi
     $mock = Mockery::mock(D3InvoiceVisionAnalysisService::class);
     $mock->shouldReceive('analyze')
         ->once()
-        ->with('T002664561', 'vision-m', 'test-token', false)
+        ->with('T002664561', false)
         ->andReturn($payload);
     $mock->shouldReceive('payloadForStorage')->once()->andReturnUsing(fn (array $r): array => $r);
     app()->instance(D3InvoiceVisionAnalysisService::class, $mock);

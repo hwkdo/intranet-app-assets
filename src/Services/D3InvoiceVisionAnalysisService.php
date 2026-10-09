@@ -2,16 +2,21 @@
 
 namespace Hwkdo\IntranetAppAssets\Services;
 
+use App\Services\PdfService;
 use Hwkdo\D3RestLaravel\Client as D3Client;
-use Hwkdo\IntranetAppAssets\Contracts\D3InvoiceVisionLlmClientInterface;
+use Hwkdo\IntranetAppAssets\Ai\Agents\D3InvoiceAnalysisAgent;
+use Hwkdo\IntranetAppBase\Contracts\AiConfigResolverInterface;
+use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
+use Hwkdo\IntranetAppBase\Data\AiRequestContext;
+use Hwkdo\IntranetAppBase\Enums\AiCapability;
 use Illuminate\Support\Facades\Log;
-use Spatie\PdfToImage\Enums\OutputFormat;
-use Spatie\PdfToImage\Pdf as PdfToImagePdf;
 
 class D3InvoiceVisionAnalysisService
 {
     public function __construct(
-        private D3InvoiceVisionLlmClientFactory $llmClientFactory,
+        private PdfService $pdfService,
+        private IntranetAiGatewayInterface $gateway,
+        private AiConfigResolverInterface $aiConfig,
     ) {}
 
     /**
@@ -19,22 +24,17 @@ class D3InvoiceVisionAnalysisService
      */
     public function analyze(
         string $documentId,
-        string $visionModel,
-        ?string $visionToken = null,
         bool $includeRawOcr = false,
         ?string $traceId = null,
     ): array {
         $traceId ??= bin2hex(random_bytes(6));
         $documentId = trim($documentId);
-        $llm = $this->llmClientFactory->make();
-        $tokenOverride = $this->normalizeBearerOverride($visionToken);
 
         if (! class_exists(D3Client::class)) {
             throw new \RuntimeException('D3-REST-Client ist nicht verfügbar.');
         }
 
         $pdfFile = null;
-        $rasterDir = null;
 
         try {
             $this->logProgress($traceId, 'resolve_d3_client.start');
@@ -52,33 +52,40 @@ class D3InvoiceVisionAnalysisService
             $pdfFile = $this->downloadD3PdfToTempFile($client, $documentId);
             $this->logProgress($traceId, 'd3_download_pdf.done', ['pdf_file' => $pdfFile, 'pdf_size_bytes' => @filesize($pdfFile) ?: null]);
 
-            $this->logProgress($traceId, 'pdf_raster.start');
-            [$imagePaths, $rasterDir, $totalPages, $truncated] = $this->rasterPdfToImagePaths($pdfFile);
-            $this->logProgress($traceId, 'pdf_raster.done', [
-                'raster_dir' => $rasterDir,
-                'total_pages' => $totalPages,
-                'processed_pages' => count($imagePaths),
-                'truncated' => $truncated,
-            ]);
+            $embeddedText = $this->embeddedText($pdfFile);
+            $usesEmbeddedText = $this->hasUsableText($embeddedText);
+            $text = $usesEmbeddedText
+                ? $embeddedText
+                : trim($this->gateway->parseAppDocument($pdfFile, 'assets'));
 
-            $rawPerPage = $this->extractPerPageOcrMarkdown($imagePaths, $visionModel, $llm, $tokenOverride, $traceId);
-            $this->logProgress($traceId, 'vision_ocr_pages.done', [
-                'chunks' => count($rawPerPage),
-            ]);
-            if ($rawPerPage === []) {
-                throw new \RuntimeException('Aus dem Dokument konnte kein OCR-Text erzeugt werden.');
+            if (! $this->hasUsableText($text)) {
+                throw new \RuntimeException('Aus dem Dokument konnte kein Text gelesen werden.');
             }
 
-            $combinedOcr = $this->combinePageMarkdown($rawPerPage);
-            $this->logProgress($traceId, 'vision_structured_analysis.start', ['ocr_chars' => mb_strlen($combinedOcr)]);
-            $analysisRaw = $this->analyzeCombinedOcr($combinedOcr, $visionModel, $llm, $tokenOverride);
-            $this->logProgress($traceId, 'vision_structured_analysis.done', ['analysis_keys' => array_keys($analysisRaw)]);
-            $analysis = $this->normalizeAnalysisData($analysisRaw);
-            $this->logProgress($traceId, 'normalize_analysis.done', [
-                'line_items' => count($analysis['line_items']),
-                'serial_numbers' => count($analysis['serial_numbers']),
-                'warnings' => count($analysis['warnings']),
+            $this->logProgress($traceId, 'structured_analysis.start', [
+                'text_source' => $usesEmbeddedText ? 'embedded_text' : 'document_parse',
+                'text_chars' => mb_strlen($text),
             ]);
+
+            $structured = $this->gateway->agent(
+                new D3InvoiceAnalysisAgent,
+                "Rechnungstext:\n\n".$text,
+                new AiRequestContext(
+                    appIdentifier: 'assets',
+                    capability: AiCapability::Agent,
+                ),
+            );
+
+            if (! is_array($structured)) {
+                throw new \RuntimeException('KI-Antwort enthält keine strukturierten Rechnungsdaten.');
+            }
+
+            $analysis = $this->normalizeAnalysisData($structured);
+            $config = $this->aiConfig->resolve('assets', AiCapability::Agent);
+            $model = trim((string) ($config->model ?? ''));
+            if ($model === '') {
+                $model = $config->provider->value;
+            }
 
             $response = [
                 'document' => [
@@ -97,17 +104,17 @@ class D3InvoiceVisionAnalysisService
                 'warnings' => $analysis['warnings'],
                 'confidence' => $analysis['confidence'],
                 'source' => [
-                    'method' => 'vision_ocr',
-                    'model' => $visionModel,
-                    'processed_pages' => count($rawPerPage),
-                    'total_pages' => $totalPages,
-                    'truncated' => $truncated,
+                    'method' => $usesEmbeddedText ? 'pdf_text' : 'document_parse',
+                    'model' => $model,
+                    'processed_pages' => 0,
+                    'total_pages' => 0,
+                    'truncated' => false,
                     'from_cache' => false,
                 ],
             ];
 
             if ($includeRawOcr) {
-                $response['raw_ocr_markdown'] = $combinedOcr;
+                $response['raw_ocr_markdown'] = $text;
             }
 
             return $response;
@@ -115,15 +122,10 @@ class D3InvoiceVisionAnalysisService
             if ($pdfFile !== null && is_file($pdfFile)) {
                 @unlink($pdfFile);
             }
-            if ($rasterDir !== null) {
-                $this->deleteDirectoryRecursive($rasterDir);
-            }
         }
     }
 
     /**
-     * Strips volatile fields for persistence (no raw OCR).
-     *
      * @param  array<string, mixed>  $response
      * @return array<string, mixed>
      */
@@ -245,195 +247,20 @@ class D3InvoiceVisionAnalysisService
         return $pdfPath;
     }
 
-    /**
-     * @return array{0: list<string>, 1: string, 2: int, 3: bool}
-     */
-    private function rasterPdfToImagePaths(string $pdfPath): array
+    private function embeddedText(string $absolutePdfPath): string
     {
-        $maxPages = max(1, min(50, (int) config('intranet-app-assets.d3_invoice_ocr_max_pages', 12)));
-        $dpi = max(120, min(300, (int) config('intranet-app-assets.d3_invoice_ocr_dpi', 180)));
-
-        $rasterDir = storage_path('app/private/d3-invoice-ocr/'.bin2hex(random_bytes(8)));
-        if (! @mkdir($rasterDir, 0755, true) && ! is_dir($rasterDir)) {
-            throw new \RuntimeException('Temporäres Verzeichnis für PDF-Rasterung konnte nicht angelegt werden.');
+        try {
+            return trim((string) $this->pdfService->pdfToText($absolutePdfPath));
+        } catch (\Throwable) {
+            return '';
         }
-
-        $pdf = new PdfToImagePdf($pdfPath);
-        $pdf->format(OutputFormat::Png)->resolution($dpi);
-
-        $totalPages = $pdf->pageCount();
-        if ($totalPages < 1) {
-            throw new \RuntimeException('PDF enthält keine Seiten.');
-        }
-
-        $usePages = min($totalPages, $maxPages);
-        $truncated = $totalPages > $maxPages;
-        $pdf->selectPages(...range(1, $usePages));
-
-        $saved = $pdf->save($rasterDir, 'page-');
-        if ($saved === []) {
-            throw new \RuntimeException('PDF konnte nicht in Bilder umgewandelt werden (Imagick/Ghostscript?).');
-        }
-
-        sort($saved);
-
-        return [$saved, $rasterDir, $totalPages, $truncated];
     }
 
-    /**
-     * @return array{request: int, connect: int}
-     */
-    private function d3VisionHttpTimeouts(): array
+    private function hasUsableText(string $text): bool
     {
-        return [
-            'request' => max(1, (int) config('intranet-app-assets.d3_invoice_vision_http_timeout', 1200)),
-            'connect' => max(1, (int) config('intranet-app-assets.d3_invoice_vision_connect_timeout', 30)),
-        ];
-    }
+        $normalized = trim(str_replace("\f", '', $text));
 
-    private function normalizeBearerOverride(?string $visionToken): ?string
-    {
-        $t = trim((string) ($visionToken ?? ''));
-
-        return $t === '' ? null : $t;
-    }
-
-    /**
-     * @param  list<string>  $imagePaths
-     * @return list<string>
-     */
-    private function extractPerPageOcrMarkdown(
-        array $imagePaths,
-        string $model,
-        D3InvoiceVisionLlmClientInterface $llm,
-        ?string $tokenOverride,
-        string $traceId,
-    ): array {
-        $chunks = [];
-        $httpTimeouts = $this->d3VisionHttpTimeouts();
-
-        foreach ($imagePaths as $index => $imgPath) {
-            if (! is_file($imgPath)) {
-                continue;
-            }
-
-            $page = $index + 1;
-            $pageStartedAt = microtime(true);
-            $this->logProgress($traceId, 'vision_ocr_page.start', [
-                'page' => $page,
-                'image_path' => $imgPath,
-                'image_size_bytes' => @filesize($imgPath) ?: null,
-                'http_timeout_seconds' => $httpTimeouts['request'],
-                'connect_timeout_seconds' => $httpTimeouts['connect'],
-            ]);
-            $prompt = <<<PROMPT
-Du siehst eine gescannte Rechnungsseite.
-Extrahiere den gesamten lesbaren Text so originalgetreu wie möglich in Markdown.
-
-Regeln:
-- Keine inhaltliche Interpretation.
-- Lesereihenfolge von oben nach unten.
-- Unleserliches als [unleserlich] markieren.
-- Gib nur den extrahierten Text aus.
-PROMPT;
-
-            try {
-                $response = $llm->chatCompletionWithImageFile(
-                    $model,
-                    $prompt,
-                    $imgPath,
-                    $httpTimeouts['request'],
-                    $httpTimeouts['connect'],
-                    $tokenOverride,
-                );
-            } catch (\Throwable $e) {
-                $this->logProgress($traceId, 'vision_ocr_page.failed', [
-                    'page' => $page,
-                    'message' => $e->getMessage(),
-                    'elapsed_ms' => (int) ((microtime(true) - $pageStartedAt) * 1000),
-                ]);
-                throw $e;
-            }
-            $text = $this->normalizeAssistantContent(data_get($response, 'choices.0.message.content'));
-            if ($text !== '') {
-                $chunks[] = "## Seite {$page}\n\n".$text;
-            }
-            $this->logProgress($traceId, 'vision_ocr_page.done', [
-                'page' => $page,
-                'text_chars' => mb_strlen($text),
-                'elapsed_ms' => (int) ((microtime(true) - $pageStartedAt) * 1000),
-            ]);
-        }
-
-        return $chunks;
-    }
-
-    /**
-     * @param  list<string>  $chunks
-     */
-    private function combinePageMarkdown(array $chunks): string
-    {
-        return trim(implode("\n\n---\n\n", $chunks));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function analyzeCombinedOcr(
-        string $ocrText,
-        string $model,
-        D3InvoiceVisionLlmClientInterface $llm,
-        ?string $tokenOverride,
-    ): array {
-        $analysisPrompt = <<<PROMPT
-Analysiere den folgenden OCR-Text einer Rechnung.
-Antworte ausschließlich als valides JSON-Objekt ohne Markdown-Fences.
-
-Nutze exakt diese Struktur:
-{
-  "supplier": {"name": null, "address": null, "iban": null, "vat_id": null},
-  "invoice": {"invoice_number": null, "invoice_date": null, "customer_number": null, "purchase_order_reference": null},
-  "totals": {"currency": null, "net": null, "tax": null, "gross": null},
-  "line_items": [
-    {"position": null, "description": null, "quantity": null, "unit": null, "unit_price": null, "total_price": null, "serial_numbers": []}
-  ],
-  "serial_numbers": [],
-  "warnings": [],
-  "confidence": null
-}
-
-Regeln:
-- Zahlen als JSON number (Punkt als Dezimaltrennzeichen), sonst null.
-- Fehlende/unklare Felder als null.
-- serial_numbers deduplizieren.
-- warnings für Unsicherheiten ergänzen.
-
-OCR-Text:
-{$ocrText}
-PROMPT;
-
-        $httpTimeouts = $this->d3VisionHttpTimeouts();
-        $response = $llm->chatCompletionWithMessages(
-            $model,
-            [
-                [
-                    'role' => 'user',
-                    'content' => $analysisPrompt,
-                ],
-            ],
-            $httpTimeouts['request'],
-            $httpTimeouts['connect'],
-            $tokenOverride,
-        );
-
-        $content = $this->normalizeAssistantContent(data_get($response, 'choices.0.message.content'));
-        $json = $this->extractJsonFromContent($content);
-        $decoded = json_decode($json, true);
-        if (! is_array($decoded)) {
-            throw new \RuntimeException('Vision-Analyse lieferte kein valides JSON.');
-        }
-
-        return $decoded;
+        return mb_strlen($normalized) >= 8;
     }
 
     private function nullableString(mixed $value): ?string
@@ -484,58 +311,6 @@ PROMPT;
             ->unique()
             ->values()
             ->all();
-    }
-
-    private function normalizeAssistantContent(mixed $content): string
-    {
-        if (is_string($content)) {
-            return trim($content);
-        }
-
-        if (! is_array($content)) {
-            return '';
-        }
-
-        $parts = [];
-        foreach ($content as $part) {
-            if (is_string($part)) {
-                $parts[] = $part;
-                continue;
-            }
-
-            if (is_array($part) && ($part['type'] ?? '') === 'text') {
-                $parts[] = (string) ($part['text'] ?? '');
-            }
-        }
-
-        return trim(implode("\n", $parts));
-    }
-
-    private function deleteDirectoryRecursive(string $dir): void
-    {
-        if ($dir === '' || ! is_dir($dir)) {
-            return;
-        }
-
-        $items = @scandir($dir);
-        if ($items === false) {
-            return;
-        }
-
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $path = $dir.DIRECTORY_SEPARATOR.$item;
-            if (is_dir($path)) {
-                $this->deleteDirectoryRecursive($path);
-            } else {
-                @unlink($path);
-            }
-        }
-
-        @rmdir($dir);
     }
 
     /**

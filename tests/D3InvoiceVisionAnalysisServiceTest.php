@@ -1,11 +1,21 @@
 <?php
 
+use App\Services\PdfService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
-use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
+use Hwkdo\IntranetAppBase\Contracts\AiConfigResolverInterface;
+use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
+
+function d3InvoiceAnalysisService(): D3InvoiceVisionAnalysisService
+{
+    return new D3InvoiceVisionAnalysisService(
+        Mockery::mock(PdfService::class),
+        Mockery::mock(IntranetAiGatewayInterface::class),
+        Mockery::mock(AiConfigResolverInterface::class),
+    );
+}
 
 it('extrahiert json robust aus markdown fences', function () {
-    $factory = \Mockery::mock(D3InvoiceVisionLlmClientFactory::class);
-    $service = new D3InvoiceVisionAnalysisService($factory);
+    $service = d3InvoiceAnalysisService();
     $json = $service->extractJsonFromContent(<<<'TEXT'
 ```json
 {
@@ -18,8 +28,7 @@ TEXT);
 });
 
 it('normalisiert analysedaten mit defaults und deduplizierten seriennummern', function () {
-    $factory = \Mockery::mock(D3InvoiceVisionLlmClientFactory::class);
-    $service = new D3InvoiceVisionAnalysisService($factory);
+    $service = d3InvoiceAnalysisService();
     $normalized = $service->normalizeAnalysisData([
         'supplier' => ['name' => '  ACME GmbH  '],
         'invoice' => ['invoice_number' => ' RE-123 '],

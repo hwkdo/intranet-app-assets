@@ -42,7 +42,13 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
         </flux:tab.panel>
 
         <flux:tab.panel name="ki">
-            <div style="min-height: 400px;">
+            <div class="min-h-[400px] space-y-4">
+                @livewire('intranet-app-base::document-parse-settings', [
+                    'appIdentifier' => 'assets',
+                    'settingsModelClass' => \Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings::class,
+                    'appSettingsClass' => \Hwkdo\IntranetAppAssets\Data\AppSettings::class,
+                ])
+
                 @livewire('intranet-app-assets::apps.assets.admin.ki-einstellungen')
             </div>
         </flux:tab.panel>
@@ -58,6 +64,8 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
                         'aiTextModelOverride',
                         'aiImageProviderOverride',
                         'aiImageModelOverride',
+                        'documentParseEngineOverride',
+                        'documentParseTierOverride',
                         'd3InvoiceVisionLlmProvider',
                         'd3InvoiceVisionModelOpenWebUi',
                         'd3InvoiceVisionModelLangdock',

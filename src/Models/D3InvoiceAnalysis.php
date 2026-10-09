@@ -3,6 +3,8 @@
 namespace Hwkdo\IntranetAppAssets\Models;
 
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
+use Hwkdo\IntranetAppBase\Contracts\AiConfigResolverInterface;
+use Hwkdo\IntranetAppBase\Enums\AiCapability;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -76,7 +78,7 @@ class D3InvoiceAnalysis extends Model
             return true;
         }
 
-        $expected = self::resolvedConfigVisionModel();
+        $expected = self::resolvedGatewayModel();
         $stored = trim((string) ($this->vision_model ?? ''));
 
         if ($expected === '') {
@@ -98,7 +100,7 @@ class D3InvoiceAnalysis extends Model
         }
 
         if ((bool) config('intranet-app-assets.d3_invoice_analysis_reanalyze_on_model_change', false)) {
-            $expected = self::resolvedConfigVisionModel();
+            $expected = self::resolvedGatewayModel();
             $stored = trim((string) ($row->vision_model ?? ''));
             if ($expected !== '' && $stored !== $expected) {
                 return null;
@@ -170,11 +172,12 @@ class D3InvoiceAnalysis extends Model
         return $query->where('status', D3InvoiceAnalysisStatus::Pending);
     }
 
-    private static function resolvedConfigVisionModel(): string
+    public static function resolvedGatewayModel(): string
     {
-        return trim((string) config(
-            'intranet-app-assets.d3_invoice_vision_model',
-            config('openwebui-api-laravel.default_model', '')
-        ));
+        $resolved = app(AiConfigResolverInterface::class)
+            ->resolve('assets', AiCapability::Agent);
+        $model = trim((string) ($resolved->model ?? ''));
+
+        return $model !== '' ? $model : $resolved->provider->value;
     }
 }
