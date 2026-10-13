@@ -7,6 +7,7 @@ use App\Services\LangdockCompletionService;
 use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
+use Hwkdo\IntranetAppAssets\Commands\BackfillYubikeyNotesCommand;
 use Hwkdo\IntranetAppAssets\Commands\CleanupStaleHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\ClearStaleAssetLocationsCommand;
 use Hwkdo\IntranetAppAssets\Commands\DomainCheckCommand;
@@ -135,6 +136,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\ProcessScheduledReturnRemindersCommand::class,
                 Commands\ProcessScheduledOwnerAssignmentsCommand::class,
                 BackfillOwnerHandoversCommand::class,
+                BackfillYubikeyNotesCommand::class,
                 ClearStaleAssetLocationsCommand::class,
                 EnsureAssetHandoversCommand::class,
                 ReportConflictingHandoverActionsCommand::class,
