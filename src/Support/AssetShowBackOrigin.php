@@ -29,6 +29,7 @@ final class AssetShowBackOrigin
         'legacy-assets' => ['route' => 'apps.assets.legacy-assets', 'label' => 'Legacy-Assets', 'manage' => true],
         'rechnungen' => ['route' => 'apps.assets.rechnungen', 'label' => 'Rechnungen Analyse', 'manage' => true],
         'admin-handovers' => ['route' => 'apps.assets.admin.open-handovers', 'label' => 'Unbestätigte Übergaben', 'manage' => true],
+        'falsche-seriennummern' => ['route' => 'apps.assets.admin.configmgr-serial-mismatches', 'label' => 'Falsche Seriennummern', 'manage' => true],
     ];
 
     /**

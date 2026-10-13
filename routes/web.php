@@ -198,6 +198,10 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.missing');
 
+    Route::livewire('apps/assets/admin/falsche-seriennummern', 'intranet-app-assets::apps.assets.configmgr-serial-mismatches-overview')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.admin.configmgr-serial-mismatches');
+
     Route::livewire('apps/assets/admin/vermisst/{asset}/bearbeiten', 'intranet-app-assets::apps.assets.missing-resolve')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.admin.missing.resolve');

@@ -14,6 +14,7 @@
     $openHandoversNavBadge = null;
     $rejectedHandoversNavBadge = null;
     $zentraleNavBadge = null;
+    $configmgrSerialMismatchNavBadge = null;
 
     if (auth()->user()?->can('manage-app-assets')) {
         $clarificationCount = AssetNavBadgeCounts::clarificationCount();
@@ -40,6 +41,11 @@
 
         if ($rejectedHandoversCount > 0) {
             $rejectedHandoversNavBadge = $rejectedHandoversCount;
+        }
+
+        $configmgrSerialMismatchCount = AssetNavBadgeCounts::configmgrSerialMismatchCount();
+        if ($configmgrSerialMismatchCount > 0) {
+            $configmgrSerialMismatchNavBadge = $configmgrSerialMismatchCount;
         }
     }
 
@@ -68,6 +74,7 @@
         ['label' => 'Fehlende Rechnung', 'href' => route('apps.assets.fehlende-rechnung'), 'icon' => 'document-text', 'description' => 'Assets mit fehlender Rechnungsnummer (manuell oder nach Ende der automatischen BEN-Suche)', 'buttonText' => 'Fehlende Rechnung anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Rechnungen Analyse', 'href' => route('apps.assets.rechnungen'), 'icon' => 'banknotes', 'description' => 'D3-Rechnungsanalysen (Vision-Cache) einsehen und ausstehende Analysen starten', 'buttonText' => 'Rechnungen Analyse anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['type' => 'separator', 'label' => 'Admin', 'permission' => 'manage-app-assets'],
+        ['label' => 'Falsche Seriennummern', 'href' => route('apps.assets.admin.configmgr-serial-mismatches'), 'icon' => 'exclamation-circle', 'description' => 'Assets, deren Seriennummer von der SCCM-BIOS-Seriennummer abweicht', 'buttonText' => 'Falsche Seriennummern anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $configmgrSerialMismatchNavBadge, 'badgeColor' => 'red'],
         ['label' => 'Yubikeys', 'href' => route('apps.assets.yubikeys'), 'icon' => 'key', 'description' => 'Aktive Benutzer und zugewiesene Yubikeys', 'buttonText' => 'Yubikeys anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Legacy-Assets', 'href' => route('apps.assets.legacy-assets'), 'icon' => 'circle-stack', 'description' => 'Legacy-Bestand vergleichen und fehlende Assets nachimportieren', 'buttonText' => 'Legacy-Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Gelöschte Assets', 'href' => route('apps.assets.deleted'), 'icon' => 'archive-box', 'description' => 'Soft-gelöschte Assets einsehen und verwalten', 'buttonText' => 'Gelöschte Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],

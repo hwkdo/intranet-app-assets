@@ -46,4 +46,9 @@ final class AssetNavBadgeCounts
     {
         return Handover::query()->pendingSignopadZentrale()->count();
     }
+
+    public static function configmgrSerialMismatchCount(): int
+    {
+        return ConfigmgrSerialMismatches::count();
+    }
 }

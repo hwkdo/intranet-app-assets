@@ -94,6 +94,18 @@ class AssetsDashboardWidgetProvider implements DashboardWidgetProviderInterface
                 defaultEnabled: true,
             ),
             new DashboardWidgetDefinition(
+                key: 'falsche-seriennummern',
+                title: 'Falsche Seriennummern',
+                description: 'Assets, deren Seriennummer von der SCCM-BIOS-Seriennummer abweicht',
+                component: 'intranet-app-assets::apps.assets.widgets.falsche-seriennummern',
+                permission: 'manage-app-assets',
+                defaultW: 6,
+                defaultH: 4,
+                minW: 4,
+                minH: 3,
+                defaultEnabled: true,
+            ),
+            new DashboardWidgetDefinition(
                 key: 'ki-chat',
                 title: 'Assets KI-Chat',
                 description: 'Assets-KI-Chat mit MCP-Tools (gleiche Konfiguration wie die Chat-Seite)',
