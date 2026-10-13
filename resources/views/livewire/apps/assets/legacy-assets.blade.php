@@ -92,7 +92,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
 
     public function sortByColumn(string $column): void
     {
-        $allowed = ['updated_at', 'id', 'itexiaid', 'modell', 'sn'];
+        $allowed = ['updated_at', 'id', 'itexiaid', 'modell', 'sn', 'status'];
         if (! in_array($column, $allowed, true)) {
             return;
         }
@@ -103,6 +103,8 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
             $this->sortBy = $column;
             $this->sortDir = $column === 'updated_at' ? 'desc' : 'asc';
         }
+
+        $this->resetPage();
     }
 
     public function importSelected(LegacyAssetImportService $importer, IntranetLegacyService $legacyService): void
@@ -202,6 +204,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                 'standort' => $legacy['standort'] ?? null,
                 'updated_at' => $updatedAt,
                 'sort_updated_at' => $sortTs !== false ? (int) $sortTs : 0,
+                'status' => $isMissing ? 'fehlt' : ($isTrashed ? 'geloescht' : 'vorhanden'),
             ];
         }
 
@@ -395,32 +398,12 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                         />
                     </label>
                 </flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('id')" class="inline-flex items-center gap-1">
-                        Legacy-ID
-                    </button>
-                </flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('itexiaid')" class="inline-flex items-center gap-1">
-                        Itexia-ID
-                    </button>
-                </flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('modell')" class="inline-flex items-center gap-1">
-                        Modell / Name
-                    </button>
-                </flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('sn')" class="inline-flex items-center gap-1">
-                        Seriennummer
-                    </button>
-                </flux:table.column>
-                <flux:table.column>Status</flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('updated_at')" class="inline-flex items-center gap-1">
-                        Legacy updated_at
-                    </button>
-                </flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'id'" :direction="$sortDir" wire:click="sortByColumn('id')">Legacy-ID</flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'itexiaid'" :direction="$sortDir" wire:click="sortByColumn('itexiaid')">Itexia-ID</flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'modell'" :direction="$sortDir" wire:click="sortByColumn('modell')">Modell / Name</flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'sn'" :direction="$sortDir" wire:click="sortByColumn('sn')">Seriennummer</flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDir" wire:click="sortByColumn('status')">Status</flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'updated_at'" :direction="$sortDir" wire:click="sortByColumn('updated_at')">Legacy updated_at</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

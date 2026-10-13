@@ -120,10 +120,10 @@
                             />
                         </label>
                     </flux:table.column>
-                    <flux:table.column>Asset</flux:table.column>
-                    <flux:table.column>Zurückgegeben von</flux:table.column>
-                    <flux:table.column>Termin</flux:table.column>
-                    <flux:table.column>Eingeleitet</flux:table.column>
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'asset', 'label' => 'Asset'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'returned_by', 'label' => 'Zurückgegeben von'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'scheduled_at', 'label' => 'Termin'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Eingeleitet'])
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>

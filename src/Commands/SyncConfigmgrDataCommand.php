@@ -12,7 +12,7 @@ class SyncConfigmgrDataCommand extends Command
     protected $signature = 'intranet-app-assets:sync-configmgr-data
                             {--details : Pro Asset ausgeben, ob ConfigMgr-Daten gefunden und gespeichert wurden}';
 
-    protected $description = 'Synchronisiert SMBIOS-GUID und MAC-Adressen aus ConfigMgr/SCCM für alle Assets mit Domain-Typ.';
+    protected $description = 'Synchronisiert SMBIOS-GUID, MAC-Adressen, Last-Logon-User und BIOS-Seriennummer aus ConfigMgr/SCCM für alle Assets mit Domain-Typ.';
 
     public function handle(): int
     {
@@ -24,6 +24,14 @@ class SyncConfigmgrDataCommand extends Command
 
         $configmgr = app(ConfigmgrLaravel::class);
         $verbose = $this->option('details');
+
+        try {
+            $biosSerialsByName = $configmgr->getBiosSerialNumbersByComputerName();
+        } catch (\Throwable $e) {
+            $this->error('BIOS-Seriennummern aus ConfigMgr konnten nicht gelesen werden: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
 
         $domainTypeIds = AssetType::where('is_domain_object', true)->pluck('id');
         $assets = Asset::whereIn('asset_type_id', $domainTypeIds)->get();
@@ -55,14 +63,18 @@ class SyncConfigmgrDataCommand extends Command
                 continue;
             }
 
+            $biosSerial = $biosSerialsByName[strtoupper($computerName)] ?? null;
+
             if (count($rows) === 0) {
                 $asset->smbios_guid = null;
                 $asset->configmgr_mac_addresses = null;
                 $asset->configmgr_last_logon_user = null;
+                $asset->configmgr_serial_number = $biosSerial;
                 $asset->save();
                 $updated++;
                 if ($verbose) {
-                    $this->line("  Asset #{$asset->id} ({$computerName}): keine ConfigMgr-Daten – Felder geleert.");
+                    $serialInfo = $biosSerial !== null ? "BIOS-Seriennummer {$biosSerial}" : 'BIOS-Seriennummer leer';
+                    $this->line("  Asset #{$asset->id} ({$computerName}): keine ConfigMgr-Systemdaten – GUID/MAC/Logon geleert, {$serialInfo}.");
                 }
 
                 continue;
@@ -76,10 +88,12 @@ class SyncConfigmgrDataCommand extends Command
             $asset->smbios_guid = $smbiosGuid;
             $asset->configmgr_mac_addresses = $macAddresses;
             $asset->configmgr_last_logon_user = $lastLogonUser;
+            $asset->configmgr_serial_number = $biosSerial;
             $asset->save();
             $updated++;
             if ($verbose) {
-                $this->line("  Asset #{$asset->id} ({$computerName}): SMBIOS-GUID, ".count($macAddresses).' MAC(s), Last-Logon-User gesetzt.');
+                $serialInfo = $biosSerial !== null ? $biosSerial : 'keine';
+                $this->line("  Asset #{$asset->id} ({$computerName}): SMBIOS-GUID, ".count($macAddresses)." MAC(s), Last-Logon-User, BIOS-Seriennummer ({$serialInfo}) gesetzt.");
             }
         }
 

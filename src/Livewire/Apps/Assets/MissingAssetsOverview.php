@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
@@ -13,7 +14,26 @@ use Livewire\WithPagination;
 #[Title('Assets vermisst')]
 class MissingAssetsOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'type', 'owner', 'location'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'updated_at';
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
 
     public function mount(): void
     {
@@ -32,10 +52,10 @@ class MissingAssetsOverview extends Component
      */
     protected function assets(): LengthAwarePaginator
     {
-        return Asset::query()
+        $query = Asset::query()
             ->where('is_missing', true)
-            ->with(['type', 'vendor', 'owner.standort'])
-            ->orderByDesc('updated_at')
-            ->paginate(25);
+            ->with(['type', 'vendor', 'owner.standort']);
+
+        return $this->applyAssetSort($query)->paginate(25);
     }
 }

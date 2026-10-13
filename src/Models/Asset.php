@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Models;
 use App\Models\User;
 use Hwkdo\IntranetAppAssets\Services\AssetPermanentDeletionArchiveRecorder;
 use Hwkdo\IntranetAppAssets\Support\AssetStockState;
+use Hwkdo\IntranetAppAssets\Support\ConfigmgrSerialNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -133,7 +134,8 @@ class Asset extends Model implements HasMedia
     }
 
     /**
-     * Volltextsuche für die „Alle Assets“-Liste (alle sichtbaren Tabellenspalten).
+     * Volltextsuche für die „Alle Assets“-Liste.
+     * Das Modellfeld wird immer durchsucht, auch wenn die Modell-Spalte ausgeblendet ist.
      *
      * @param  Builder<Asset>  $query
      * @return Builder<Asset>
@@ -276,7 +278,16 @@ class Asset extends Model implements HasMedia
             $tokens[] = 'invoice_pending';
         }
 
+        if ($this->configmgrSerialMismatches()) {
+            $tokens[] = 'sccm_seriennummer_abweichung';
+        }
+
         return implode(' ', $tokens);
+    }
+
+    public function configmgrSerialMismatches(): bool
+    {
+        return ConfigmgrSerialNumber::mismatches($this->serial_number, $this->configmgr_serial_number);
     }
 
     private function historyText(): string

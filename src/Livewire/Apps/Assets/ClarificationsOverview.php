@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Services\AssetClarificationAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
@@ -19,7 +20,26 @@ use Livewire\WithPagination;
 #[Title('Assets in Klärung')]
 class ClarificationsOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'owner', 'location'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'updated_at';
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
 
     public string $search = '';
 
@@ -125,12 +145,12 @@ class ClarificationsOverview extends Component
      */
     protected function assets(): LengthAwarePaginator
     {
-        return Asset::query()
+        $query = Asset::query()
             ->where('is_clarification', true)
             ->with(['type', 'vendor', 'owner.standort'])
-            ->when(filled($this->search), fn ($query) => $query->matchingListeSearch($this->search))
-            ->orderByDesc('updated_at')
-            ->paginate(25);
+            ->when(filled($this->search), fn ($query) => $query->matchingListeSearch($this->search));
+
+        return $this->applyAssetSort($query)->paginate(25);
     }
 
     /**

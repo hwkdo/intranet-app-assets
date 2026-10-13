@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter;
@@ -13,6 +14,15 @@ use Livewire\Component;
 
 new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends Component
 {
+    use SortsAssetTable;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'type', 'vendor'];
+    }
     /** @var list<int> */
     public array $selectedHandoverIds = [];
 
@@ -98,11 +108,11 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
     #[Computed]
     public function assets(): \Illuminate\Database\Eloquent\Collection
     {
-        return Asset::query()
+        $query = Asset::query()
             ->with(['type', 'vendor'])
-            ->where('user_id', auth()->id())
-            ->orderBy('model')
-            ->get();
+            ->where('user_id', auth()->id());
+
+        return $this->applyAssetSort($query)->get();
     }
 
     /** @return \Illuminate\Support\Collection<int, Handover> keyed by asset_id */
@@ -340,10 +350,10 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                             />
                         </label>
                     </flux:table.column>
-                    <flux:table.column>Modell / Name</flux:table.column>
-                    <flux:table.column>Seriennummer</flux:table.column>
-                    <flux:table.column>Typ</flux:table.column>
-                    <flux:table.column>Hersteller</flux:table.column>
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>

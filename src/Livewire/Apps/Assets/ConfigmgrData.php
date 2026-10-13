@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\ConfigmgrLaravel\ConfigmgrLaravel;
+use Hwkdo\IntranetAppAssets\Support\ConfigmgrSerialNumber;
 use Livewire\Component;
 
 class ConfigmgrData extends Component
@@ -11,15 +12,25 @@ class ConfigmgrData extends Component
 
     public ?string $computerName = null;
 
+    public ?string $serialNumber = null;
+
+    public ?string $configmgrSerialNumber = null;
+
     /** @var array<int, object{rechnername: string|null, smbios_guid: string|null, last_logon_user: string|null, mac_adresse: string|null}>|null */
     public ?array $configmgrRows = null;
 
     public ?string $configmgrError = null;
 
-    public function mount(?int $assetId = null, ?string $computerName = null): void
-    {
+    public function mount(
+        ?int $assetId = null,
+        ?string $computerName = null,
+        ?string $serialNumber = null,
+        ?string $configmgrSerialNumber = null,
+    ): void {
         $this->assetId = $assetId;
         $this->computerName = $computerName;
+        $this->serialNumber = $serialNumber;
+        $this->configmgrSerialNumber = $configmgrSerialNumber;
 
         $computerName = trim((string) $computerName ?? '');
         if ($computerName === '') {
@@ -40,6 +51,11 @@ class ConfigmgrData extends Component
         } catch (\Throwable $e) {
             $this->configmgrError = $e->getMessage();
         }
+    }
+
+    public function configmgrSerialMismatches(): bool
+    {
+        return ConfigmgrSerialNumber::mismatches($this->serialNumber, $this->configmgrSerialNumber);
     }
 
     public function render(): \Illuminate\Contracts\View\View

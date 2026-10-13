@@ -101,10 +101,13 @@ class AssetsSearchSource implements SearchSourceInterface
             $asset->type?->name,
         ], fn (?string $part): bool => $part !== null && $part !== ''));
 
-        if ($parts === []) {
-            return null;
+        $subtitle = $parts === [] ? '' : implode(' · ', array_slice($parts, 0, 2));
+
+        if ($asset->configmgrSerialMismatches()) {
+            $warning = 'SCCM-Seriennummer weicht ab';
+            $subtitle = $subtitle === '' ? $warning : $subtitle.' · '.$warning;
         }
 
-        return implode(' · ', array_slice($parts, 0, 2));
+        return $subtitle === '' ? null : $subtitle;
     }
 }

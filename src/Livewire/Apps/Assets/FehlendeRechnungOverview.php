@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
@@ -13,7 +14,21 @@ use Livewire\WithPagination;
 #[Title('Fehlende Rechnung')]
 class FehlendeRechnungOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'invoice_number', 'order_number', 'created_by'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'created_at';
+    }
 
     public function render(): \Illuminate\Contracts\View\View
     {
@@ -27,10 +42,10 @@ class FehlendeRechnungOverview extends Component
      */
     protected function getAssets(): LengthAwarePaginator
     {
-        return Asset::query()
+        $query = Asset::query()
             ->invoiceNumberPending()
-            ->with(['vendor', 'createdBy'])
-            ->orderBy('created_at')
-            ->paginate(25);
+            ->with(['vendor', 'createdBy']);
+
+        return $this->applyAssetSort($query)->paginate(25);
     }
 }

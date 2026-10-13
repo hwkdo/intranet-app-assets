@@ -1,6 +1,7 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Livewire\Attributes\Computed;
@@ -13,6 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
 
     #[Url(as: 'q')]
@@ -42,6 +44,14 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
     }
 
     /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'imei', 'type', 'vendor', 'owner', 'status'];
+    }
+
+    /**
      * @return list<int>
      */
     private function validatedMobilTypeIdsForQuery(): array
@@ -60,8 +70,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
     {
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
-            ->whereHas('type', fn ($q) => $q->where('is_intune_object', true))
-            ->orderBy('model');
+            ->whereHas('type', fn ($q) => $q->where('is_intune_object', true));
     }
 
     #[Computed]
@@ -75,7 +84,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
     {
         $mobilTypeIds = $this->validatedMobilTypeIdsForQuery();
 
-        return $this->baseQuery()
+        $query = $this->baseQuery()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $term = '%'.$this->search.'%';
@@ -89,8 +98,9 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
             })
             ->when($mobilTypeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $mobilTypeIds))
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
-            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'))
-            ->paginate(25);
+            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'));
+
+        return $this->applyAssetSort($query)->paginate(25);
     }
 
     /**
@@ -98,7 +108,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
      */
     public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->baseQuery();
+        return $this->baseQuery()->orderBy('model')->orderBy('id');
     }
 
     /**
@@ -122,7 +132,9 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
             })
             ->when($mobilTypeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $mobilTypeIds))
             ->when($this->intuneFilter === 'intune', fn ($q) => $q->whereNotNull('intune_device_id'))
-            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'));
+            ->when($this->intuneFilter === 'non-intune', fn ($q) => $q->whereNull('intune_device_id'))
+            ->orderBy('model')
+            ->orderBy('id');
     }
 
     /**
@@ -221,13 +233,13 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
 
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>IMEI</flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
-                <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'imei', 'label' => 'IMEI'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

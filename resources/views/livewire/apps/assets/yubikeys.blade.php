@@ -26,12 +26,12 @@
 
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
-                <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

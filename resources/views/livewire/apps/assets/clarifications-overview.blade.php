@@ -129,10 +129,10 @@
                             />
                         </label>
                     </flux:table.column>
-                    <flux:table.column>Asset</flux:table.column>
-                    <flux:table.column>Seriennummer</flux:table.column>
-                    <flux:table.column>Besitzer (laut System)</flux:table.column>
-                    <flux:table.column>Standort</flux:table.column>
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Asset'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer (laut System)'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'location', 'label' => 'Standort'])
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>

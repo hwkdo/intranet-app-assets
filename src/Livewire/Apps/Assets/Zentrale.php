@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Services\AdminAssistedHandoverService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,6 +20,20 @@ use Livewire\Component;
 #[Title('Assets – Zentrale')]
 class Zentrale extends Component
 {
+    use SortsAssetTable;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['asset', 'recipient', 'issuer', 'created_at'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'created_at';
+    }
     public bool $embedded = false;
 
     public bool $showConfirmModal = false;
@@ -62,11 +78,11 @@ class Zentrale extends Component
     #[Computed]
     public function pendingHandovers(): Collection
     {
-        return Handover::query()
+        $query = Handover::query()
             ->pendingSignopadZentrale()
-            ->with(['asset.type', 'asset.vendor', 'recipient', 'issuer'])
-            ->orderBy('created_at')
-            ->get();
+            ->with(['asset.type', 'asset.vendor', 'recipient', 'issuer']);
+
+        return AssetTableSort::applyHandover($query, $this->activeSortColumn(), $this->activeSortDirection())->get();
     }
 
     #[Computed]

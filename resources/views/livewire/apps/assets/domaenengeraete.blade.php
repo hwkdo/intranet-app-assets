@@ -1,6 +1,7 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -12,32 +13,30 @@ use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
 
     #[Url(as: 'q')]
     public string $search = '';
 
-    /** @var 'domain_last_seen'|'last_logon_timestamp'|'' */
-    #[Url]
-    public string $sortBy = '';
+    #[Url(as: 'modell', except: false)]
+    public bool $showModel = false;
 
-    /** @var 'asc'|'desc' */
-    #[Url]
-    public string $sortDir = 'desc';
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'model', 'serial_number', 'domain_connection', 'domain_last_seen', 'last_logon_timestamp', 'type', 'vendor', 'owner', 'status'];
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
 
     public function updatedSearch(): void
     {
-        $this->resetPage();
-    }
-
-    public function sortByColumn(string $column): void
-    {
-        if ($this->sortBy === $column) {
-            $this->sortDir = $this->sortDir === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortBy = $column;
-            $this->sortDir = 'desc';
-        }
         $this->resetPage();
     }
 
@@ -50,12 +49,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
 
     protected function orderQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
-        $orderColumn = in_array($this->sortBy, ['domain_last_seen', 'last_logon_timestamp'], true)
-            ? $this->sortBy
-            : 'model';
-        $orderDir = $this->sortDir === 'asc' ? 'asc' : 'desc';
-
-        return $query->orderBy($orderColumn, $orderDir);
+        return $this->applyAssetSort($query);
     }
 
     #[Computed]
@@ -121,6 +115,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
     {
         return [
             ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
+            ['heading' => 'Modell', 'value' => fn (Asset $a) => $a->model],
             ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
             ['heading' => 'Domäne', 'value' => fn (Asset $a) => $a->domain_connection ?? '—'],
             ['heading' => 'Last seen', 'value' => fn (Asset $a) => $a->domain_last_seen?->format('d.m.Y H:i') ?? '—'],
@@ -135,6 +130,9 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                 }
                 if ($a->is_clarification) {
                     $status[] = 'Klärung';
+                }
+                if ($a->configmgrSerialMismatches()) {
+                    $status[] = 'SN weicht ab';
                 }
                 if (empty($status)) {
                     $status[] = 'OK';
@@ -207,8 +205,8 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             </div>
         @endcan
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex flex-1 gap-3">
-                <div class="flex-1 max-w-sm">
+            <div class="flex flex-1 flex-wrap items-center gap-3">
+                <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
                         wire:model.live.debounce.300ms="search"
                         placeholder="Suchen nach SN, Modell, Name, Domäne, SMBIOS-GUID, MAC, Last-Logon-User…"
@@ -216,6 +214,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                         clearable
                     />
                 </div>
+                <flux:switch wire:model.live="showModel" label="Modell anzeigen" />
             </div>
             <flux:dropdown position="bottom" align="end">
                 <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
@@ -230,33 +229,18 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
 
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Domäne</flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('domain_last_seen')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
-                        Last seen
-                        @if($this->sortBy === 'domain_last_seen')
-                            <flux:icon icon="{{ $this->sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                        @else
-                            <flux:icon icon="chevron-up-down" class="size-4 opacity-50" />
-                        @endif
-                    </button>
-                </flux:table.column>
-                <flux:table.column>
-                    <button type="button" wire:click="sortByColumn('last_logon_timestamp')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
-                        Last Logon
-                        @if($this->sortBy === 'last_logon_timestamp')
-                            <flux:icon icon="{{ $this->sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                        @else
-                            <flux:icon icon="chevron-up-down" class="size-4 opacity-50" />
-                        @endif
-                    </button>
-                </flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
-                <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @if($showModel)
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'model', 'label' => 'Modell', 'columnClass' => 'w-44'])
+                @endif
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'domain_connection', 'label' => 'Domäne'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'domain_last_seen', 'label' => 'Last seen'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'last_logon_timestamp', 'label' => 'Last Logon'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -268,6 +252,17 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                                 <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
+                        @if($showModel)
+                            <flux:table.cell class="max-w-44 overflow-hidden">
+                                @if(filled($asset->model))
+                                    <flux:tooltip :content="$asset->model" position="top">
+                                        <span class="block min-w-0 truncate">{{ $asset->model }}</span>
+                                    </flux:tooltip>
+                                @else
+                                    <span>—</span>
+                                @endif
+                            </flux:table.cell>
+                        @endif
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ $asset->domain_connection ?? '—' }}</flux:table.cell>
                         <flux:table.cell class="text-sm">
@@ -290,6 +285,9 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                                 @if(!$asset->is_missing && !$asset->is_clarification)
                                     <flux:badge color="green" size="sm">OK</flux:badge>
                                 @endif
+                                @if($asset->configmgrSerialMismatches())
+                                    <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
+                                @endif
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>
@@ -298,7 +296,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="10" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="{{ $showModel ? 11 : 10 }}" class="text-center text-zinc-500 py-8">
                             Keine Domänengeräte gefunden.
                         </flux:table.cell>
                     </flux:table.row>

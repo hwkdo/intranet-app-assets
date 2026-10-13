@@ -6,6 +6,7 @@ namespace Hwkdo\IntranetAppAssets\Services;
 
 use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,16 +27,16 @@ class YubikeyOverviewService
     /**
      * @return Builder<User>
      */
-    public function activeUsersQuery(bool $onlyWithoutYubikey = false, string $search = ''): Builder
-    {
+    public function activeUsersQuery(
+        bool $onlyWithoutYubikey = false,
+        string $search = '',
+        string $sortColumn = 'owner',
+        string $sortDirection = 'asc',
+    ): Builder {
         $yubikeyTypeId = $this->resolveYubikeyTypeId();
         $search = trim($search);
 
-        $query = User::query()
-            ->aktiv()
-            ->orderBy('nachname')
-            ->orderBy('vorname')
-            ->orderBy('id');
+        $query = User::query()->aktiv();
 
         if ($onlyWithoutYubikey && $yubikeyTypeId !== null) {
             $query->whereNotExists(function ($sub) use ($yubikeyTypeId): void {
@@ -67,7 +68,7 @@ class YubikeyOverviewService
             });
         }
 
-        return $query;
+        return AssetTableSort::applyYubikeyUsers($query, $sortColumn, $sortDirection, $yubikeyTypeId);
     }
 
     /**
@@ -77,11 +78,13 @@ class YubikeyOverviewService
         bool $onlyWithoutYubikey = false,
         string $search = '',
         int $perPage = 25,
+        string $sortColumn = 'owner',
+        string $sortDirection = 'asc',
     ): LengthAwarePaginator {
         $yubikeyTypeId = $this->resolveYubikeyTypeId();
 
         /** @var LengthAwarePaginator<User> $users */
-        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search)->paginate($perPage);
+        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search, $sortColumn, $sortDirection)->paginate($perPage);
 
         if ($yubikeyTypeId !== null) {
             $this->attachYubikeys($users->getCollection(), $yubikeyTypeId, trim($search));

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Exports\YubikeysTableExport;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Services\YubikeyOverviewService;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
@@ -19,7 +20,21 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 #[Title('Yubikeys')]
 class YubikeysOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'type', 'vendor', 'owner', 'status'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'owner';
+    }
 
     #[Url(as: 'q')]
     public string $search = '';
@@ -65,7 +80,12 @@ class YubikeysOverview extends Component
     public function render(YubikeyOverviewService $service): View
     {
         return view('intranet-app-assets::livewire.apps.assets.yubikeys', [
-            'users' => $service->paginateActiveUsers($this->onlyWithoutYubikey, $this->search),
+            'users' => $service->paginateActiveUsers(
+                $this->onlyWithoutYubikey,
+                $this->search,
+                sortColumn: $this->activeSortColumn(),
+                sortDirection: $this->activeSortDirection(),
+            ),
         ]);
     }
 }

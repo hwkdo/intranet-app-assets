@@ -620,6 +620,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         <livewire:intranet-app-assets::apps.assets.configmgr-data
                             :asset-id="$asset->id"
                             :computer-name="$asset->name"
+                            :serial-number="$asset->serial_number"
+                            :configmgr-serial-number="$asset->configmgr_serial_number"
                             lazy
                             wire:key="configmgr-data-{{ $asset->id }}"
                         />

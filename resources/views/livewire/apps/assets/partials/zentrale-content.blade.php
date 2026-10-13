@@ -13,10 +13,10 @@
 
         <flux:table class="mt-4">
             <flux:table.columns>
-                <flux:table.column>Asset</flux:table.column>
-                <flux:table.column>Empfänger</flux:table.column>
-                <flux:table.column>Ausgestellt von</flux:table.column>
-                <flux:table.column>Seit</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'asset', 'label' => 'Asset'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'recipient', 'label' => 'Empfänger'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'issuer', 'label' => 'Ausgestellt von'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Seit'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

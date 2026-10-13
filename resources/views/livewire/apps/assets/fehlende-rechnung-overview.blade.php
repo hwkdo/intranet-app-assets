@@ -6,11 +6,11 @@
     <div class="space-y-4">
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Rechnungsnr.</flux:table.column>
-                <flux:table.column>BEN</flux:table.column>
-                <flux:table.column>Angelegt von</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'invoice_number', 'label' => 'Rechnungsnr.'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'order_number', 'label' => 'BEN'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_by', 'label' => 'Angelegt von'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

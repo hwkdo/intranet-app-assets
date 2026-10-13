@@ -1,6 +1,7 @@
 <?php
 
 use Flux\Flux;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Livewire\Attributes\Computed;
@@ -12,7 +13,26 @@ use Livewire\WithPagination;
 
 new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'deleted_at', 'deleted_by', 'deleted_reason'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'deleted_at';
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
 
     #[Url(as: 'q')]
     public string $search = '';
@@ -25,7 +45,7 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
     #[Computed]
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return Asset::query()
+        $query = Asset::query()
             ->onlyTrashed()
             ->with(['type', 'vendor', 'owner', 'historyEntries.user'])
             ->when($this->search, function ($query): void {
@@ -36,9 +56,9 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
                         ->orWhere('name', 'like', $term)
                         ->orWhere('itexia_id', 'like', $term);
                 });
-            })
-            ->orderByDesc('deleted_at')
-            ->paginate(25);
+            });
+
+        return $this->applyAssetSort($query)->paginate(25);
     }
 
     public function restoreAsset(int $assetId): void
@@ -89,10 +109,10 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
 
             <flux:table>
                 <flux:table.columns>
-                    <flux:table.column>Asset</flux:table.column>
-                    <flux:table.column>Gelöscht am</flux:table.column>
-                    <flux:table.column>Gelöscht von</flux:table.column>
-                    <flux:table.column>Grund</flux:table.column>
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Asset'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'deleted_at', 'label' => 'Gelöscht am'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'deleted_by', 'label' => 'Gelöscht von'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'deleted_reason', 'label' => 'Grund'])
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>

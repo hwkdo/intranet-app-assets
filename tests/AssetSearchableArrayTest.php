@@ -73,7 +73,7 @@ it('builds a searchable payload with core fields and aggregated note history tex
         ->and($searchable['owner_nachname'])->toBe('Muster')
         ->and($searchable['serial_number'])->toBe('SN-12345')
         ->and($searchable['itexia_uuid'])->toBe('uuid-77')
-        ->and($searchable['status_tokens'])->toBe('missing clarification invoice_pending')
+        ->and($searchable['status_tokens'])->toBe('missing clarification invoice_pending sccm_seriennummer_abweichung')
         ->and($searchable['history_text'])->toContain('Besitzer wurde geändert')
         ->and($searchable['notes_text'])->toContain('Direkte Asset-Notiz')
         ->and($searchable['notes_text'])->toContain('Übergabe-Notiz')

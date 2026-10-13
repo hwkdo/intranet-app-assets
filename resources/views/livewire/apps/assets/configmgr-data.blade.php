@@ -6,7 +6,19 @@
                     ConfigMgr/SCCM-Daten
                 </flux:accordion.heading>
                 <flux:accordion.content>
+                    @if($this->configmgrSerialMismatches())
+                        <flux:callout variant="warning" icon="exclamation-triangle" class="mb-4">
+                            <flux:callout.heading>Seriennummer weicht ab</flux:callout.heading>
+                            <flux:callout.text>Im Asset steht {{ $serialNumber }}, in SCCM {{ $configmgrSerialNumber }}.</flux:callout.text>
+                        </flux:callout>
+                    @endif
                     @if($configmgrError)
+                        @if(filled($configmgrSerialNumber))
+                            <dl class="mb-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                <dt class="font-semibold">Seriennummer (BIOS)</dt>
+                                <dd class="font-mono text-xs">{{ $configmgrSerialNumber }}</dd>
+                            </dl>
+                        @endif
                         <flux:callout variant="warning" icon="exclamation-triangle">
                             <flux:callout.text>{{ $configmgrError }}</flux:callout.text>
                         </flux:callout>
@@ -22,6 +34,8 @@
                             <dd class="font-mono text-xs">{{ $first->smbios_guid ?? '—' }}</dd>
                             <dt class="font-semibold">Letzter Logon-Benutzer</dt>
                             <dd>{{ $first->last_logon_user ?? '—' }}</dd>
+                            <dt class="font-semibold">Seriennummer (BIOS)</dt>
+                            <dd class="font-mono text-xs">{{ filled($configmgrSerialNumber) ? $configmgrSerialNumber : '—' }}</dd>
                             <dt class="font-semibold">MAC-Adresse(n)</dt>
                             <dd>
                                 @if(count($macAddresses) > 0)
@@ -34,6 +48,11 @@
                                     —
                                 @endif
                             </dd>
+                        </dl>
+                    @elseif(filled($configmgrSerialNumber))
+                        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <dt class="font-semibold">Seriennummer (BIOS)</dt>
+                            <dd class="font-mono text-xs">{{ $configmgrSerialNumber }}</dd>
                         </dl>
                     @else
                         <p class="text-sm text-zinc-500">Keine ConfigMgr-Daten für diesen Computernamen.</p>

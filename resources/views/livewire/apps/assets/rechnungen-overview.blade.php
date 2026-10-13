@@ -2,6 +2,7 @@
 
 use Flux\Flux;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
@@ -21,7 +22,38 @@ use Livewire\WithPagination;
 
 new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['d3_document_id', 'status', 'assets_count', 'vision_model', 'analyzed_at', 'queue_status', 'asset_count'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'analyzed_at';
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
+
+    public function updatedSortColumn(): void
+    {
+        $this->resetPage('analysisPage');
+        $this->resetPage('pendingPage');
+    }
+
+    public function updatedSortDirection(): void
+    {
+        $this->resetPage('analysisPage');
+        $this->resetPage('pendingPage');
+    }
 
     /** analyzed | pending */
     #[Url]
@@ -148,16 +180,23 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
     {
         $q = trim($this->search);
 
-        return D3InvoiceAnalysis::query()
+        $query = D3InvoiceAnalysis::query()
             ->withCount('assets')
             ->when($q !== '', function ($query) use ($q): void {
                 $query->where('d3_document_id', 'like', '%'.$q.'%');
             })
             ->when($this->onlyFailed, function ($query): void {
                 $query->where('status', D3InvoiceAnalysisStatus::Failed);
-            })
-            ->orderByDesc('updated_at')
-            ->paginate(20, ['*'], 'analysisPage');
+            });
+
+        $column = $this->activeSortColumn();
+        if (in_array($column, ['d3_document_id', 'status', 'assets_count', 'vision_model', 'analyzed_at'], true)) {
+            $query->orderBy($column, $this->activeSortDirection());
+        } else {
+            $query->orderByDesc('updated_at');
+        }
+
+        return $query->paginate(20, ['*'], 'analysisPage');
     }
 
     /**
@@ -201,6 +240,20 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                 ];
             })
             ->values();
+
+        if (in_array($this->activeSortColumn(), ['d3_document_id', 'queue_status', 'asset_count'], true)) {
+            $pending = $pending->sortBy(
+                function (object $item): int|string {
+                    return match ($this->activeSortColumn()) {
+                        'asset_count' => $item->asset_count,
+                        'queue_status' => $item->row?->status?->value ?? '',
+                        default => $item->d3_document_id,
+                    };
+                },
+                SORT_REGULAR,
+                $this->activeSortDirection() === 'desc',
+            )->values();
+        }
 
         return $pending;
     }
@@ -296,11 +349,11 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
 
                 <flux:table>
                     <flux:table.columns>
-                        <flux:table.column>D3-ID</flux:table.column>
-                        <flux:table.column>Status</flux:table.column>
-                        <flux:table.column>Assets</flux:table.column>
-                        <flux:table.column>Modell</flux:table.column>
-                        <flux:table.column>Analysiert</flux:table.column>
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'd3_document_id', 'label' => 'D3-ID'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'assets_count', 'label' => 'Assets'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'vision_model', 'label' => 'Modell'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'analyzed_at', 'label' => 'Analysiert'])
                         <flux:table.column></flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
@@ -363,9 +416,9 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
             @else
                 <flux:table>
                     <flux:table.columns>
-                        <flux:table.column>D3-ID</flux:table.column>
-                        <flux:table.column>Queue-Status</flux:table.column>
-                        <flux:table.column>Assets</flux:table.column>
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'd3_document_id', 'label' => 'D3-ID'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'queue_status', 'label' => 'Queue-Status'])
+                        @include('intranet-app-assets::partials.sortable-column', ['column' => 'asset_count', 'label' => 'Assets'])
                         <flux:table.column></flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>

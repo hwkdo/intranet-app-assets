@@ -3,6 +3,8 @@
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
+use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
@@ -18,7 +20,21 @@ use Livewire\WithPagination;
 #[Title('Offene Rückgaben')]
 class PendingReturnsOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['asset', 'returned_by', 'scheduled_at', 'created_at'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return 'schedule';
+    }
 
     /** @var list<int> */
     public array $selectedReturnIds = [];
@@ -129,7 +145,7 @@ class PendingReturnsOverview extends Component
      */
     protected function returns(): LengthAwarePaginator
     {
-        return AssetReturn::query()
+        $query = AssetReturn::query()
             ->whereNull('completed_at')
             ->whereHas('handover')
             ->with([
@@ -137,15 +153,25 @@ class PendingReturnsOverview extends Component
                 'handover.asset.vendor',
                 'handover.recipient',
                 'initiatedBy',
-            ])
-            ->orderByRaw('CASE WHEN schedule_type = ? AND scheduled_at IS NOT NULL AND scheduled_at <= ? THEN 0 WHEN schedule_type = ? AND scheduled_at IS NOT NULL THEN 1 ELSE 2 END', [
-                ReturnScheduleType::Scheduled->value,
-                now(),
-                ReturnScheduleType::Scheduled->value,
-            ])
-            ->orderBy('scheduled_at')
-            ->orderByDesc('created_at')
-            ->paginate(25);
+            ]);
+
+        if ($this->activeSortColumn() === 'schedule') {
+            return $query
+                ->orderByRaw('CASE WHEN schedule_type = ? AND scheduled_at IS NOT NULL AND scheduled_at <= ? THEN 0 WHEN schedule_type = ? AND scheduled_at IS NOT NULL THEN 1 ELSE 2 END', [
+                    ReturnScheduleType::Scheduled->value,
+                    now(),
+                    ReturnScheduleType::Scheduled->value,
+                ])
+                ->orderBy('scheduled_at')
+                ->orderByDesc('created_at')
+                ->paginate(25);
+        }
+
+        return AssetTableSort::applyReturn(
+            $query->reorder(),
+            $this->activeSortColumn(),
+            $this->activeSortDirection(),
+        )->paginate(25);
     }
 
     /**

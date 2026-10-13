@@ -10,6 +10,7 @@ use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\AssetAdminMarkClarificationService;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Support\AssetListeAdminActions;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
@@ -26,6 +27,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
 
     #[Url(as: 'q')]
@@ -38,13 +40,8 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     #[Url]
     public string $statusFilter = '';
 
-    /** @var 'model'|'created_at' */
-    #[Url(as: 'sort')]
-    public string $sortColumn = 'model';
-
-    /** @var 'asc'|'desc' */
-    #[Url(as: 'sdir')]
-    public string $sortDirection = 'asc';
+    #[Url(as: 'modell', except: false)]
+    public bool $showModel = false;
 
     /** @var list<int> */
     public array $selectedAssetIds = [];
@@ -55,45 +52,19 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
 
     private const SELECTION_SESSION_KEY = 'intranet_app_assets.bulk.assets_list.selection';
 
-    /** @var list<string> */
-    private const SORT_COLUMNS = ['model', 'created_at'];
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'model', 'serial_number', 'type', 'vendor', 'owner', 'location', 'status', 'created_at'];
+    }
 
     public function mount(): void
     {
-        $this->sanitizeSortFromUrl();
         $stored = Session::get(self::SELECTION_SESSION_KEY, []);
         $this->selectedAssetIds = $this->sanitizeIds(is_array($stored) ? $stored : []);
         $this->pruneStaleSelection();
-    }
-
-    public function updatedSortColumn(): void
-    {
-        $this->sanitizeSortFromUrl();
-        $this->resetPage();
-    }
-
-    public function updatedSortDirection(): void
-    {
-        if (! in_array($this->sortDirection, ['asc', 'desc'], true)) {
-            $this->sortDirection = 'asc';
-        }
-        $this->resetPage();
-    }
-
-    public function sortBy(string $column): void
-    {
-        if (! in_array($column, self::SORT_COLUMNS, true)) {
-            return;
-        }
-
-        if ($this->sortColumn === $column) {
-            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortColumn = $column;
-            $this->sortDirection = 'asc';
-        }
-
-        $this->resetPage();
     }
 
     public function updatedSearch(): void
@@ -290,24 +261,12 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         return array_values(array_intersect($selected, $allowed));
     }
 
-    #[Computed]
-    public function listingSortColumn(): string
-    {
-        return in_array($this->sortColumn, self::SORT_COLUMNS, true) ? $this->sortColumn : 'model';
-    }
-
-    #[Computed]
-    public function listingSortDirection(): string
-    {
-        return $this->sortDirection === 'desc' ? 'desc' : 'asc';
-    }
-
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = Asset::query()
             ->with(['type', 'vendor', 'owner.standort']);
 
-        return $this->applyListingSort($query);
+        return $this->applyAssetSort($query);
     }
 
     /**
@@ -321,20 +280,6 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             ->with(['type', 'vendor', 'owner.standort'])
             ->orderBy('model')
             ->orderBy('id');
-    }
-
-    /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Asset>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Asset>
-     */
-    protected function applyListingSort(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
-    {
-        $column = $this->listingSortColumn;
-        $direction = $this->listingSortDirection;
-
-        return $query
-            ->orderBy($column, $direction)
-            ->orderBy('id', $direction);
     }
 
     #[Computed]
@@ -465,6 +410,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
     {
         return [
             ['heading' => 'Modell / Name', 'value' => fn (Asset $a) => $a->display_name.($a->itexia_id ? ' ('.$a->itexia_id.')' : '')],
+            ['heading' => 'Modell', 'value' => fn (Asset $a) => $a->model],
             ['heading' => 'Seriennummer', 'value' => fn (Asset $a) => $a->serial_number],
             ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
             ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
@@ -482,6 +428,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     $status[] = 'Auf Lager';
                 } elseif ($a->user_id === null) {
                     $status[] = 'Gemeinschaftsgerät';
+                }
+                if ($a->configmgrSerialMismatches()) {
+                    $status[] = 'SN weicht ab';
                 }
                 if ($status === []) {
                     $status[] = 'OK';
@@ -588,16 +537,6 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         }
     }
 
-    private function sanitizeSortFromUrl(): void
-    {
-        if (! in_array($this->sortColumn, self::SORT_COLUMNS, true)) {
-            $this->sortColumn = 'model';
-        }
-
-        if (! in_array($this->sortDirection, ['asc', 'desc'], true)) {
-            $this->sortDirection = 'asc';
-        }
-    }
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout heading="Alle Assets" subheading="Übersicht aller verwalteten Assets">
@@ -698,6 +637,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         clearable
                     />
                 </div>
+                <flux:switch wire:model.live="showModel" label="Modell anzeigen" />
                 <flux:pillbox
                     wire:model.live="typeIds"
                     multiple
@@ -761,20 +701,17 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         />
                     </label>
                 </flux:table.column>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column class="w-36">Hersteller</flux:table.column>
-                <flux:table.column class="w-36">Besitzer</flux:table.column>
-                <flux:table.column class="w-36">Standort</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
-                <flux:table.column
-                    sortable
-                    :sorted="$this->listingSortColumn === 'created_at'"
-                    :direction="$this->listingSortDirection"
-                    wire:click="sortBy('created_at')"
-                    align="end"
-                >Angelegt</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @if($showModel)
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'model', 'label' => 'Modell', 'columnClass' => 'w-44'])
+                @endif
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller', 'columnClass' => 'w-36'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer', 'columnClass' => 'w-36'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'location', 'label' => 'Standort', 'columnClass' => 'w-36'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -805,6 +742,17 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
+                        @if($showModel)
+                            <flux:table.cell class="max-w-44 overflow-hidden">
+                                @if(filled($asset->model))
+                                    <flux:tooltip :content="$asset->model" position="top">
+                                        <span class="block min-w-0 truncate">{{ $asset->model }}</span>
+                                    </flux:tooltip>
+                                @else
+                                    <span>—</span>
+                                @endif
+                            </flux:table.cell>
+                        @endif
                         <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name }}</flux:table.cell>
                         <flux:table.cell class="overflow-hidden">
@@ -853,6 +801,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                     <flux:badge color="zinc" size="sm">Gemeinschaftsgerät</flux:badge>
                                 @elseif(! $asset->is_missing && ! $asset->is_clarification)
                                     <flux:badge color="green" size="sm">OK</flux:badge>
+                                @endif
+                                @if($asset->configmgrSerialMismatches())
+                                    <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -966,7 +917,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="10" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="{{ $showModel ? 11 : 10 }}" class="text-center text-zinc-500 py-8">
                             Keine Assets gefunden.
                         </flux:table.cell>
                     </flux:table.row>

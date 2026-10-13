@@ -1,6 +1,7 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
@@ -14,6 +15,7 @@ use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 
 new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends Component {
+    use SortsAssetTable;
     use WithPagination;
 
     #[Url(as: 'q')]
@@ -61,6 +63,14 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     }
 
     /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['display_name', 'serial_number', 'itexia_id', 'itexia_uuid', 'invoice_number', 'order_number', 'type', 'vendor', 'owner', 'status'];
+    }
+
+    /**
      * @return list<int>
      */
     private function validatedTypeIdsForQuery(): array
@@ -76,8 +86,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
             ->whereNotNull('itexia_id')
-            ->where('itexia_id', '!=', '')
-            ->orderBy('model');
+            ->where('itexia_id', '!=', '');
     }
 
     protected function applyFilters(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
@@ -135,7 +144,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     #[Computed]
     public function assets(): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return $this->applyFilters($this->baseQuery())->paginate(25);
+        return $this->applyAssetSort($this->applyFilters($this->baseQuery()))->paginate(25);
     }
 
     #[Computed]
@@ -165,7 +174,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
      */
     public function getExportQueryAll(): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->baseQuery();
+        return $this->baseQuery()->orderBy('model')->orderBy('id');
     }
 
     /**
@@ -173,7 +182,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
      */
     public function getExportQueryFiltered(): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->applyFilters($this->baseQuery());
+        return $this->applyFilters($this->baseQuery())->orderBy('model')->orderBy('id');
     }
 
     /**
@@ -285,16 +294,16 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
 
         <flux:table>
             <flux:table.columns>
-                <flux:table.column>Modell / Name</flux:table.column>
-                <flux:table.column>Seriennummer</flux:table.column>
-                <flux:table.column>Itexia-ID</flux:table.column>
-                <flux:table.column>Itexia-UUID</flux:table.column>
-                <flux:table.column>Rechnungsnr.</flux:table.column>
-                <flux:table.column>BEN</flux:table.column>
-                <flux:table.column>Typ</flux:table.column>
-                <flux:table.column>Hersteller</flux:table.column>
-                <flux:table.column>Besitzer</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'itexia_id', 'label' => 'Itexia-ID'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'itexia_uuid', 'label' => 'Itexia-UUID'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'invoice_number', 'label' => 'Rechnungsnr.'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'order_number', 'label' => 'BEN'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>

@@ -197,7 +197,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
                             <flux:card wire:key="asset-search-result-{{ $asset->id }}" class="space-y-3">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <flux:heading size="sm">{{ $asset->display_name }}</flux:heading>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <flux:heading size="sm">{{ $asset->display_name }}</flux:heading>
+                                            @if($asset->configmgrSerialMismatches())
+                                                <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
+                                            @endif
+                                        </div>
                                         <flux:text class="text-sm text-zinc-500">
                                             {{ $asset->type?->name ?? '—' }} · {{ $asset->vendor?->name ?? '—' }}
                                         </flux:text>
@@ -209,6 +214,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
 
                                 <div class="space-y-1 text-sm">
                                     <div><span class="font-medium">Seriennummer:</span> {{ $asset->serial_number }}</div>
+                                    @if($asset->configmgrSerialMismatches())
+                                        <div>
+                                            <span class="font-medium">SCCM-Seriennummer:</span>
+                                            <span class="font-mono">{{ $asset->configmgr_serial_number }}</span>
+                                        </div>
+                                    @endif
                                     <div><span class="font-medium">Besitzer:</span> {{ $asset->owner?->name ?? '—' }}</div>
                                     <div><span class="font-medium">Standort:</span> {{ $asset->location ?? '—' }}</div>
                                 </div>

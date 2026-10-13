@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 
 use App\Models\User;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Services\OpenHandoverAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
@@ -24,7 +26,26 @@ use Livewire\WithPagination;
 #[Title('Übergaben')]
 class AdminHandoversOverview extends Component
 {
+    use SortsAssetTable;
     use WithPagination;
+
+    /**
+     * @return list<string>
+     */
+    protected function sortableColumns(): array
+    {
+        return ['created_at', 'rejected_at', 'asset', 'recipient', 'issuer'];
+    }
+
+    protected function defaultSortColumn(): string
+    {
+        return $this->filter === self::FILTER_REJECTED ? 'rejected_at' : 'created_at';
+    }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'desc';
+    }
 
     public const string FILTER_OPEN = 'open';
 
@@ -202,7 +223,7 @@ class AdminHandoversOverview extends Component
     public function handovers(): LengthAwarePaginator
     {
         if ($this->filter === self::FILTER_REJECTED) {
-            return Handover::query()
+            $query = Handover::query()
                 ->rejectedPendingAdmin()
                 ->with([
                     'asset.type',
@@ -225,11 +246,12 @@ class AdminHandoversOverview extends Component
                             ->orWhereHas('issuer', fn ($iq) => $iq->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                     });
                 })
-                ->orderByDesc('rejected_at')
-                ->paginate(25);
+            ;
+
+            return AssetTableSort::applyHandover($query, $this->activeSortColumn(), $this->activeSortDirection())->paginate(25);
         }
 
-        return Handover::query()
+        $query = Handover::query()
             ->open()
             ->with([
                 'asset.type',
@@ -250,8 +272,9 @@ class AdminHandoversOverview extends Component
                         ->orWhereHas('issuer', fn ($iq) => $iq->where('vorname', 'like', $term)->orWhere('nachname', 'like', $term));
                 });
             })
-            ->orderByDesc('created_at')
-            ->paginate(25);
+        ;
+
+        return AssetTableSort::applyHandover($query, $this->activeSortColumn(), $this->activeSortDirection())->paginate(25);
     }
 
     public function render(): View
