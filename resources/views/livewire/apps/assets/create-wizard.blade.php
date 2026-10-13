@@ -746,14 +746,9 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             <flux:separator />
 
             <div class="space-y-6">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <flux:heading size="lg">Einzelne Assets</flux:heading>
-                        <flux:text class="mt-1 text-zinc-500 dark:text-zinc-200">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt. Namen mit Zahl am Ende (z. B. Device01) werden beim Hinzufügen hochgezählt.</flux:text>
-                    </div>
-                    <flux:button type="button" wire:click="addUnit" variant="outline" icon="plus">
-                        Weiteres Asset
-                    </flux:button>
+                <div>
+                    <flux:heading size="lg">Einzelne Assets</flux:heading>
+                    <flux:text class="mt-1 text-zinc-500 dark:text-zinc-200">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt. Namen mit Zahl am Ende (z. B. Device01) werden beim Hinzufügen hochgezählt.</flux:text>
                 </div>
 
                 @foreach($this->units as $index => $unit)
@@ -859,6 +854,10 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                         </div>
                     </flux:card>
                 @endforeach
+
+                <flux:button type="button" wire:click="addUnit" variant="outline" icon="plus">
+                    Weiteres Asset
+                </flux:button>
             </div>
 
             <div class="flex gap-3">
