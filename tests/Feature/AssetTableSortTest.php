@@ -57,3 +57,49 @@ it('sortiert alle assets nach seriennummer wenn die spalte angeklickt wird', fun
         ->assertSee($serialFirst)
         ->assertSee($serialLast);
 });
+
+it('sortiert assets standardmäßig nach anlegedatum absteigend und markiert die spalte', function (): void {
+    $admin = User::factory()->create(['active' => true]);
+    $admin->givePermissionTo(['see-app-assets', 'manage-app-assets']);
+
+    $type = AssetType::query()->create(['name' => 'created-type-'.uniqid('', true)]);
+    $vendor = AssetVendor::query()->create(['name' => 'created-vendor-'.uniqid('', true)]);
+    $suffix = uniqid('', true);
+    $recentSerial = 'RECENT-'.$suffix;
+    $oldSerial = 'OLD-'.$suffix;
+
+    $recent = Asset::query()->create([
+        'serial_number' => $recentSerial,
+        'name' => 'Recent-'.$suffix,
+        'model' => 'Recent-Modell',
+        'asset_type_id' => $type->id,
+        'asset_vendor_id' => $vendor->id,
+    ]);
+    $old = Asset::query()->create([
+        'serial_number' => $oldSerial,
+        'name' => 'Old-'.$suffix,
+        'model' => 'Old-Modell',
+        'asset_type_id' => $type->id,
+        'asset_vendor_id' => $vendor->id,
+    ]);
+
+    Asset::withoutTimestamps(function () use ($recent, $old): void {
+        $recent->created_at = '2024-06-01 08:00:00';
+        $recent->save();
+        $old->created_at = '2010-01-01 08:00:00';
+        $old->save();
+    });
+
+    $component = Livewire::actingAs($admin)
+        ->test('intranet-app-assets::apps.assets.liste');
+
+    expect($component->instance()->activeSortColumn())->toBe('created_at')
+        ->and($component->instance()->activeSortDirection())->toBe('desc');
+
+    $component
+        ->assertSeeInOrder([$recentSerial, $oldSerial])
+        ->call('sortBy', 'created_at')
+        ->assertSet('sortColumn', 'created_at')
+        ->assertSet('sortDirection', 'asc')
+        ->assertSeeInOrder([$oldSerial, $recentSerial]);
+});

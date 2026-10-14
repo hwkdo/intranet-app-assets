@@ -22,12 +22,7 @@ class FehlendeRechnungOverview extends Component
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'invoice_number', 'order_number', 'created_by'];
-    }
-
-    protected function defaultSortColumn(): string
-    {
-        return 'created_at';
+        return ['display_name', 'serial_number', 'invoice_number', 'order_number', 'created_by', 'created_at'];
     }
 
     public function render(): \Illuminate\Contracts\View\View

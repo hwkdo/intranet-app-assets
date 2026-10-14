@@ -3,6 +3,7 @@
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -27,12 +28,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'model', 'serial_number', 'domain_connection', 'domain_last_seen', 'last_logon_timestamp', 'type', 'vendor', 'owner', 'status'];
-    }
-
-    protected function defaultSortDirection(): string
-    {
-        return 'desc';
+        return ['display_name', 'model', 'serial_number', 'domain_connection', 'domain_last_seen', 'last_logon_timestamp', 'type', 'vendor', 'owner', 'status', 'created_at'];
     }
 
     public function updatedSearch(): void
@@ -43,7 +39,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
-            ->with(['type', 'vendor', 'owner'])
+            ->with(['type', 'vendor', 'owner.standort'])
             ->whereHas('type', fn ($q) => $q->where('is_domain_object', true));
     }
 
@@ -123,6 +119,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
             ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
             ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Standort', 'value' => fn (Asset $a) => AssetLocationDisplayResolver::resolve($a)['value'] ?? '—'],
             ['heading' => 'Status', 'value' => function (Asset $a) {
                 $status = [];
                 if ($a->is_missing) {
@@ -139,6 +136,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                 }
                 return implode(', ', $status);
             }],
+            ['heading' => 'Angelegt', 'value' => fn (Asset $a) => $a->created_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
         ];
     }
 
@@ -241,6 +239,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -263,7 +262,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                                 @endif
                             </flux:table.cell>
                         @endif
-                        <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
                         <flux:table.cell class="font-mono text-sm">{{ $asset->domain_connection ?? '—' }}</flux:table.cell>
                         <flux:table.cell class="text-sm">
                             {{ $asset->domain_last_seen?->format('d.m.Y H:i') ?? '—' }}
@@ -290,13 +289,14 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                                 @endif
                             </div>
                         </flux:table.cell>
+                        @include('intranet-app-assets::partials.created-at-cell', ['asset' => $asset])
                         <flux:table.cell>
                             <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'domaenengeraete']) }}" variant="ghost" size="sm" icon="eye" />
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="{{ $showModel ? 11 : 10 }}" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="{{ $showModel ? 12 : 11 }}" class="text-center text-zinc-500 py-8">
                             Keine Domänengeräte gefunden.
                         </flux:table.cell>
                     </flux:table.row>

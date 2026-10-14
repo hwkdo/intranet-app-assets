@@ -36,6 +36,11 @@ class PendingReturnsOverview extends Component
         return 'schedule';
     }
 
+    protected function defaultSortDirection(): string
+    {
+        return 'asc';
+    }
+
     /** @var list<int> */
     public array $selectedReturnIds = [];
 

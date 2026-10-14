@@ -10,6 +10,7 @@
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'configmgr_serial_number', 'label' => 'SCCM-Seriennummer'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -37,6 +38,7 @@
                         </flux:table.cell>
                         <flux:table.cell>{{ $asset->type?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->owner?->name ?? '—' }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.created-at-cell', ['asset' => $asset])
                         <flux:table.cell>
                             <div class="flex items-center gap-1 whitespace-nowrap">
                                 <flux:button
@@ -61,7 +63,7 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
+                        <flux:table.cell colspan="7" class="py-8 text-center text-zinc-500">
                             Keine abweichenden SCCM-Seriennummern.
                         </flux:table.cell>
                     </flux:table.row>

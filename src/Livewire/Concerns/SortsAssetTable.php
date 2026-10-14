@@ -63,12 +63,12 @@ trait SortsAssetTable
 
     protected function defaultSortColumn(): string
     {
-        return 'model';
+        return 'created_at';
     }
 
     protected function defaultSortDirection(): string
     {
-        return 'asc';
+        return 'desc';
     }
 
     /**

@@ -32,6 +32,7 @@
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -54,6 +55,7 @@
                             <flux:table.cell>
                                 <flux:badge color="zinc" size="sm">Kein Yubikey</flux:badge>
                             </flux:table.cell>
+                            <flux:table.cell class="text-end text-zinc-500">—</flux:table.cell>
                             <flux:table.cell></flux:table.cell>
                         </flux:table.row>
                     @else
@@ -62,7 +64,7 @@
                                 <flux:table.cell>
                                     <div class="font-medium">{{ $yubikey->display_name }}</div>
                                 </flux:table.cell>
-                                <flux:table.cell class="font-mono text-sm">{{ $yubikey->serial_number }}</flux:table.cell>
+                                @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $yubikey->serial_number])
                                 <flux:table.cell>{{ $yubikey->type?->name ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $yubikey->vendor?->name ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>
@@ -72,6 +74,7 @@
                                 <flux:table.cell>
                                     <flux:badge color="green" size="sm">Zugewiesen</flux:badge>
                                 </flux:table.cell>
+                                @include('intranet-app-assets::partials.created-at-cell', ['asset' => $yubikey])
                                 <flux:table.cell>
                                     <flux:button href="{{ route('apps.assets.show', [$yubikey, 'from' => 'yubikeys']) }}" variant="ghost" size="sm" icon="eye" wire:navigate />
                                 </flux:table.cell>
@@ -80,7 +83,7 @@
                     @endif
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="8" class="text-center text-zinc-500 py-8">
                             @if($onlyWithoutYubikey)
                                 Keine aktiven Benutzer ohne Yubikey gefunden.
                             @elseif(filled($search))

@@ -6,6 +6,7 @@ use App\Services\IntranetLegacyService;
 use App\Services\LangdockCompletionService;
 use Hwkdo\IntranetAppAssets\Ai\Gateway\OpenWebUiChatGateway;
 use Hwkdo\IntranetAppAssets\Ai\Providers\OpenWebUiChatProvider;
+use Hwkdo\IntranetAppAssets\Commands\BackfillLegacyCreatedAtCommand;
 use Hwkdo\IntranetAppAssets\Commands\BackfillOwnerHandoversCommand;
 use Hwkdo\IntranetAppAssets\Commands\BackfillYubikeyNotesCommand;
 use Hwkdo\IntranetAppAssets\Commands\CleanupStaleHandoversCommand;
@@ -135,6 +136,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
                 Commands\ProcessScheduledReturnRemindersCommand::class,
                 Commands\ProcessScheduledOwnerAssignmentsCommand::class,
+                BackfillLegacyCreatedAtCommand::class,
                 BackfillOwnerHandoversCommand::class,
                 BackfillYubikeyNotesCommand::class,
                 ClearStaleAssetLocationsCommand::class,

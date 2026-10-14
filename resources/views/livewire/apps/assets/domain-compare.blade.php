@@ -157,7 +157,7 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
                         @forelse($this->assetsNotInDomain as $asset)
                             <flux:table.row wire:key="not-in-domain-{{ $asset->id }}">
                                 <flux:table.cell class="font-medium">{{ $asset->name }}</flux:table.cell>
-                                <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
+                                @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
                                 <flux:table.cell class="font-mono text-sm">{{ $asset->domain_connection }}</flux:table.cell>
                                 <flux:table.cell>{{ $asset->type?->name }} · {{ $asset->vendor?->name }}</flux:table.cell>
                                 <flux:table.cell>

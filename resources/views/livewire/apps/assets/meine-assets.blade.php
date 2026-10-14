@@ -21,7 +21,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'type', 'vendor'];
+        return ['display_name', 'serial_number', 'type', 'vendor', 'created_at'];
     }
     /** @var list<int> */
     public array $selectedHandoverIds = [];
@@ -354,6 +354,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                     @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
                     @include('intranet-app-assets::partials.sortable-column', ['column' => 'type', 'label' => 'Typ'])
                     @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
+                    @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -396,7 +397,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                     </div>
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
+                            @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
                             <flux:table.cell>{{ $asset->type?->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell class="max-w-[10rem]">
                                 @php $vendorName = $asset->vendor?->name ?? '—'; @endphp
@@ -404,6 +405,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                                     <span class="block truncate">{{ $vendorName }}</span>
                                 </flux:tooltip>
                             </flux:table.cell>
+                            @include('intranet-app-assets::partials.created-at-cell', ['asset' => $asset])
                             <flux:table.cell>
                                 <div class="flex flex-wrap items-center gap-1">
                                     @php $pendingHandover = $this->pendingHandoversByAssetId->get($asset->id); @endphp
@@ -469,7 +471,7 @@ new #[Layout('components.layouts.app')] #[Title('Meine Assets')] class extends C
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="6" class="text-center text-zinc-500 py-8">
+                            <flux:table.cell colspan="7" class="text-center text-zinc-500 py-8">
                                 Ihnen sind derzeit keine Assets zugewiesen.
                             </flux:table.cell>
                         </flux:table.row>

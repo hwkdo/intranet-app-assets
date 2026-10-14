@@ -125,6 +125,7 @@ final class AssetTableSort
             'type' => '(SELECT '.(new AssetType)->getTable().'.name FROM '.$asset.' INNER JOIN '.(new AssetType)->getTable().' ON '.(new AssetType)->getTable().'.id = '.$asset.'.asset_type_id WHERE '.$assetFilter.' ORDER BY '.$asset.'.id LIMIT 1)',
             'vendor' => '(SELECT '.(new AssetVendor)->getTable().'.name FROM '.$asset.' INNER JOIN '.(new AssetVendor)->getTable().' ON '.(new AssetVendor)->getTable().'.id = '.$asset.'.asset_vendor_id WHERE '.$assetFilter.' ORDER BY '.$asset.'.id LIMIT 1)',
             'status' => '(SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM '.$asset.' WHERE '.$assetFilter.')',
+            'created_at' => 'COALESCE((SELECT MAX('.$asset.'.created_at) FROM '.$asset.' WHERE '.$assetFilter.'), \'1000-01-01 00:00:00\')',
             default => null,
         };
 

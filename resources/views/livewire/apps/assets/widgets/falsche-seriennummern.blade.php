@@ -29,9 +29,8 @@ new class extends Component
     {
         return ConfigmgrSerialMismatches::collect(
             Asset::query()->with(['type', 'vendor', 'owner']),
-        )->sortBy(
-            fn (Asset $asset): string => $asset->display_name,
-            SORT_NATURAL | SORT_FLAG_CASE,
+        )->sortByDesc(
+            fn (Asset $asset): int => $asset->created_at?->getTimestamp() ?? 0,
         )->values();
     }
 

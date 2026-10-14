@@ -11,6 +11,7 @@
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'invoice_number', 'label' => 'Rechnungsnr.'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'order_number', 'label' => 'BEN'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_by', 'label' => 'Angelegt von'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -19,10 +20,11 @@
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                         </flux:table.cell>
-                        <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
                         <flux:table.cell class="font-mono text-sm">{{ filled($asset->invoice_number) ? $asset->invoice_number : '—' }}</flux:table.cell>
                         <flux:table.cell class="font-mono text-sm">{{ filled($asset->order_number) ? $asset->order_number : '—' }}</flux:table.cell>
                         <flux:table.cell>{{ $asset->createdBy?->name ?? '—' }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.created-at-cell', ['asset' => $asset])
                         <flux:table.cell>
                             <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'fehlende-rechnung']) }}" variant="ghost" size="sm" icon="eye">
                                 Anzeigen
@@ -31,7 +33,7 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="6" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="7" class="text-center text-zinc-500 py-8">
                             Keine Assets mit fehlender Rechnungsnummer.
                         </flux:table.cell>
                     </flux:table.row>

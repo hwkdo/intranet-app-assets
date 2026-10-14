@@ -137,7 +137,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
                                 <flux:table.cell>
                                     <div class="font-medium">{{ $h->asset?->display_name ?? '—' }}</div>
                                 </flux:table.cell>
-                                <flux:table.cell class="font-mono text-sm">{{ $h->asset?->serial_number ?? '—' }}</flux:table.cell>
+                                @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $h->asset?->serial_number])
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>

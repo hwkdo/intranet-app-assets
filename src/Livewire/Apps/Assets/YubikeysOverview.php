@@ -28,12 +28,7 @@ class YubikeysOverview extends Component
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'type', 'vendor', 'owner', 'status'];
-    }
-
-    protected function defaultSortColumn(): string
-    {
-        return 'owner';
+        return ['display_name', 'serial_number', 'type', 'vendor', 'owner', 'status', 'created_at'];
     }
 
     #[Url(as: 'q')]

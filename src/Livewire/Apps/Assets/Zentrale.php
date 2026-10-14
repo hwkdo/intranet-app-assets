@@ -34,6 +34,12 @@ class Zentrale extends Component
     {
         return 'created_at';
     }
+
+    protected function defaultSortDirection(): string
+    {
+        return 'asc';
+    }
+
     public bool $embedded = false;
 
     public bool $showConfirmModal = false;

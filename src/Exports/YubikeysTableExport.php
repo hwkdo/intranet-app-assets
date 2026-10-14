@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class YubikeysTableExport implements FromCollection, WithColumnWidths, WithHeadings, WithMapping
 {
     /**
-     * @param  Collection<int, array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}>  $rows
+     * @param  Collection<int, array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, location: string, status: string, created_at: string}>  $rows
      */
     public function __construct(private Collection $rows) {}
 
@@ -34,12 +34,14 @@ class YubikeysTableExport implements FromCollection, WithColumnWidths, WithHeadi
             'Hersteller',
             'Besitzer',
             'Benutzername',
+            'Standort',
             'Status',
+            'Angelegt',
         ];
     }
 
     /**
-     * @param  array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}  $row
+     * @param  array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, location: string, status: string, created_at: string}  $row
      * @return array<int, string>
      */
     public function map($row): array
@@ -51,7 +53,9 @@ class YubikeysTableExport implements FromCollection, WithColumnWidths, WithHeadi
             $row['vendor'],
             $row['owner'],
             $row['username'],
+            $row['location'],
             $row['status'],
+            $row['created_at'],
         ];
     }
 
@@ -67,7 +71,9 @@ class YubikeysTableExport implements FromCollection, WithColumnWidths, WithHeadi
             'D' => 14,
             'E' => 22,
             'F' => 18,
-            'G' => 14,
+            'G' => 18,
+            'H' => 14,
+            'I' => 18,
         ];
     }
 }

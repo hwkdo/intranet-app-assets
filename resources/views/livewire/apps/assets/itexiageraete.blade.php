@@ -5,6 +5,7 @@ use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
+use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -67,7 +68,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'itexia_id', 'itexia_uuid', 'invoice_number', 'order_number', 'type', 'vendor', 'owner', 'status'];
+        return ['display_name', 'serial_number', 'itexia_id', 'itexia_uuid', 'invoice_number', 'order_number', 'type', 'vendor', 'owner', 'status', 'created_at'];
     }
 
     /**
@@ -84,7 +85,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     protected function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return Asset::query()
-            ->with(['type', 'vendor', 'owner'])
+            ->with(['type', 'vendor', 'owner.standort'])
             ->whereNotNull('itexia_id')
             ->where('itexia_id', '!=', '');
     }
@@ -200,6 +201,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
             ['heading' => 'Typ', 'value' => fn (Asset $a) => $a->type?->name ?? '—'],
             ['heading' => 'Hersteller', 'value' => fn (Asset $a) => $a->vendor?->name ?? '—'],
             ['heading' => 'Besitzer', 'value' => fn (Asset $a) => $a->owner?->name ?? '—'],
+            ['heading' => 'Standort', 'value' => fn (Asset $a) => AssetLocationDisplayResolver::resolve($a)['value'] ?? '—'],
             ['heading' => 'Status', 'value' => function (Asset $a) {
                 $status = [];
                 if ($a->itexia_uuid) {
@@ -215,6 +217,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                 }
                 return implode(', ', $status);
             }],
+            ['heading' => 'Angelegt', 'value' => fn (Asset $a) => $a->created_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—'],
         ];
     }
 
@@ -304,6 +307,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'vendor', 'label' => 'Hersteller'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'owner', 'label' => 'Besitzer'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
+                @include('intranet-app-assets::partials.sortable-column', ['column' => 'created_at', 'label' => 'Angelegt', 'align' => 'end'])
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
@@ -312,13 +316,20 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                         </flux:table.cell>
-                        <flux:table.cell class="font-mono text-sm">{{ $asset->serial_number }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
                         <flux:table.cell class="font-mono text-sm">{{ $asset->itexia_id ?? '—' }}</flux:table.cell>
-                        <flux:table.cell class="font-mono text-sm max-w-[6rem]">
-                            @php $uuid = $asset->itexia_uuid ?? '—'; @endphp
-                            <flux:tooltip :content="$uuid" position="top">
-                                <span class="block truncate">{{ $uuid }}</span>
-                            </flux:tooltip>
+                        <flux:table.cell class="whitespace-nowrap font-mono text-sm">
+                            @php
+                                $uuid = trim((string) ($asset->itexia_uuid ?? ''));
+                                $uuidPrefix = $uuid === '' ? '' : explode('-', $uuid, 2)[0];
+                            @endphp
+                            @if($uuid !== '')
+                                <flux:tooltip :content="$uuid" position="top">
+                                    <span>{{ $uuidPrefix }}</span>
+                                </flux:tooltip>
+                            @else
+                                <span>—</span>
+                            @endif
                         </flux:table.cell>
                         <flux:table.cell class="text-sm">
                             @php $invoiceLink = $this->invoiceNumberLink($asset->invoice_number); @endphp
@@ -359,13 +370,14 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                                 @endif
                             </div>
                         </flux:table.cell>
+                        @include('intranet-app-assets::partials.created-at-cell', ['asset' => $asset])
                         <flux:table.cell>
                             <flux:button href="{{ route('apps.assets.show', [$asset, 'from' => 'itexiageraete']) }}" variant="ghost" size="sm" icon="eye" />
                         </flux:table.cell>
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="11" class="text-center text-zinc-500 py-8">
+                        <flux:table.cell colspan="12" class="text-center text-zinc-500 py-8">
                             Keine Itexia-Geräte gefunden.
                         </flux:table.cell>
                     </flux:table.row>

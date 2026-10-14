@@ -429,7 +429,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                                 <div class="text-xs text-zinc-500">{{ $row['name'] }}</div>
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell class="font-mono text-sm">{{ $row['sn'] ?: '—' }}</flux:table.cell>
+                        @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $row['sn'] ?? ''])
                         <flux:table.cell>
                             @if($row['is_missing'])
                                 <flux:badge color="amber" size="sm">Fehlt im neuen System</flux:badge>

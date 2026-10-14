@@ -31,7 +31,7 @@ new class extends Component
                 $query->whereNull('itexia_uuid')
                     ->orWhere('itexia_uuid', '');
             })
-            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->limit($this->itemLimit())
             ->get();
     }

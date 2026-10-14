@@ -22,17 +22,7 @@ class MissingAssetsOverview extends Component
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'type', 'owner', 'location'];
-    }
-
-    protected function defaultSortColumn(): string
-    {
-        return 'updated_at';
-    }
-
-    protected function defaultSortDirection(): string
-    {
-        return 'desc';
+        return ['display_name', 'serial_number', 'type', 'owner', 'location', 'created_at'];
     }
 
     public function mount(): void

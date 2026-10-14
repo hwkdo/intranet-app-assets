@@ -94,7 +94,7 @@ class YubikeyOverviewService
     }
 
     /**
-     * @return SupportCollection<int, array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}>
+     * @return SupportCollection<int, array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, location: string, status: string, created_at: string}>
      */
     public function getExportRows(bool $onlyWithoutYubikey = false, string $search = ''): SupportCollection
     {
@@ -102,7 +102,7 @@ class YubikeyOverviewService
         $search = trim($search);
 
         /** @var Collection<int, User> $users */
-        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search)->get();
+        $users = $this->activeUsersQuery($onlyWithoutYubikey, $search)->with('standort')->get();
 
         if ($yubikeyTypeId !== null) {
             $this->attachYubikeys($users, $yubikeyTypeId, $search);
@@ -133,7 +133,7 @@ class YubikeyOverviewService
     }
 
     /**
-     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}
+     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, location: string, status: string, created_at: string}
      */
     private function exportRowForUserWithoutYubikey(User $user): array
     {
@@ -144,12 +144,14 @@ class YubikeyOverviewService
             'vendor' => '—',
             'owner' => (string) $user->name,
             'username' => (string) $user->username,
+            'location' => $this->exportLocation($user),
             'status' => 'Kein Yubikey',
+            'created_at' => '—',
         ];
     }
 
     /**
-     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, status: string}
+     * @return array{model: string, serial_number: string, type: string, vendor: string, owner: string, username: string, location: string, status: string, created_at: string}
      */
     private function exportRowForAssignedYubikey(User $user, Asset $yubikey): array
     {
@@ -160,8 +162,22 @@ class YubikeyOverviewService
             'vendor' => $yubikey->vendor?->name ?? '—',
             'owner' => (string) $user->name,
             'username' => (string) $user->username,
+            'location' => $this->exportLocation($user),
             'status' => 'Zugewiesen',
+            'created_at' => $yubikey->created_at?->timezone((string) config('app.timezone'))->format('d.m.Y H:i') ?? '—',
         ];
+    }
+
+    private function exportLocation(User $user): string
+    {
+        $raum = trim((string) ($user->raum ?? ''));
+        if ($raum !== '') {
+            return $raum;
+        }
+
+        $standortName = trim((string) ($user->standort?->name ?? ''));
+
+        return $standortName !== '' ? $standortName : '—';
     }
 
     /**
@@ -177,7 +193,7 @@ class YubikeyOverviewService
             ->with(['vendor', 'type'])
             ->where('asset_type_id', $yubikeyTypeId)
             ->whereIn('user_id', $users->pluck('id'))
-            ->orderBy('serial_number')
+            ->orderByDesc('created_at')
             ->get()
             ->groupBy('user_id');
 

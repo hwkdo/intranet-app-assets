@@ -26,7 +26,7 @@ new class extends Component
         return Asset::query()
             ->with(['type', 'vendor', 'owner'])
             ->where('is_missing', true)
-            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->limit($this->itemLimit())
             ->get();
     }

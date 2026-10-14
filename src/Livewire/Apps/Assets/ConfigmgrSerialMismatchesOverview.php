@@ -26,12 +26,7 @@ class ConfigmgrSerialMismatchesOverview extends Component
      */
     protected function sortableColumns(): array
     {
-        return ['display_name', 'serial_number', 'configmgr_serial_number', 'type', 'owner'];
-    }
-
-    protected function defaultSortColumn(): string
-    {
-        return 'display_name';
+        return ['display_name', 'serial_number', 'configmgr_serial_number', 'type', 'owner', 'created_at'];
     }
 
     public function mount(): void
@@ -97,6 +92,14 @@ class ConfigmgrSerialMismatchesOverview extends Component
     private function sortAssets(Collection $assets): Collection
     {
         $column = $this->activeSortColumn();
+        if ($column === 'created_at') {
+            $byCreatedAt = fn (Asset $asset): int => $asset->created_at?->getTimestamp() ?? 0;
+
+            return ($this->activeSortDirection() === 'desc'
+                ? $assets->sortByDesc($byCreatedAt)
+                : $assets->sortBy($byCreatedAt))->values();
+        }
+
         $callback = function (Asset $asset) use ($column): string {
             return match ($column) {
                 'serial_number' => (string) $asset->serial_number,

@@ -94,7 +94,7 @@ new #[Layout('components.layouts.app')] #[Title('Archiv endgültig gelöschter A
                             <flux:table.cell>
                                 <div class="font-medium">{{ $archive->displayNameFromPayload() }}</div>
                             </flux:table.cell>
-                            <flux:table.cell class="font-mono text-sm">{{ $p['serial_number'] ?? '—' }}</flux:table.cell>
+                            @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $p['serial_number'] ?? ''])
                             <flux:table.cell class="font-mono text-sm">{{ filled($p['order_number'] ?? null) ? $p['order_number'] : '—' }}</flux:table.cell>
                             <flux:table.cell class="font-mono text-sm">{{ filled($p['itexia_id'] ?? null) ? $p['itexia_id'] : '—' }}</flux:table.cell>
                             <flux:table.cell>
