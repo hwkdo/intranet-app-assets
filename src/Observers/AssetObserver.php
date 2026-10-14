@@ -8,6 +8,7 @@ use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\D3InvoiceAnalysis;
+use Hwkdo\IntranetAppAssets\Services\AssetItexiaInventoryNoticeDispatcher;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditDiffBuilder;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Log;
 
 class AssetObserver
 {
+    public function __construct(
+        private AssetItexiaInventoryNoticeDispatcher $inventoryNotices,
+    ) {}
+
     /**
      * Felder, deren Änderungen im Verlauf protokolliert werden.
      *
@@ -51,10 +56,13 @@ class AssetObserver
     public function created(Asset $asset): void
     {
         $this->syncItexiaIdToLdapIfNeeded($asset);
+        $this->inventoryNotices->dispatchIfNeeded($asset, created: true);
     }
 
     public function updated(Asset $asset): void
     {
+        $this->inventoryNotices->dispatchIfNeeded($asset, created: false);
+
         $changes = $asset->getChanges();
         unset($changes['updated_at'], $changes['created_at']);
 

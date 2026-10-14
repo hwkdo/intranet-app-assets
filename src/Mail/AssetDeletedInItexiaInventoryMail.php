@@ -19,8 +19,10 @@ class AssetDeletedInItexiaInventoryMail extends Mailable implements ShouldQueue
         public string $typeName,
         public string $vendorName,
         public string $modelName,
+        public string $serialNumber,
         public string $itexiaId,
         public ?string $itexiaUuid,
+        public string $assetUrl,
     ) {}
 
     public function envelope(): Envelope

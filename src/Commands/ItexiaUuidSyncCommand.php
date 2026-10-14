@@ -2,6 +2,8 @@
 
 namespace Hwkdo\IntranetAppAssets\Commands;
 
+use Hwkdo\IntranetAppAssets\Enums\AssetItexiaInventoryNoticeKind;
+use Hwkdo\IntranetAppAssets\Jobs\NotifyAssetItexiaInventoryJob;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
@@ -162,6 +164,15 @@ class ItexiaUuidSyncCommand extends Command
                         'event' => AssetHistory::EventUpdated,
                         'user_id' => null,
                     ]);
+                    $invoiceNumber = trim((string) ($asset->invoice_number ?? ''));
+                    NotifyAssetItexiaInventoryJob::dispatch(
+                        (int) $asset->id,
+                        AssetItexiaInventoryNoticeKind::UuidLinked,
+                        null,
+                        null,
+                        null,
+                        $invoiceNumber !== '' ? $invoiceNumber : null,
+                    );
                     $updated++;
                     if ($verbose) {
                         $this->line("  Asset #{$asset->id} (Barcode: {$barcode}): UUID gespeichert.");

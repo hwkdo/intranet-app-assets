@@ -10,6 +10,7 @@ use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 
 class LegacyAssetImportService
 {
@@ -90,6 +91,21 @@ class LegacyAssetImportService
             return ['imported' => 0, 'skipped' => 0, 'selected' => 0];
         }
 
+        return AssetItexiaInventoryNotifyContext::suppress(function () use ($legacyService, $legacyAssets, $legacyIds): array {
+            return $this->importMissingByLegacyIdsUnsuppressed($legacyService, $legacyAssets, $legacyIds);
+        });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $legacyAssets
+     * @param  list<int>  $legacyIds
+     * @return array{imported: int, skipped: int, selected: int}
+     */
+    private function importMissingByLegacyIdsUnsuppressed(
+        IntranetLegacyService $legacyService,
+        array $legacyAssets,
+        array $legacyIds,
+    ): array {
         $this->syncAssetTypes($legacyService);
         $this->syncAssetVendors($legacyService);
 
@@ -132,6 +148,7 @@ class LegacyAssetImportService
             $vendorId = $vendorMap[$legacy['assetvendor_id'] ?? null] ?? null;
             if (! $typeId || ! $vendorId) {
                 $skipped++;
+
                 continue;
             }
 

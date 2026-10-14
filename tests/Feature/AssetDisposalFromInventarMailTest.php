@@ -9,6 +9,7 @@ use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
 use Hwkdo\IntranetAppAssets\Services\AssetDisposalFromInventarService;
 use Hwkdo\IntranetAppAssets\Services\AssetItexiaDeleteInventoryNotifier;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 use Hwkdo\SeventhingsLaravel\Models\Asset as ItexiaAsset;
 use Hwkdo\SeventhingsLaravel\SeventhingsLaravel;
 use Illuminate\Support\Facades\Mail;
@@ -32,7 +33,9 @@ it('sendet keine asset inventar mail bei anlagenabgang aus der inventar app', fu
     Mail::fake();
 
     $actor = User::factory()->create();
-    $asset = createAssetWithItexiaId('12345');
+    $asset = AssetItexiaInventoryNotifyContext::suppress(
+        fn (): Asset => createAssetWithItexiaId('12345'),
+    );
 
     app(AssetDisposalFromInventarService::class)->disposeFromInventarMeldung(
         $asset,
@@ -57,7 +60,9 @@ it('sendet asset inventar mail bei direktem loeschen mit itexia verknuepfung', f
     Mail::fake();
 
     $actor = User::factory()->create();
-    $asset = createAssetWithItexiaId('67890');
+    $asset = AssetItexiaInventoryNotifyContext::suppress(
+        fn (): Asset => createAssetWithItexiaId('67890'),
+    );
     $snapshot = [
         'type_name' => 'Laptop',
         'vendor_name' => 'Dell',
@@ -85,5 +90,8 @@ it('sendet asset inventar mail bei direktem loeschen mit itexia verknuepfung', f
         $snapshot,
     );
 
-    Mail::assertQueued(AssetDeletedInItexiaInventoryMail::class, 1);
+    Mail::assertQueued(AssetDeletedInItexiaInventoryMail::class, function (AssetDeletedInItexiaInventoryMail $mail) use ($asset): bool {
+        return $mail->assetUrl === route('apps.assets.show', $asset)
+            && $mail->serialNumber === $asset->serial_number;
+    });
 });

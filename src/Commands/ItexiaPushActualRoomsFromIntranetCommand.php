@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets\Commands;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Services\AssetItexiaRoomSearchHintResolver;
 use Hwkdo\IntranetAppAssets\SeventhingsMappingConfig;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 use Hwkdo\IntranetAppAssets\Support\ItexiaRoomHintMatcher;
 use Hwkdo\IntranetAppAssets\Support\SeventhingsMinuteApiBudget;
 use Hwkdo\SeventhingsLaravel\Client;
@@ -55,7 +56,7 @@ class ItexiaPushActualRoomsFromIntranetCommand extends Command
         }
 
         try {
-            return $this->runPush();
+            return AssetItexiaInventoryNotifyContext::suppress(fn (): int => $this->runPush());
         } finally {
             $lock?->release();
         }

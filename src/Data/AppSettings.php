@@ -58,7 +58,7 @@ class AppSettings extends BaseAppSettings implements HasAiSettings, HasDocumentP
             'schulung' => 'HWK-SCHULUNG',
         ],
 
-        #[Description('Kommagetrennte E-Mail-Adressen für Inventar-Hinweise, wenn ein Asset mit Itexia-ID gelöscht und in Seventhings gefunden wurde')]
+        #[Description('Kommagetrennte E-Mail-Adressen für Inventar-Hinweise: Asset mit Itexia-ID angelegt, Standort geändert (inkl. Übergabe/Rückgabe) oder gelöscht und in Seventhings gefunden')]
         public string $empfaengerInventarMails = 'asset@hwk-do.de',
 
         #[Description('Tage ab Asset-Anlage: automatische D3-Suche nach Rechnung anhand BEN; danach als „fehlende Rechnungsnr.“ markieren (1–365)')]

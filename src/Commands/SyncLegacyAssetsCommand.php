@@ -12,6 +12,7 @@ use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 use Illuminate\Console\Command;
 
 class SyncLegacyAssetsCommand extends Command
@@ -39,17 +40,19 @@ class SyncLegacyAssetsCommand extends Command
             $this->warn('DRY-RUN: Es werden keine Änderungen vorgenommen.');
         }
 
-        $this->syncAssetTypes($legacyService);
-        $this->syncAssetVendors($legacyService);
-        $legacyAssets = $this->syncAssets($legacyService);
-        $this->syncHandoversAndReturns($legacyService, $legacyAssets);
-        $this->syncAttachments($legacyService, $legacyAssets);
-        $this->syncAssetNotes($legacyService, $legacyAssets);
+        return AssetItexiaInventoryNotifyContext::suppress(function () use ($legacyService): int {
+            $this->syncAssetTypes($legacyService);
+            $this->syncAssetVendors($legacyService);
+            $legacyAssets = $this->syncAssets($legacyService);
+            $this->syncHandoversAndReturns($legacyService, $legacyAssets);
+            $this->syncAttachments($legacyService, $legacyAssets);
+            $this->syncAssetNotes($legacyService, $legacyAssets);
 
-        $this->newLine();
-        $this->info('Synchronisierung abgeschlossen.');
+            $this->newLine();
+            $this->info('Synchronisierung abgeschlossen.');
 
-        return self::SUCCESS;
+            return self::SUCCESS;
+        });
     }
 
     private function syncAssetTypes(IntranetLegacyService $legacyService): void

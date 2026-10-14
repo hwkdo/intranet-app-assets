@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Commands;
 
 use Hwkdo\IntranetAppAssets\Models\Asset;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 use Illuminate\Console\Command;
 
 class ClearStaleAssetLocationsCommand extends Command
@@ -16,6 +17,11 @@ class ClearStaleAssetLocationsCommand extends Command
     protected $description = 'Entfernt veraltete Standorte bei Assets mit Besitzer (user_id gesetzt, location noch befüllt).';
 
     public function handle(): int
+    {
+        return AssetItexiaInventoryNotifyContext::suppress(fn (): int => $this->clear());
+    }
+
+    private function clear(): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $limit = max(0, (int) $this->option('limit'));

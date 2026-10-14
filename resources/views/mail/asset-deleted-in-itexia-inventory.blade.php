@@ -16,9 +16,13 @@ Ein Asset mit Itexia-Verknüpfung wurde im Intranet **gelöscht** (Soft Delete).
 
 **Modell:** {{ $modelName !== '' ? $modelName : '—' }}
 
+**Seriennummer:** {{ $serialNumber !== '' ? $serialNumber : '—' }}
+
 **Itexia-ID (Barcode):** {{ $itexiaId }}
 
 **Itexia-UUID (Seventhings):** {{ $itexiaUuid ?? '—' }}
+
+<x-mail::button :url="$assetUrl">Asset im Intranet öffnen</x-mail::button>
 
 <x-mail::subcopy>
 Diese Nachricht wurde automatisch erzeugt, weil der Datensatz in Seventhings zum Zeitpunkt der Löschung noch existierte.

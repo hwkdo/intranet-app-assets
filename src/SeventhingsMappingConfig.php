@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppAssets;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\AssetVendor;
+use Hwkdo\IntranetAppAssets\Support\AssetItexiaInventoryNotifyContext;
 
 /**
  * Konfiguration der verfügbaren Attribute für das Seventhings-Mapping
@@ -39,6 +40,7 @@ class SeventhingsMappingConfig
             'geraeteart' => 'ger_teart_b9efdd60',
         ];
     }
+
     /**
      * Lokale Asset-Attribute (key => Anzeigelabel).
      *
@@ -218,6 +220,13 @@ class SeventhingsMappingConfig
      * Gibt true zurück wenn das Setzen unterstützt und durchgeführt wurde.
      */
     public static function setLocalValue(Asset $asset, string $localAttribute, mixed $value): bool
+    {
+        return AssetItexiaInventoryNotifyContext::suppress(
+            fn (): bool => self::setLocalValueUnsuppressed($asset, $localAttribute, $value),
+        );
+    }
+
+    private static function setLocalValueUnsuppressed(Asset $asset, string $localAttribute, mixed $value): bool
     {
         $value = self::normalizeValue($value);
         if ($value === '' && ! in_array($localAttribute, ['name', 'location', 'order_number', 'invoice_number'], true)) {
