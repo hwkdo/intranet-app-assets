@@ -1,5 +1,6 @@
 <?php
 
+use Flux\DateRange;
 use Hwkdo\IntranetAppAssets\Exports\AssetsTableExport;
 use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Models\Asset;
@@ -7,6 +8,7 @@ use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Services\AssetLocationDisplayResolver;
 use Hwkdo\IntranetAppAssets\Support\DmsLinkHelper;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -38,6 +40,19 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     #[Url(as: 'types')]
     public array $typeIds = [];
 
+    #[Url(as: 'angelegtVon')]
+    public ?string $createdFrom = null;
+
+    #[Url(as: 'angelegtBis')]
+    public ?string $createdTo = null;
+
+    public ?DateRange $createdAtRange = null;
+
+    public function mount(): void
+    {
+        $this->syncCreatedAtRangeFromUrl();
+    }
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -61,6 +76,61 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     public function updatedTypeIds(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedCreatedAtRange(mixed $value): void
+    {
+        if ($value instanceof DateRange && $value->hasStart() && $value->hasEnd()) {
+            $from = $value->start()->format('Y-m-d');
+            $to = $value->end()->format('Y-m-d');
+
+            if ($from > $to) {
+                [$from, $to] = [$to, $from];
+            }
+
+            $this->createdFrom = $from;
+            $this->createdTo = $to;
+        } else {
+            $this->createdFrom = null;
+            $this->createdTo = null;
+            $this->createdAtRange = null;
+        }
+
+        $this->resetPage();
+    }
+
+    private function syncCreatedAtRangeFromUrl(): void
+    {
+        $from = $this->normalizedDate($this->createdFrom);
+        $to = $this->normalizedDate($this->createdTo);
+
+        if ($from !== null && $to !== null && $from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $this->createdFrom = $from;
+        $this->createdTo = $to;
+
+        if ($from !== null && $to !== null) {
+            $this->createdAtRange = new DateRange($from, $to);
+
+            return;
+        }
+
+        $this->createdAtRange = null;
+    }
+
+    private function normalizedDate(?string $date): ?string
+    {
+        if ($date === null || trim($date) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', trim($date))->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -94,6 +164,8 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
     {
         $searchTerm = trim($this->search ?? '');
         $typeIds = $this->validatedTypeIdsForQuery();
+        $createdFrom = $this->normalizedDate($this->createdFrom);
+        $createdTo = $this->normalizedDate($this->createdTo);
 
         return $query
             ->when($searchTerm !== '', function ($q) use ($searchTerm) {
@@ -133,7 +205,9 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
             ->when($this->itexiaRoomFilter === 'without-room', fn ($q) => $q
                 ->whereNull('itexia_actual_room_id')
                 ->whereNull('itexia_target_room_id'))
-            ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds));
+            ->when($typeIds !== [], fn ($q) => $q->whereIn('asset_type_id', $typeIds))
+            ->when($createdFrom !== null, fn ($q) => $q->where('created_at', '>=', Carbon::parse($createdFrom)->startOfDay()))
+            ->when($createdTo !== null, fn ($q) => $q->where('created_at', '<=', Carbon::parse($createdTo)->endOfDay()));
     }
 
     #[Computed]
@@ -268,21 +342,32 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
                     @endforeach
                 </flux:pillbox>
-                <flux:select wire:model.live="itexiaFilter" placeholder="Itexia-Filter" class="w-52 shrink-0">
-                    <flux:select.option value="all">Alle Itexia-Geräte</flux:select.option>
+                <flux:select wire:model.live="itexiaFilter" placeholder="Itexia-Status" class="w-56 shrink-0">
+                    <flux:select.option value="all">Itexia-Status: Alle</flux:select.option>
                     <flux:select.option value="found">Gefunden in Itexia</flux:select.option>
                     <flux:select.option value="not-found">Nicht gefunden in Itexia</flux:select.option>
                 </flux:select>
-                <flux:select wire:model.live="invoiceOrderFilter" placeholder="Rechnung/Bestellung" class="w-52 shrink-0">
-                    <flux:select.option value="all">Alle</flux:select.option>
+                <flux:select wire:model.live="invoiceOrderFilter" placeholder="Rechnung/Bestellung" class="w-60 shrink-0">
+                    <flux:select.option value="all">Rechnung/Bestellung: Alle</flux:select.option>
                     <flux:select.option value="without">Ohne Rechnung/Bestellung</flux:select.option>
                     <flux:select.option value="with">Mit Rechnung/Bestellung</flux:select.option>
                 </flux:select>
                 <flux:select wire:model.live="itexiaRoomFilter" placeholder="Itexia-Raum" class="w-52 shrink-0">
-                    <flux:select.option value="all">Alle</flux:select.option>
+                    <flux:select.option value="all">Itexia-Raum: Alle</flux:select.option>
                     <flux:select.option value="with-room">Nur mit Raum</flux:select.option>
                     <flux:select.option value="without-room">Nur ohne Raum</flux:select.option>
                 </flux:select>
+                <flux:date-picker
+                    mode="range"
+                    wire:model.live="createdAtRange"
+                    placeholder="Angelegt…"
+                    clearable
+                    selectable-header
+                    max="today"
+                    with-presets
+                    presets="today yesterday last7Days last30Days thisMonth lastMonth thisYear custom"
+                    class="w-64 shrink-0"
+                />
             </div>
             <flux:dropdown position="bottom" align="end">
                 <flux:button variant="ghost" icon="arrow-down-tray" icon-trailing="chevron-down" wire:loading.attr="disabled">
