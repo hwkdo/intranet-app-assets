@@ -48,7 +48,7 @@ new #[Title('Assets - KI-Chat')] class extends Component
     }
 };
 ?>
-
+<div>
 <x-intranet-app-assets::assets-layout heading="KI-Chat" subheading="KI-Chat für Assets mit MCP-Server-Unterstützung">
     @if ($this->hasApiKey)
         @livewire('prism-chat', [
@@ -76,3 +76,4 @@ new #[Title('Assets - KI-Chat')] class extends Component
         </flux:card>
     @endif
 </x-intranet-app-assets::assets-layout>
+</div>

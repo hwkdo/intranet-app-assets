@@ -1,6 +1,5 @@
 <?php
 
-use Livewire\Volt\Volt;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
@@ -243,9 +242,3 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
         ->middleware(['can:manage-app-assets', 'ldap.password.confirm'])
         ->name('apps.assets.delete');
 });
-
-Route::middleware(['web', 'auth', 'can:manage-app-assets'])->group(function (): void {
-    Volt::route('apps/assets/admin/background-activities', 'apps.assets.admin.background-activities')
-        ->name('apps.assets.admin.background-activities');
-});
-
