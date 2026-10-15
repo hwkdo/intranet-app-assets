@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppAssets\Background;
 
 use Hwkdo\IntranetAppAssets\IntranetAppAssets;
+use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
+use Hwkdo\IntranetAppAssets\Jobs\NotifyAssetItexiaInventoryJob;
 use Hwkdo\IntranetAppAssets\Mail\AssetCreatedWithItexiaMail;
 use Hwkdo\IntranetAppAssets\Mail\AssetDeletedInItexiaInventoryMail;
 use Hwkdo\IntranetAppAssets\Mail\AssetItexiaInvoiceAddedMail;
@@ -171,6 +173,8 @@ final class AssetsBackgroundActivities
                 environments: $production,
                 sort: 100,
             ),
+            BackgroundActivityDefinition::queued(key: 'assets.d3-invoice-analysis', label: 'D3-Rechnungsanalyse', appIdentifier: $id, appName: $name, job: AnalyzeD3InvoiceJob::class, description: 'Wertet eine D3-Rechnung per KI aus.', sort: 110),
+            BackgroundActivityDefinition::queued(key: 'assets.itexia-inventory-notify', label: 'Itexia-Bestand melden', appIdentifier: $id, appName: $name, job: NotifyAssetItexiaInventoryJob::class, description: 'Meldet Bestandsänderungen an Itexia.', sort: 120),
             BackgroundActivityDefinition::mail(key: 'assets.mail-created', label: 'Mail: Asset angelegt', appIdentifier: $id, appName: $name, mailable: AssetCreatedWithItexiaMail::class, sort: 200),
             BackgroundActivityDefinition::mail(key: 'assets.mail-deleted', label: 'Mail: Asset in Itexia gelöscht', appIdentifier: $id, appName: $name, mailable: AssetDeletedInItexiaInventoryMail::class, sort: 210),
             BackgroundActivityDefinition::mail(key: 'assets.mail-invoice', label: 'Mail: Rechnung ergänzt', appIdentifier: $id, appName: $name, mailable: AssetItexiaInvoiceAddedMail::class, sort: 220),
