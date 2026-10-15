@@ -41,11 +41,11 @@ use Hwkdo\IntranetAppAssets\Services\LocalOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Support\MsGraphIntuneDeviceLookup;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphIntuneServiceInterface;
 use Hwkdo\SeventhingsLaravel\Events\ItexiaAssetActualRoomUpdated;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Laravel\Ai\AiManager;
 use Livewire\Livewire;
+use Livewire\Volt\Volt;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -150,6 +150,10 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
     {
         parent::boot();
 
+        $this->app->booted(function (): void {
+            Volt::mount(__DIR__.'/../resources/views/livewire');
+        });
+
         Asset::observe(AssetObserver::class);
         Asset::observe(AssetOwnerHandoverObserver::class);
         Asset::observe(AssetOwnerLocationObserver::class);
@@ -188,10 +192,6 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
             $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
             $this->loadRoutesFrom(__DIR__.'/../routes/ai.php');
             $this->loadRoutesFrom(__DIR__.'/../routes/channels.php');
-        });
-
-        $this->app->resolving(Schedule::class, function () {
-            require __DIR__.'/../routes/console.php';
         });
 
         $this->configureTypesenseIndexSettings();

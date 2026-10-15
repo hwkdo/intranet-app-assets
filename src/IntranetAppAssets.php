@@ -2,6 +2,8 @@
 
 namespace Hwkdo\IntranetAppAssets;
 
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesBackgroundActivitiesInterface;
+use Hwkdo\IntranetAppAssets\Background\AssetsBackgroundActivities;
 use Hwkdo\IntranetAppAssets\Dashboard\AssetsDashboardWidgetProvider;
 use Hwkdo\IntranetAppAssets\Mcp\Servers\AssetsServer;
 use Hwkdo\IntranetAppAssets\Search\AssetsSearchSource;
@@ -18,7 +20,7 @@ use Hwkdo\IntranetAppBase\Interfaces\ProvidesTasksInterface;
 use Hwkdo\IntranetAppBase\Interfaces\SearchSourceInterface;
 use Illuminate\Support\Collection;
 
-class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface, ProvidesSearchInterface
+class IntranetAppAssets implements IntranetAppInterface, ProvidesBackgroundActivitiesInterface, ProvidesTasksInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface, ProvidesSearchInterface
 {
     public static function app_name(): string
     {
@@ -105,4 +107,11 @@ class IntranetAppAssets implements IntranetAppInterface, ProvidesTasksInterface,
             AssetsSearchSource::class,
         ];
     }
+
+    public static function backgroundActivities(): array
+    {
+        return AssetsBackgroundActivities::definitions();
+    }
+
+
 }
