@@ -119,3 +119,29 @@ it('hebt den unterschied hervor und uebernimmt die sccm seriennummer', function 
     expect($asset->fresh()->serial_number)->toBe('YLT0N1V8')
         ->and($asset->fresh()->configmgrSerialMismatches())->toBeFalse();
 });
+
+it('zeigt in der falsche-seriennummern-tabelle die volle seriennummer ohne kuerzung', function (): void {
+    $admin = User::factory()->create(['active' => true]);
+    $admin->givePermissionTo(['see-app-assets', 'manage-app-assets']);
+
+    $type = AssetType::query()->create(['name' => 'full-sn-type-'.uniqid('', true)]);
+    $vendor = AssetVendor::query()->create(['name' => 'full-sn-vendor-'.uniqid('', true)]);
+    $suffix = uniqid('', true);
+    $assetSerial = 'PREFIXLONG-'.$suffix.'-ASSETTAIL';
+    $sccmSerial = 'PREFIXLONG-'.$suffix.'-SCCMTAIL';
+
+    Asset::query()->create([
+        'serial_number' => $assetSerial,
+        'configmgr_serial_number' => $sccmSerial,
+        'name' => 'Voll-SN-'.$suffix,
+        'model' => 'Voll-SN-Modell',
+        'asset_type_id' => $type->id,
+        'asset_vendor_id' => $vendor->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(ConfigmgrSerialMismatchesOverview::class)
+        ->assertSee($assetSerial)
+        ->assertSee($sccmSerial)
+        ->assertSee('PREFIXLONG-'.$suffix);
+});
