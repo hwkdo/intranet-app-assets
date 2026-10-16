@@ -70,6 +70,24 @@ class Asset extends Model implements HasMedia
         ];
     }
 
+    /**
+     * Prüfzeitstempel der Itexia-Syncs stehen nicht im Index.
+     */
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        if ($this->wasRecentlyCreated) {
+            return true;
+        }
+
+        $ignored = [
+            'itexia_check_at',
+            'itexia_rooms_synced_at',
+            'updated_at',
+        ];
+
+        return array_diff(array_keys($this->getChanges()), $ignored) !== [];
+    }
+
     protected function casts(): array
     {
         return [
