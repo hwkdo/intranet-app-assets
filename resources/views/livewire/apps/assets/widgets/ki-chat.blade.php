@@ -64,6 +64,12 @@ new class extends Component
                 'baseUrl' => $this->baseUrl,
                 'useMcpTools' => true,
                 'embedded' => true,
+                'suggestions' => [
+                    'Welche Assets sind mir aktuell zugeordnet?',
+                    'Suche alle Notebooks von Hersteller Lenovo.',
+                    'Prüfe, ob die Bestellnummer gültig ist und lege daraus ein Asset an.',
+                    'Analysiere die Rechnung zu einem Asset.',
+                ],
             ], key('assets-dashboard-ki-chat'))
         </div>
     @else

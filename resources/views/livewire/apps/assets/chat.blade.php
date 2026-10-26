@@ -57,6 +57,12 @@ new #[Title('Assets - KI-Chat')] class extends Component
             'apiKey' => $this->apiKey,
             'baseUrl' => $this->baseUrl,
             'useMcpTools' => true,
+            'suggestions' => [
+                'Welche Assets sind mir aktuell zugeordnet?',
+                'Suche alle Notebooks von Hersteller Lenovo.',
+                'Prüfe, ob die Bestellnummer gültig ist und lege daraus ein Asset an.',
+                'Analysiere die Rechnung zu einem Asset.',
+            ],
         ])
     @else
         <flux:card class="glass-card">
