@@ -38,7 +38,7 @@ new #[Title('Assets - KI-Chat')] class extends Component
     #[Computed]
     public function baseUrl(): string
     {
-        return (string) config('openwebui-api-laravel.base_api_url_ollama', 'https://chat.ai.hwk-do.com/api');
+        return (string) config('openwebui-api-laravel.base_api_url', 'https://chat.ai.hwk-do.com/api');
     }
 
     #[Computed]
