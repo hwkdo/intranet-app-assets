@@ -6,6 +6,7 @@ namespace Hwkdo\IntranetAppAssets\Data;
 
 use Hwkdo\IntranetAppAssets\Enums\BenPruefungsQuelle;
 use Hwkdo\IntranetAppAssets\Enums\D3InvoiceVisionLlmProvider;
+use Hwkdo\IntranetAppAssets\Enums\InvoiceMailMailboxAction;
 use Hwkdo\IntranetAppBase\Contracts\HasAiSettings;
 use Hwkdo\IntranetAppBase\Contracts\HasDocumentParseSettings;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
@@ -114,6 +115,30 @@ class AppSettings extends BaseAppSettings implements HasAiSettings, HasDocumentP
 
         #[Description('Maximaler Planungshorizont für Verleih-Rückgabe-Termine (Tage)')]
         public int $loanMaxDays = 90,
+
+        #[Description('Rechnungs-Mails: überwachtes Sammelpostfach (UPN)')]
+        public string $invoiceMailMailboxUpn = 'rechnungen@hwk-do.de',
+
+        #[Description('Rechnungs-Mails: Report-Modus (kein automatischer D3-Upload)')]
+        public bool $invoiceMailReportMode = true,
+
+        #[Description('Rechnungs-Mails: Schwelle der JEV-Wahrscheinlichkeit für „relevant“ (0–1)')]
+        public float $invoiceMailRelevanceThreshold = 0.85,
+
+        #[Description('Rechnungs-Mails: Aktion im Postfach nach der Verarbeitung')]
+        public InvoiceMailMailboxAction $invoiceMailMailboxAction = InvoiceMailMailboxAction::None,
+
+        #[Description('Rechnungs-Mails: Zielordner-ID für „In Ordner verschieben“')]
+        public string $invoiceMailMoveFolderId = '',
+
+        #[Description('Rechnungs-Mails: Mindest-Konfidenz für automatischen D3-Upload (nur ohne Report-Modus)')]
+        public float $invoiceMailAutoUploadMinConfidence = 0.9,
+
+        #[Description('Rechnungs-Mails: D3-Belegtyp (Feld 82) beim Upload')]
+        public string $invoiceMailBelegtypDefault = 'Rechnung',
+
+        #[Description('Rechnungs-Mails: Absender (Adresse oder @domain), die immer irrelevant sind')]
+        public array $invoiceMailSenderBlocklist = [],
     ) {}
 
     public function textProviderOverride(): ?AiProvider

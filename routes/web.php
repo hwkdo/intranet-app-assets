@@ -1,5 +1,6 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Http\Controllers\InvoiceMailAttachmentDownloadController;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
@@ -137,6 +138,20 @@ Route::middleware(['web', 'auth', 'can:see-app-assets'])->group(function () {
     Route::livewire('apps/assets/rechnungen', 'intranet-app-assets::apps.assets.rechnungen-overview')
         ->middleware('can:manage-app-assets')
         ->name('apps.assets.rechnungen');
+
+    Route::livewire('apps/assets/rechnungs-mails', 'intranet-app-assets::apps.assets.invoice-mails.index')
+        ->middleware('can:manage-app-assets')
+        ->name('apps.assets.invoice-mails');
+
+    Route::livewire('apps/assets/rechnungs-mails/{invoiceMail}', 'intranet-app-assets::apps.assets.invoice-mails.show')
+        ->middleware('can:manage-app-assets')
+        ->whereNumber('invoiceMail')
+        ->name('apps.assets.invoice-mails.show');
+
+    Route::get('apps/assets/rechnungs-mails/anhang/{invoiceMailAttachment}', InvoiceMailAttachmentDownloadController::class)
+        ->middleware('can:manage-app-assets')
+        ->whereNumber('invoiceMailAttachment')
+        ->name('apps.assets.invoice-mails.attachment');
 
     Route::livewire('apps/assets/deleted', 'intranet-app-assets::apps.assets.deleted')
         ->middleware('can:manage-app-assets')

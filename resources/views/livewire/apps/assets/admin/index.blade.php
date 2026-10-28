@@ -74,6 +74,14 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
                         'd3InvoiceVisionModelLangdock',
                         'openWebUiModel',
                         'openWebUiCollectionIds',
+                        'invoiceMailMailboxUpn',
+                        'invoiceMailReportMode',
+                        'invoiceMailRelevanceThreshold',
+                        'invoiceMailMailboxAction',
+                        'invoiceMailMoveFolderId',
+                        'invoiceMailAutoUploadMinConfidence',
+                        'invoiceMailBelegtypDefault',
+                        'invoiceMailSenderBlocklist',
                     ],
                 ])
             </div>

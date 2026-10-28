@@ -7,6 +7,7 @@ namespace Hwkdo\IntranetAppAssets\Support;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Models\Handover;
+use Hwkdo\IntranetAppAssets\Models\InvoiceMail;
 
 final class AssetNavBadgeCounts
 {
@@ -15,6 +16,11 @@ final class AssetNavBadgeCounts
         return Asset::query()
             ->where('is_clarification', true)
             ->count();
+    }
+
+    public static function invoiceMailAttentionCount(): int
+    {
+        return InvoiceMail::query()->needsAttention()->count();
     }
 
     public static function missingCount(): int

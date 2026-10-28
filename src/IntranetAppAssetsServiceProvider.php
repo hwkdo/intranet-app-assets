@@ -17,6 +17,7 @@ use Hwkdo\IntranetAppAssets\Commands\ReportConflictingHandoverActionsCommand;
 use Hwkdo\IntranetAppAssets\Commands\SetDomainConnectionCommand;
 use Hwkdo\IntranetAppAssets\Commands\SyncLegacyAssetsCommand;
 use Hwkdo\IntranetAppAssets\Contracts\IntuneDeviceLookupInterface;
+use Hwkdo\IntranetAppAssets\Contracts\InvoiceMailboxClientInterface;
 use Hwkdo\IntranetAppAssets\Contracts\LangdockOpenAiChatPort;
 use Hwkdo\IntranetAppAssets\Contracts\LdapPasswordVerifierInterface;
 use Hwkdo\IntranetAppAssets\Contracts\OrderNumberValidationServiceInterface;
@@ -34,6 +35,7 @@ use Hwkdo\IntranetAppAssets\Observers\AssetOwnerLocationObserver;
 use Hwkdo\IntranetAppAssets\Services\CombinedOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
+use Hwkdo\IntranetAppAssets\Services\InvoiceMail\MsGraphInvoiceMailboxClient;
 use Hwkdo\IntranetAppAssets\Services\LangdockD3InvoiceVisionLlmClient;
 use Hwkdo\IntranetAppAssets\Services\LdapRecordPasswordVerifier;
 use Hwkdo\IntranetAppAssets\Services\LegacyOrderNumberValidationService;
@@ -70,6 +72,10 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         $this->app->singleton(LangdockD3InvoiceVisionLlmClient::class);
         $this->app->singleton(D3InvoiceVisionLlmClientFactory::class);
         $this->app->singleton(D3InvoiceVisionAnalysisService::class);
+
+        if (! $this->app->bound(InvoiceMailboxClientInterface::class)) {
+            $this->app->bind(InvoiceMailboxClientInterface::class, MsGraphInvoiceMailboxClient::class);
+        }
 
         /*
          * Langdock-Port: Host-App bindet üblicherweise in AppServiceProvider.
@@ -134,6 +140,7 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
                 Commands\SetItexiaIdsCommand::class,
                 Commands\InvoiceAutoResolveCommand::class,
                 Commands\D3InvoiceAnalysesBackfillCommand::class,
+                Commands\InvoiceMailsStaleCheckCommand::class,
                 Commands\ProcessScheduledReturnRemindersCommand::class,
                 Commands\ProcessScheduledOwnerAssignmentsCommand::class,
                 BackfillLegacyCreatedAtCommand::class,

@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppAssets\Background;
 
+use Hwkdo\IntranetAppAssets\Commands\InvoiceMailsStaleCheckCommand;
 use Hwkdo\IntranetAppAssets\IntranetAppAssets;
 use Hwkdo\IntranetAppAssets\Jobs\AnalyzeD3InvoiceJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\AnalyzeInvoiceMailAttachmentJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\ApplyInvoiceMailMailboxActionJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\ClassifyInvoiceMailJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\ImportInvoiceMailsJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\IngestInvoiceMailJob;
+use Hwkdo\IntranetAppAssets\Jobs\InvoiceMail\UploadInvoiceMailToD3Job;
 use Hwkdo\IntranetAppAssets\Jobs\NotifyAssetItexiaInventoryJob;
 use Hwkdo\IntranetAppAssets\Mail\AssetCreatedWithItexiaMail;
 use Hwkdo\IntranetAppAssets\Mail\AssetDeletedInItexiaInventoryMail;
@@ -14,6 +21,7 @@ use Hwkdo\IntranetAppAssets\Mail\AssetItexiaLocationChangedMail;
 use Hwkdo\IntranetAppAssets\Mail\AssetItexiaUuidLinkedMail;
 use Hwkdo\IntranetAppBase\Data\BackgroundActivityDefinition;
 use Hwkdo\IntranetAppBase\Data\BackgroundActivityFrequency;
+use Hwkdo\IntranetAppBase\Data\BackgroundActivityParameter;
 use Hwkdo\IntranetAppBase\Enums\BackgroundActivityCadence;
 
 final class AssetsBackgroundActivities
@@ -173,6 +181,46 @@ final class AssetsBackgroundActivities
                 environments: $production,
                 sort: 100,
             ),
+            BackgroundActivityDefinition::scheduled(
+                key: InvoiceMailsStaleCheckCommand::ActivityKey,
+                label: 'Rechnungs-Mails: hängende Verarbeitung',
+                appIdentifier: $id,
+                appName: $name,
+                command: 'intranet-app-assets:invoice-mails-stale-check',
+                frequency: BackgroundActivityFrequency::everyMinutes(15, 4),
+                description: 'Stößt hängende Rechnungs-Mails neu an und markiert sie nach mehreren Versuchen als fehlgeschlagen.',
+                allowedCadences: $all,
+                minEvery: 5,
+                maxEvery: 60,
+                allowsOffset: true,
+                withoutOverlappingMinutes: 15,
+                environments: $production,
+                parameters: [
+                    new BackgroundActivityParameter(
+                        key: 'after_minutes',
+                        label: 'Hängt nach Minuten',
+                        type: 'int',
+                        default: 30,
+                        min: 5,
+                        max: 1440,
+                    ),
+                    new BackgroundActivityParameter(
+                        key: 'max_retries',
+                        label: 'Neustarts bis „Fehlgeschlagen“',
+                        type: 'int',
+                        default: 2,
+                        min: 0,
+                        max: 10,
+                    ),
+                ],
+                sort: 105,
+            ),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-ingest', label: 'Rechnungs-Mail übernehmen', appIdentifier: $id, appName: $name, job: IngestInvoiceMailJob::class, description: 'Holt eine neue Mail aus dem Rechnungs-Postfach.', sort: 130),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-classify', label: 'Rechnungs-Mail klassifizieren', appIdentifier: $id, appName: $name, job: ClassifyInvoiceMailJob::class, description: 'Prüft per JEV, ob die Mail ein Beleg ist.', sort: 131),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-analyze', label: 'Rechnungs-Mail: Anhang analysieren', appIdentifier: $id, appName: $name, job: AnalyzeInvoiceMailAttachmentJob::class, description: 'Ermittelt Empfänger und Belegdaten eines Anhangs.', sort: 132),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-d3-upload', label: 'Rechnungs-Mail: D3-Upload', appIdentifier: $id, appName: $name, job: UploadInvoiceMailToD3Job::class, description: 'Lädt einen Anhang als Zahlungsbeleg nach D3.', sort: 133),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-mailbox-action', label: 'Rechnungs-Mail: Postfach-Aktion', appIdentifier: $id, appName: $name, job: ApplyInvoiceMailMailboxActionJob::class, description: 'Markiert die Mail als gelesen oder verschiebt sie.', sort: 134),
+            BackgroundActivityDefinition::queued(key: 'assets.invoice-mail-import', label: 'Rechnungs-Mails importieren', appIdentifier: $id, appName: $name, job: ImportInvoiceMailsJob::class, description: 'Einmaliger Import eines Datumsbereichs.', sort: 135),
             BackgroundActivityDefinition::queued(key: 'assets.d3-invoice-analysis', label: 'D3-Rechnungsanalyse', appIdentifier: $id, appName: $name, job: AnalyzeD3InvoiceJob::class, description: 'Wertet eine D3-Rechnung per KI aus.', sort: 110),
             BackgroundActivityDefinition::queued(key: 'assets.itexia-inventory-notify', label: 'Itexia-Bestand melden', appIdentifier: $id, appName: $name, job: NotifyAssetItexiaInventoryJob::class, description: 'Meldet Bestandsänderungen an Itexia.', sort: 120),
             BackgroundActivityDefinition::mail(key: 'assets.mail-created', label: 'Mail: Asset angelegt', appIdentifier: $id, appName: $name, mailable: AssetCreatedWithItexiaMail::class, sort: 200),

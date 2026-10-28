@@ -15,6 +15,7 @@
     $rejectedHandoversNavBadge = null;
     $zentraleNavBadge = null;
     $configmgrSerialMismatchNavBadge = null;
+    $invoiceMailNavBadge = null;
 
     if (auth()->user()?->can('manage-app-assets')) {
         $clarificationCount = AssetNavBadgeCounts::clarificationCount();
@@ -22,6 +23,11 @@
         $pendingReturnsCount = AssetNavBadgeCounts::pendingReturnsCount();
         $openHandoversCount = AssetNavBadgeCounts::openHandoversCount();
         $rejectedHandoversCount = AssetNavBadgeCounts::rejectedHandoversCount();
+        $invoiceMailAttentionCount = AssetNavBadgeCounts::invoiceMailAttentionCount();
+
+        if ($invoiceMailAttentionCount > 0) {
+            $invoiceMailNavBadge = $invoiceMailAttentionCount;
+        }
 
         if ($clarificationCount > 0) {
             $clarificationNavBadge = $clarificationCount;
@@ -73,6 +79,7 @@
         ['type' => 'separator', 'label' => 'Rechnungen', 'permission' => 'manage-app-assets'],
         ['label' => 'Fehlende Rechnung', 'href' => route('apps.assets.fehlende-rechnung'), 'icon' => 'document-text', 'description' => 'Assets mit fehlender Rechnungsnummer (manuell oder nach Ende der automatischen BEN-Suche)', 'buttonText' => 'Fehlende Rechnung anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
         ['label' => 'Rechnungen Analyse', 'href' => route('apps.assets.rechnungen'), 'icon' => 'banknotes', 'description' => 'D3-Rechnungsanalysen (Vision-Cache) einsehen und ausstehende Analysen starten', 'buttonText' => 'Rechnungen Analyse anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
+        ['label' => 'Rechnungs-Mails', 'href' => route('apps.assets.invoice-mails'), 'icon' => 'inbox-arrow-down', 'description' => 'Mails aus dem Rechnungs-Postfach: Relevanz, ermittelter Empfänger und D3-Upload', 'buttonText' => 'Rechnungs-Mails anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $invoiceMailNavBadge, 'badgeColor' => 'amber'],
         ['type' => 'separator', 'label' => 'Admin', 'permission' => 'manage-app-assets'],
         ['label' => 'Falsche Seriennummern', 'href' => route('apps.assets.admin.configmgr-serial-mismatches'), 'icon' => 'exclamation-circle', 'description' => 'Assets, deren Seriennummer von der SCCM-BIOS-Seriennummer abweicht', 'buttonText' => 'Falsche Seriennummern anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $configmgrSerialMismatchNavBadge, 'badgeColor' => 'red'],
         ['label' => 'Yubikeys', 'href' => route('apps.assets.yubikeys'), 'icon' => 'key', 'description' => 'Aktive Benutzer und zugewiesene Yubikeys', 'buttonText' => 'Yubikeys anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
