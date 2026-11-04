@@ -89,8 +89,17 @@ class AppSettings extends BaseAppSettings implements HasAiSettings, HasDocumentP
         #[Description('KI-Bild-Provider überschreiben (leer = Intranet-Base-Default)')]
         public ?AiProvider $aiImageProviderOverride = null,
 
-        #[Description('KI-Bild-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
+        #[Description('KI-Generate-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
         public ?string $aiImageModelOverride = null,
+
+        #[Description('KI-Edit-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
+        public ?string $aiImageEditModelOverride = null,
+
+        #[Description('KI-Klassifikation-Provider überschreiben (leer = Intranet-Base-Default)')]
+        public ?AiProvider $aiClassificationProviderOverride = null,
+
+        #[Description('KI-Klassifikation-Modell überschreiben (leer = Base- bzw. Provider-Default)')]
+        public ?string $aiClassificationModelOverride = null,
 
         #[Description('Document-Parsing-Motor überschreiben (leer = Intranet-Base-Default)')]
         public ?DocumentParseEngine $documentParseEngineOverride = null,
@@ -159,6 +168,21 @@ class AppSettings extends BaseAppSettings implements HasAiSettings, HasDocumentP
     public function imageModelOverride(): ?string
     {
         return $this->normalizedOverrideString($this->aiImageModelOverride);
+    }
+
+    public function imageEditModelOverride(): ?string
+    {
+        return $this->normalizedOverrideString($this->aiImageEditModelOverride);
+    }
+
+    public function classificationProviderOverride(): ?AiProvider
+    {
+        return $this->aiClassificationProviderOverride;
+    }
+
+    public function classificationModelOverride(): ?string
+    {
+        return $this->normalizedOverrideString($this->aiClassificationModelOverride);
     }
 
     private function normalizedOverrideString(?string $value): ?string
