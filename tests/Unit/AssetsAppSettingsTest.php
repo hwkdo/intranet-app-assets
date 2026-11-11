@@ -26,12 +26,16 @@ it('uses explicit ai overrides when configured', function (): void {
         aiTextModelOverride: 'gpt-5-mini',
         aiImageProviderOverride: AiProvider::OpenAi,
         aiImageModelOverride: 'dall-e-3',
+        aiImageEditProviderOverride: AiProvider::ComfyUi,
+        aiImageEditModelOverride: 'qwen-edit',
     );
 
     expect($settings->textProviderOverride())->toBe(AiProvider::Langdock)
         ->and($settings->textModelOverride())->toBe('gpt-5-mini')
         ->and($settings->imageProviderOverride())->toBe(AiProvider::OpenAi)
-        ->and($settings->imageModelOverride())->toBe('dall-e-3');
+        ->and($settings->imageModelOverride())->toBe('dall-e-3')
+        ->and($settings->imageEditProviderOverride())->toBe(AiProvider::ComfyUi)
+        ->and($settings->imageEditModelOverride())->toBe('qwen-edit');
 });
 
 it('does not map d3 vision model fields to gateway text model override', function (): void {

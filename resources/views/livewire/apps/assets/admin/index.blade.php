@@ -67,6 +67,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
                         'aiTextModelOverride',
                         'aiImageProviderOverride',
                         'aiImageModelOverride',
+                        'aiImageEditProviderOverride',
                         'aiImageEditModelOverride',
                         'aiClassificationProviderOverride',
                         'aiClassificationModelOverride',
