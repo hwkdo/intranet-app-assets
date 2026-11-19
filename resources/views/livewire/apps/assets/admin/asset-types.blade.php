@@ -102,14 +102,14 @@ new class extends Component {
 
 <div class="space-y-4">
     @if($showForm)
-        <flux:card class="space-y-4">
+        <section class="glass-card overflow-hidden space-y-4">
             <flux:heading size="lg">
                 {{ $editingId ? 'Typ bearbeiten' : 'Neuer Typ' }}
             </flux:heading>
 
-            <form wire:submit="save" class="space-y-4">
+            <form wire:submit="save" class="hwk-fields glass-card space-y-4 p-5 sm:p-6" style="overflow: visible">
                 <flux:field>
-                    <flux:label>Name <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                    <flux:label>Name <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                     <flux:input wire:model="name" placeholder="z.B. Laptop" autofocus />
                     <flux:error name="name" />
                 </flux:field>
@@ -133,7 +133,7 @@ new class extends Component {
                     <flux:button wire:click="cancel" variant="ghost" size="sm">Abbrechen</flux:button>
                 </div>
             </form>
-        </flux:card>
+        </section>
     @else
         <div class="flex justify-end">
             <flux:button wire:click="create" variant="primary" icon="plus" size="sm">
@@ -142,7 +142,8 @@ new class extends Component {
         </div>
     @endif
 
-    <flux:table>
+    <div class="glass-card overflow-hidden">
+<flux:table>
         <flux:table.columns>
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>Domain-Objekt</flux:table.column>
@@ -157,23 +158,23 @@ new class extends Component {
                     <flux:table.cell class="font-medium">{{ $type->name }}</flux:table.cell>
                     <flux:table.cell>
                         @if($type->is_domain_object)
-                            <flux:badge color="blue" size="sm" icon="check">Ja</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="blue" size="sm" icon="check">Ja</x-intranet-app-assets::hwk-badge>
                         @else
-                            <flux:text class="text-zinc-400">Nein</flux:text>
+                            <flux:text class="text-slate-600 dark:text-white/70">Nein</flux:text>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
                         @if($type->is_intune_object)
-                            <flux:badge color="sky" size="sm" icon="check">Ja</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="sky" size="sm" icon="check">Ja</x-intranet-app-assets::hwk-badge>
                         @else
-                            <flux:text class="text-zinc-400">Nein</flux:text>
+                            <flux:text class="text-slate-600 dark:text-white/70">Nein</flux:text>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
                         @if($type->itexia_creation_allowed)
-                            <flux:badge color="green" size="sm" icon="check">Ja</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="green" size="sm" icon="check">Ja</x-intranet-app-assets::hwk-badge>
                         @else
-                            <flux:text class="text-zinc-400">Nein</flux:text>
+                            <flux:text class="text-slate-600 dark:text-white/70">Nein</flux:text>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>{{ $type->assets_count ?? $type->assets()->count() }}</flux:table.cell>
@@ -193,11 +194,12 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-zinc-500 py-6">
-                        Noch keine Typen vorhanden.
-                    </flux:table.cell>
+                    <flux:table.cell colspan="6" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Noch keine Typen vorhanden." />
+</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
     </flux:table>
+</div>
 </div>

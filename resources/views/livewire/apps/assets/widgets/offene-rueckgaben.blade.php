@@ -68,7 +68,7 @@ new class extends Component
 ?>
 
 @placeholder
-    <flux:card class="h-full">
+    <section class="glass-card overflow-hidden h-full">
         <div class="mb-3 space-y-2">
             <flux:skeleton class="h-4 w-44" />
             <flux:skeleton class="h-3 w-64" />
@@ -78,7 +78,7 @@ new class extends Component
             <flux:skeleton class="h-14 w-full rounded-md" />
             <flux:skeleton class="h-14 w-full rounded-md" />
         </div>
-    </flux:card>
+    </section>
 @endplaceholder
 
 <x-intranet-app-base::dashboard.widget-card
@@ -95,32 +95,32 @@ new class extends Component
         <a
             href="{{ route('apps.assets.admin.return.complete', $return) }}"
             wire:navigate
-            class="group block cursor-pointer rounded-md border border-zinc-200 px-3 py-2 transition-colors duration-150 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/40 dark:hover:bg-white/15"
+            class="group block cursor-pointer rounded-md border border-[#d0e3f9] px-3 py-2 transition-colors duration-150 hover:bg-[#d0e3f9]/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/15"
         >
             <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <div class="font-medium group-hover:text-zinc-900 dark:group-hover:text-white">
+                    <div class="font-medium group-hover:text-[#073070] dark:group-hover:text-white">
                         {{ $asset?->display_name ?? 'Unbekanntes Asset' }}
                     </div>
-                    <div class="text-xs text-zinc-500 dark:text-white">
+                    <div class="text-xs text-slate-600 dark:text-white">
                         {{ $asset?->serial_number ?? '—' }}
                         · von {{ $fromName }}
                     </div>
                     @if($return->isScheduled())
-                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-300">
+                        <div class="mt-0.5 text-xs text-slate-600 dark:text-white/70">
                             Termin {{ AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) ?? '—' }}
                         </div>
                     @endif
                 </div>
                 @if($badge)
-                    <flux:badge size="sm" :color="$badge['color']" class="shrink-0">{{ $badge['label'] }}</flux:badge>
+                    <x-intranet-app-assets::hwk-badge size="sm" :color="$badge['color']" class="shrink-0">{{ $badge['label'] }}</x-intranet-app-assets::hwk-badge>
                 @elseif(! $return->isScheduled())
-                    <flux:badge size="sm" color="amber" class="shrink-0">Sofort</flux:badge>
+                    <x-intranet-app-assets::hwk-badge size="sm" color="amber" class="shrink-0">Sofort</x-intranet-app-assets::hwk-badge>
                 @endif
             </div>
         </a>
     @empty
-        <flux:text class="text-zinc-500 dark:text-white">Keine offenen Rückgaben vorhanden.</flux:text>
+        <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine offenen Rückgaben vorhanden." />
     @endforelse
 
     @if($this->hasMore)

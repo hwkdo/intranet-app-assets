@@ -122,7 +122,7 @@ new #[Layout('components.layouts.app')] #[Title('SCCM-Abgleich')] class extends 
 <div>
 <x-intranet-app-assets::assets-layout heading="SCCM-Abgleich" subheading="Vergleich: Computer in Active Directory (OUs) vs. Einträge in ConfigMgr/SCCM pro Domäne">
     <div class="space-y-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="glass-card p-4" style="--glass-opacity: 0.92; overflow: visible">
             <flux:select wire:model.live="connection" variant="listbox" label="Domäne" class="max-w-xs">
                 <flux:select.option value="default">{{ config('intranet-app-assets.domain_connections.default', 'Verwaltung') }}</flux:select.option>
                 <flux:select.option value="schulung">{{ config('intranet-app-assets.domain_connections.schulung', 'Schulung') }}</flux:select.option>
@@ -150,7 +150,7 @@ new #[Layout('components.layouts.app')] #[Title('SCCM-Abgleich')] class extends 
                 <flux:callout.text>SCCM-Datenbank nicht erreichbar oder Abfrage fehlgeschlagen: {{ $this->sccmData['error'] }}</flux:callout.text>
             </flux:callout>
         @else
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4">In AD (OUs), aber nicht in SCCM</flux:heading>
                 <flux:text class="mb-4">
                     Diese Hostnamen wurden in den konfigurierten Active-Directory-OUs für <strong>{{ $this->connectionLabel }}</strong> gefunden, kommen aber unter der zugeordneten SCCM-Ressourcendomäne nicht in <code>v_R_System</code> vor (Abgleich case-insensitive).
@@ -168,14 +168,14 @@ new #[Layout('components.layouts.app')] #[Title('SCCM-Abgleich')] class extends 
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="2" class="text-center text-zinc-500 py-6">
-                                    Keine Abweichungen – alle gefundenen AD-Computer erscheinen in SCCM (für die gewählte Ressourcendomäne).
-                                </flux:table.cell>
+                                <flux:table.cell colspan="2" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Abweichungen – alle gefundenen AD-Computer erscheinen in SCCM (für die gewählte Ressourcendomäne)." />
+</flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
-            </flux:card>
+            </section>
         @endif
     </div>
 </x-intranet-app-assets::assets-layout>

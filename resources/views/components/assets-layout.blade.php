@@ -6,134 +6,235 @@
 ])
 
 @php
-    use Hwkdo\IntranetAppAssets\Support\AssetNavBadgeCounts;
-
-    $clarificationNavBadge = null;
-    $missingNavBadge = null;
-    $pendingReturnsNavBadge = null;
-    $openHandoversNavBadge = null;
-    $rejectedHandoversNavBadge = null;
-    $zentraleNavBadge = null;
-    $configmgrSerialMismatchNavBadge = null;
-    $invoiceMailNavBadge = null;
-
-    if (auth()->user()?->can('manage-app-assets')) {
-        $clarificationCount = AssetNavBadgeCounts::clarificationCount();
-        $missingCount = AssetNavBadgeCounts::missingCount();
-        $pendingReturnsCount = AssetNavBadgeCounts::pendingReturnsCount();
-        $openHandoversCount = AssetNavBadgeCounts::openHandoversCount();
-        $rejectedHandoversCount = AssetNavBadgeCounts::rejectedHandoversCount();
-        $invoiceMailAttentionCount = AssetNavBadgeCounts::invoiceMailAttentionCount();
-
-        if ($invoiceMailAttentionCount > 0) {
-            $invoiceMailNavBadge = $invoiceMailAttentionCount;
-        }
-
-        if ($clarificationCount > 0) {
-            $clarificationNavBadge = $clarificationCount;
-        }
-
-        if ($missingCount > 0) {
-            $missingNavBadge = $missingCount;
-        }
-
-        if ($pendingReturnsCount > 0) {
-            $pendingReturnsNavBadge = $pendingReturnsCount;
-        }
-
-        if ($openHandoversCount > 0) {
-            $openHandoversNavBadge = $openHandoversCount;
-        }
-
-        if ($rejectedHandoversCount > 0) {
-            $rejectedHandoversNavBadge = $rejectedHandoversCount;
-        }
-
-        $configmgrSerialMismatchCount = AssetNavBadgeCounts::configmgrSerialMismatchCount();
-        if ($configmgrSerialMismatchCount > 0) {
-            $configmgrSerialMismatchNavBadge = $configmgrSerialMismatchCount;
-        }
-    }
-
-    if (auth()->user()?->can('see-app-assets-zentrale')) {
-        $zentraleCount = AssetNavBadgeCounts::zentraleHandoversCount();
-        if ($zentraleCount > 0) {
-            $zentraleNavBadge = $zentraleCount;
-        }
-    }
-
-    $defaultNavItems = [
-        ['label' => 'Übersicht', 'href' => route('apps.assets.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen', 'welcomeSection' => 'main'],
-        ['label' => 'Meine Assets', 'href' => route('apps.assets.meine-assets'), 'icon' => 'user', 'description' => 'Ihre zugewiesenen Assets', 'buttonText' => 'Meine Assets anzeigen', 'welcomeSection' => 'main'],
-        ['label' => 'Zentrale', 'href' => route('apps.assets.zentrale'), 'icon' => 'building-office', 'description' => 'Übergaben an der Zentrale per Signopad bestätigen', 'buttonText' => 'Zentrale öffnen', 'permission' => 'see-app-assets-zentrale', 'welcomeSection' => 'main', 'badge' => $zentraleNavBadge, 'badgeColor' => 'amber'],
-        ['label' => 'Benachrichtigungen', 'href' => route('apps.assets.settings.notifications'), 'icon' => 'bell', 'description' => 'Benachrichtigungen dieser App konfigurieren', 'buttonText' => 'Benachrichtigungen öffnen', 'welcomeSection' => 'settings'],
-        ['label' => 'App-Info', 'href' => route('apps.assets.info'), 'icon' => 'information-circle', 'description' => 'Installierte Version und Release-Historie', 'buttonText' => 'App-Info anzeigen', 'welcomeSection' => 'settings'],
-        ['type' => 'separator', 'label' => 'Tools', 'permission' => 'manage-app-assets'],
-        ['label' => 'Suche', 'href' => route('apps.assets.search'), 'icon' => 'magnifying-glass', 'description' => 'Asset-Suche über Stammdaten, Verlauf und Notizen', 'buttonText' => 'Suche öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Chat', 'href' => route('apps.assets.chat'), 'icon' => 'chat-bubble-left-right', 'description' => 'KI-Chat mit OpenWebUI und MCP-Server-Unterstützung', 'buttonText' => 'Chat öffnen', 'permission' => 'manage-app-assets', 'requiresAiUsage' => true, 'welcomeSection' => 'main'],
-        ['type' => 'separator', 'label' => 'Ansichten', 'permission' => 'manage-app-assets'],
-        ['label' => 'Alle Assets', 'href' => route('apps.assets.liste'), 'icon' => 'server-stack', 'description' => 'Alle Assets durchsuchen und verwalten', 'buttonText' => 'Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Itexia-Geräte', 'href' => route('apps.assets.itexiageraete'), 'icon' => 'qr-code', 'description' => 'Assets mit Itexia-ID und Filter Gefunden/Nicht gefunden in Itexia', 'buttonText' => 'Itexia-Geräte anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Mobilgeräte', 'href' => route('apps.assets.mobilgeraete'), 'icon' => 'device-phone-mobile', 'description' => 'Mobilgeräte (is_intune_object) mit IMEI und Intune-Filter', 'buttonText' => 'Mobilgeräte anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Domänengeräte', 'href' => route('apps.assets.domaenengeraete'), 'icon' => 'computer-desktop', 'description' => 'Domänengeräte (is_domain_object) mit Domäne und Last Logon', 'buttonText' => 'Domänengeräte anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['type' => 'separator', 'label' => 'Rechnungen', 'permission' => 'manage-app-assets'],
-        ['label' => 'Fehlende Rechnung', 'href' => route('apps.assets.fehlende-rechnung'), 'icon' => 'document-text', 'description' => 'Assets mit fehlender Rechnungsnummer (manuell oder nach Ende der automatischen BEN-Suche)', 'buttonText' => 'Fehlende Rechnung anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Rechnungen Analyse', 'href' => route('apps.assets.rechnungen'), 'icon' => 'banknotes', 'description' => 'D3-Rechnungsanalysen (Vision-Cache) einsehen und ausstehende Analysen starten', 'buttonText' => 'Rechnungen Analyse anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Rechnungs-Mails', 'href' => route('apps.assets.invoice-mails'), 'icon' => 'inbox-arrow-down', 'description' => 'Mails aus dem Rechnungs-Postfach: Relevanz, ermittelter Empfänger und D3-Upload', 'buttonText' => 'Rechnungs-Mails anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $invoiceMailNavBadge, 'badgeColor' => 'amber'],
-        ['type' => 'separator', 'label' => 'Admin', 'permission' => 'manage-app-assets'],
-        ['label' => 'Falsche Seriennummern', 'href' => route('apps.assets.admin.configmgr-serial-mismatches'), 'icon' => 'exclamation-circle', 'description' => 'Assets, deren Seriennummer von der SCCM-BIOS-Seriennummer abweicht', 'buttonText' => 'Falsche Seriennummern anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $configmgrSerialMismatchNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Yubikeys', 'href' => route('apps.assets.yubikeys'), 'icon' => 'key', 'description' => 'Aktive Benutzer und zugewiesene Yubikeys', 'buttonText' => 'Yubikeys anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Legacy-Assets', 'href' => route('apps.assets.legacy-assets'), 'icon' => 'circle-stack', 'description' => 'Legacy-Bestand vergleichen und fehlende Assets nachimportieren', 'buttonText' => 'Legacy-Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Gelöschte Assets', 'href' => route('apps.assets.deleted'), 'icon' => 'archive-box', 'description' => 'Soft-gelöschte Assets einsehen und verwalten', 'buttonText' => 'Gelöschte Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main'],
-        ['label' => 'Unbestätigte Übergaben', 'href' => route('apps.assets.admin.open-handovers'), 'icon' => 'clock', 'description' => 'Noch nicht bestätigte Übergaben adminseitig bearbeiten', 'buttonText' => 'Unbestätigte Übergaben anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $openHandoversNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Abgelehnte Übergaben', 'href' => route('apps.assets.admin.rejected-handovers'), 'icon' => 'x-circle', 'description' => 'Vom Empfänger abgelehnte Übergaben adminseitig auflösen', 'buttonText' => 'Abgelehnte Übergaben anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $rejectedHandoversNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Offene Rückgaben', 'href' => route('apps.assets.admin.returns.pending'), 'icon' => 'arrow-uturn-left', 'description' => 'Rückgaben mit Empfangsbestätigung und Zuordnung abschließen', 'buttonText' => 'Rückgaben anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $pendingReturnsNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Assets in Klärung', 'href' => route('apps.assets.admin.clarifications'), 'icon' => 'question-mark-circle', 'description' => 'Vom Besitzer gemeldete Klärungsfälle bearbeiten', 'buttonText' => 'Klärfälle anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $clarificationNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Assets vermisst', 'href' => route('apps.assets.admin.missing'), 'icon' => 'exclamation-triangle', 'description' => 'Als vermisst markierte Assets einsehen und bearbeiten', 'buttonText' => 'Vermisste Assets anzeigen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'main', 'badge' => $missingNavBadge, 'badgeColor' => 'red'],
-        ['label' => 'Admin-Settings', 'href' => route('apps.assets.admin.index'), 'icon' => 'shield-check', 'description' => 'Typen, Hersteller und Seventhings-Zuordnung', 'buttonText' => 'Admin-Settings öffnen', 'permission' => 'manage-app-assets', 'welcomeSection' => 'settings'],
-    ];
-
-    $navItems = !empty($navItems) ? $navItems : $defaultNavItems;
+    $navItems = ! empty($navItems) ? $navItems : \Hwkdo\IntranetAppAssets\Support\AssetNavigation::items();
     $customBgUrl = \Hwkdo\IntranetAppBase\Models\AppBackground::getCustomBackgroundUrl('assets');
+    $canUseAi = \Hwkdo\IntranetAppBase\Support\AiUsage::allowed();
+    $currentPath = trim(request()->path(), '/');
+    $activeHref = \Hwkdo\IntranetAppAssets\Support\AssetNavigation::activeHref($navItems, $currentPath);
 @endphp
 
-@if($customBgUrl)
+@if ($customBgUrl)
     @push('app-styles')
-    <style data-app-bg data-ts="{{ uniqid() }}">
-        :root { --app-bg-image: url('{{ $customBgUrl }}'); }
-    </style>
+        <style data-app-bg data-ts="{{ uniqid() }}">
+            :root {
+                --app-bg-image: url('{{ $customBgUrl }}');
+            }
+        </style>
     @endpush
 @endif
 
-@php
-    $shouldRenderAppIndexAuto = $renderAppIndexAuto ?? request()->routeIs('apps.assets.index');
-@endphp
+<div class="hwk-assets space-y-4">
+    <style>
+        .hwk-assets {
+            --color-accent: #073070;
+            --color-accent-content: #073070;
+            --color-accent-foreground: #ffffff;
+        }
 
-@if($shouldRenderAppIndexAuto)
-    <x-intranet-app-base::app-layout
-        app-identifier="assets"
-        :heading="$heading"
-        :subheading="$subheading"
-        :nav-items="$navItems"
-        :wrap-in-card="false"
+        .dark .hwk-assets {
+            --color-accent: #d0e3f9;
+            --color-accent-content: #d0e3f9;
+            --color-accent-foreground: #04214e;
+        }
+
+        .hwk-assets ui-tabs.hwk-pills {
+            height: auto !important;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            border-bottom-width: 0 !important;
+        }
+
+        .hwk-assets ui-tabs.hwk-pills [data-flux-tab] {
+            height: auto;
+            margin-bottom: 0 !important;
+            border-bottom-width: 0 !important;
+            border-radius: 9999px;
+            padding: 0.375rem 0.75rem;
+            background: rgb(255 255 255 / 0.8) !important;
+            color: #073070 !important;
+            box-shadow: inset 0 0 0 1px #d0e3f9;
+        }
+
+        .dark .hwk-assets ui-tabs.hwk-pills [data-flux-tab] {
+            background: rgb(255 255 255 / 0.1) !important;
+            color: #fff !important;
+            box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.15);
+        }
+
+        .hwk-assets ui-tabs.hwk-pills [data-flux-tab][data-selected],
+        .dark .hwk-assets ui-tabs.hwk-pills [data-flux-tab][data-selected] {
+            background: #073070 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 6px rgb(7 48 112 / 0.25);
+        }
+
+        .hwk-assets [data-flux-heading] {
+            color: #073070;
+        }
+
+        .dark .hwk-assets [data-flux-heading] {
+            color: #fff;
+        }
+
+        .hwk-assets dl.hwk-rows {
+            display: grid;
+            grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr);
+            column-gap: 1.5rem;
+        }
+
+        .hwk-assets dl.hwk-rows > dt,
+        .hwk-assets dl.hwk-rows > dd {
+            border-bottom: 1px solid #d0e3f9;
+            padding-block: 0.7rem;
+            font-size: 0.875rem;
+        }
+
+        .dark .hwk-assets dl.hwk-rows > dt,
+        .dark .hwk-assets dl.hwk-rows > dd {
+            border-bottom-color: rgb(255 255 255 / 0.1);
+        }
+
+        .hwk-assets dl.hwk-rows > dt {
+            font-weight: 500;
+            color: #073070;
+        }
+
+        .dark .hwk-assets dl.hwk-rows > dt {
+            color: #fff;
+        }
+
+        .hwk-assets dl.hwk-rows > dd {
+            color: var(--color-slate-600);
+        }
+
+        .dark .hwk-assets dl.hwk-rows > dd {
+            color: rgb(255 255 255 / 0.7);
+        }
+
+        .hwk-assets form.hwk-fields .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .hwk-assets form.hwk-fields [data-flux-field] {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.35rem 1.5rem;
+            align-items: center;
+            border-bottom: 1px solid #d0e3f9;
+            padding-block: 0.9rem;
+        }
+
+        .hwk-assets form.hwk-fields [data-flux-field] > * {
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .hwk-assets form.hwk-fields [data-flux-field] > [data-flux-label] {
+            margin-bottom: 0 !important;
+        }
+
+        .dark .hwk-assets form.hwk-fields [data-flux-field] {
+            border-bottom-color: rgb(255 255 255 / 0.1);
+        }
+
+        @media (min-width: 640px) {
+            .hwk-assets form.hwk-fields [data-flux-field] {
+                grid-template-columns: minmax(9rem, 16rem) minmax(0, 1fr);
+            }
+
+            .hwk-assets form.hwk-fields [data-flux-field] > * {
+                grid-column: 2;
+            }
+
+            .hwk-assets form.hwk-fields [data-flux-field] > [data-flux-label] {
+                grid-column: 1;
+                grid-row: 1;
+            }
+        }
+
+        .hwk-assets [data-flux-card] {
+            background-color: rgb(255 255 255 / var(--glass-opacity)) !important;
+            border: 1px solid rgb(208 227 249 / 0.8) !important;
+            color: var(--color-slate-800);
+            box-shadow: none !important;
+            backdrop-filter: blur(8px);
+        }
+
+        .dark .hwk-assets [data-flux-card] {
+            background-color: rgb(7 48 112 / var(--glass-opacity)) !important;
+            border-color: rgb(255 255 255 / 0.08) !important;
+            color: rgb(255 255 255 / 0.92);
+        }
+    </style>
+
+    <x-intranet-app-assets::hwk-hero
+        eyebrow="Assets"
+        :title="$heading !== '' ? $heading : 'Assets'"
+        :description="$subheading !== '' ? $subheading : null"
     >
-        <x-intranet-app-base::app-index-auto
-            app-identifier="assets"
-            app-name="Assets"
-            app-description="Verwaltung von IT-Assets und Hardware"
-            :nav-items="$navItems"
-            welcome-title="Willkommen in der Asset-Verwaltung"
-            welcome-description="Hier können Sie alle IT-Assets verwalten, Übergaben und Rückgaben nachverfolgen sowie die vollständige Asset-Historie einsehen."
-        />
-    </x-intranet-app-base::app-layout>
-@else
-    <x-intranet-app-base::app-layout
-        app-identifier="assets"
-        :heading="$heading"
-        :subheading="$subheading"
-        :nav-items="$navItems"
-        :wrap-in-card="true"
-    >
-        {{ $slot }}
-    </x-intranet-app-base::app-layout>
-@endif
+        @isset($actions)
+            <x-slot:actions>{{ $actions }}</x-slot:actions>
+        @endisset
+    </x-intranet-app-assets::hwk-hero>
+
+    <div class="flex items-start gap-6 max-lg:flex-col">
+        <nav
+            aria-label="Assets"
+            class="glass-card w-full shrink-0 p-2 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-64 lg:overflow-y-auto"
+            style="--glass-opacity: 0.92; overflow: auto"
+        >
+            <ul class="space-y-0.5">
+                @foreach ($navItems as $navItem)
+                    @if (($navItem['type'] ?? '') === 'separator')
+                        @if (! isset($navItem['permission']) || auth()->user()?->can($navItem['permission']))
+                            <li class="px-3 pt-3 pb-1 text-xs font-semibold tracking-[0.2em] text-[#073070]/70 uppercase dark:text-white/60">{{ $navItem['label'] }}</li>
+                        @endif
+                    @elseif (! isset($navItem['permission']) || auth()->user()?->can($navItem['permission']))
+                        <li>
+                            @if (! empty($navItem['requiresAiUsage']) && ! $canUseAi)
+                                <x-intranet-app-base::ai-usage-locked-nav-item :label="$navItem['label']" />
+                            @else
+                                @php
+                                    $current = $activeHref !== null && $activeHref === ($navItem['href'] ?? null);
+                                    $badgeAmber = ($navItem['badgeColor'] ?? 'red') === 'amber';
+                                @endphp
+                                <a
+                                    href="{{ $navItem['href'] }}"
+                                    wire:navigate
+                                    @class([
+                                        'flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#073070]',
+                                        'bg-[#073070] text-white shadow-md shadow-[#073070]/25' => $current,
+                                        'text-[#073070] hover:bg-[#d0e3f9]/80 dark:text-white dark:hover:bg-white/10' => ! $current,
+                                    ])
+                                    @if ($current) aria-current="page" @endif
+                                >
+                                    @if (! empty($navItem['icon']))
+                                        <flux:icon :icon="$navItem['icon']" variant="micro" class="size-4 shrink-0" />
+                                    @endif
+                                    <span class="min-w-0 flex-1 truncate">{{ $navItem['label'] }}</span>
+                                    @if (isset($navItem['badge']) && $navItem['badge'] !== null && $navItem['badge'] !== '')
+                                        <span @class([
+                                            'inline-flex min-w-5 shrink-0 justify-center rounded-full px-1.5 text-xs font-semibold text-white',
+                                            'bg-amber-500' => $badgeAmber,
+                                            'bg-red-600' => ! $badgeAmber,
+                                        ])>{{ $navItem['badge'] }}</span>
+                                    @endif
+                                </a>
+                            @endif
+                        </li>
+                    @endif
+                @endforeach
+            </ul>
+        </nav>
+
+        <div class="min-w-0 flex-1 space-y-4">
+            {{ $slot }}
+        </div>
+    </div>
+</div>
+
+@push('nav-items')
+    @json($navItems)
+@endpush

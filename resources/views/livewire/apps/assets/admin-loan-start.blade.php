@@ -16,22 +16,22 @@
                 </flux:callout.text>
             </flux:callout>
 
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4 dark:text-white">Asset</flux:heading>
-                <dl class="grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Anzeigename</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $asset->display_name }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
-                    <dd class="font-mono text-zinc-900 dark:text-white">{{ $asset->serial_number }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Typ</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $asset->type?->name ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Standort</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $asset->location ?: '—' }}</dd>
+                <dl class="hwk-rows">
+                    <dt class="font-semibold text-slate-600 dark:text-white">Anzeigename</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $asset->display_name }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Seriennummer</dt>
+                    <dd class="font-mono text-[#073070] dark:text-white">{{ $asset->serial_number }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Typ</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $asset->type?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Standort</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $asset->location ?: '—' }}</dd>
                 </dl>
-            </flux:card>
+            </section>
 
-            <form wire:submit="submit" class="space-y-6">
-                <flux:card class="space-y-4">
+            <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
+                <section class="glass-card overflow-hidden space-y-4">
                     <flux:heading size="lg" class="dark:text-white">Empfänger</flux:heading>
 
                     <flux:select
@@ -46,9 +46,9 @@
                         @endforeach
                     </flux:select>
                     <flux:error name="recipientUserId" />
-                </flux:card>
+                </section>
 
-                <flux:card class="space-y-4">
+                <section class="glass-card overflow-hidden space-y-4">
                     <flux:heading size="lg" class="dark:text-white">Rückgabe-Termin</flux:heading>
 
                     <flux:callout variant="subtle" icon="information-circle">
@@ -75,9 +75,9 @@
                         />
                     </div>
                     <flux:error name="scheduledDate" />
-                </flux:card>
+                </section>
 
-                <flux:card class="space-y-4">
+                <section class="glass-card overflow-hidden space-y-4">
                     <flux:heading size="lg" class="dark:text-white">Bestätigung</flux:heading>
 
                     <flux:radio.group wire:model.live="channel" label="Wie soll die Übergabe bestätigt werden?">
@@ -98,9 +98,9 @@
                         />
                     </flux:radio.group>
                     <flux:error name="channel" />
-                </flux:card>
+                </section>
 
-                <flux:card class="space-y-4">
+                <section class="glass-card overflow-hidden space-y-4">
                     <flux:textarea
                         wire:model="note"
                         label="Hinweis (optional)"
@@ -108,7 +108,7 @@
                         rows="4"
                     />
                     <flux:error name="note" />
-                </flux:card>
+                </section>
 
                 <div class="flex flex-wrap gap-2">
                     <flux:button type="submit" variant="primary" icon="clock">

@@ -329,8 +329,8 @@ new class extends Component
 ?>
 
 @placeholder
-    <div class="rounded-xl border border-zinc-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/50">
-        <div class="flex items-center gap-2 text-zinc-500">
+    <div class="rounded-xl border border-[#d0e3f9] bg-white px-4 py-4 shadow-sm dark:border-white/10 dark:bg-white/5/50">
+        <div class="flex items-center gap-2 text-slate-600 dark:text-white/70">
             <flux:icon.loading variant="micro" />
             <span>Itexia-Daten werden geladen…</span>
         </div>
@@ -338,7 +338,7 @@ new class extends Component
 @endplaceholder
 
 <div>
-    <flux:card class="overflow-hidden transition-colors hover:border-zinc-400/60 dark:hover:border-zinc-500/60">
+    <section class="glass-card overflow-hidden transition-colors hover:border-[#073070]/20 dark:hover:border-white/20">
         <flux:accordion exclusive transition>
             <flux:accordion.item>
                 <flux:accordion.heading class="cursor-pointer select-none font-medium">
@@ -347,7 +347,7 @@ new class extends Component
                 <flux:accordion.content>
                 <div wire:intersect.once="loadItexiaData" class="min-h-[2rem]">
                     @if($loaded === null)
-                        <div class="flex items-center gap-2 text-zinc-500">
+                        <div class="flex items-center gap-2 text-slate-600 dark:text-white/70">
                             <flux:icon.loading variant="micro" wire:loading.delay.shortest />
                             <span wire:loading.delay.shortest>Lade Itexia-Daten…</span>
                         </div>
@@ -384,23 +384,23 @@ new class extends Component
                                     <div @class([
                                         'rounded-lg border p-3 space-y-1.5',
                                         'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-900/30' => !$row['match'],
-                                        'border-zinc-200 bg-zinc-50/30 dark:border-zinc-700 dark:bg-zinc-800/20' => $row['match'],
+                                        'border-[#d0e3f9] bg-[#d0e3f9]/40/30 dark:border-white/10 dark:bg-white/5/20' => $row['match'],
                                     ])>
                                         <div class="flex items-center justify-between gap-2">
                                             <span @class(['font-semibold text-sm', 'text-red-700 dark:text-red-200' => !$row['match']])>{{ $entry['label'] }}</span>
                                             @if($row['match'])
-                                                <flux:badge size="sm" color="green" icon="check">Übereinstimmung</flux:badge>
+                                                <x-intranet-app-assets::hwk-badge size="sm" color="green" icon="check">Übereinstimmung</x-intranet-app-assets::hwk-badge>
                                             @else
-                                                <flux:badge size="sm" color="red" icon="x-circle">Abweichung</flux:badge>
+                                                <x-intranet-app-assets::hwk-badge size="sm" color="red" icon="x-circle">Abweichung</x-intranet-app-assets::hwk-badge>
                                             @endif
                                         </div>
                                         <div class="grid grid-cols-1 gap-1 text-sm">
                                             <div>
-                                                <span @class(['text-zinc-500 dark:text-zinc-400' => $row['match'], 'text-red-700 dark:text-red-200' => !$row['match']])>Intranet:</span>
+                                                <span @class(['text-slate-600 dark:text-white/70' => $row['match'], 'text-red-700 dark:text-red-200' => !$row['match']])>Intranet:</span>
                                                 <span @class(['font-mono', 'text-red-600 dark:text-red-100' => !$row['match']])>{{ $row['localValue'] ?? '—' }}</span>
                                             </div>
                                             <div>
-                                                <span @class(['text-zinc-500 dark:text-zinc-400' => $row['match'], 'text-red-700 dark:text-red-200' => !$row['match']])>Seventhings:</span>
+                                                <span @class(['text-slate-600 dark:text-white/70' => $row['match'], 'text-red-700 dark:text-red-200' => !$row['match']])>Seventhings:</span>
                                                 <span @class(['font-mono', 'text-red-600 dark:text-red-100' => !$row['match']])>{{ $row['itexiaValue'] ?? '—' }}</span>
                                             </div>
                                         </div>
@@ -444,13 +444,13 @@ new class extends Component
                 </flux:accordion.content>
             </flux:accordion.item>
         </flux:accordion>
-    </flux:card>
+    </section>
 
     {{-- Seventhings-Suche nach Seriennummer (wenn Itexia-ID nicht gefunden) --}}
     <flux:modal wire:model="showSeventhingsSearchModal" class="md:max-w-2xl" variant="flyout">
         <div class="space-y-4">
             <flux:heading size="lg">In Seventhings suchen</flux:heading>
-            <p class="text-sm text-zinc-500">Seriennummer eingeben oder den Vorschlag aus dem Asset nutzen. Gefundenes Objekt prüfen und bei Bedarf als Itexia-ID (Barcode) übernehmen.</p>
+            <p class="text-sm text-slate-600 dark:text-white/70">Seriennummer eingeben oder den Vorschlag aus dem Asset nutzen. Gefundenes Objekt prüfen und bei Bedarf als Itexia-ID (Barcode) übernehmen.</p>
             @if($assetId)
                 @livewire('intranet-app-assets::apps.assets.seventhings-serial-search', ['assetId' => $assetId], key('seventhings-serial-'.$assetId))
             @endif

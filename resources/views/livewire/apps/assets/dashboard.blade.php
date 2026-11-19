@@ -34,8 +34,8 @@ new #[Layout('components.layouts.app')] #[Title('Assets Dashboard')] class exten
         :render-app-index-auto="false"
     >
         <div class="space-y-4">
-            <div class="flex items-center justify-between gap-3">
-                <flux:text class="flex-1 text-zinc-500 dark:text-white">Widgets auswählen und per Drag &amp; Drop anordnen.</flux:text>
+            <div class="glass-card sticky top-3 z-20 flex items-center justify-between gap-3 p-3" style="--glass-opacity: 0.92">
+                <flux:text class="flex-1 text-slate-600 dark:text-white/70">Widgets auswählen und per Drag &amp; Drop anordnen.</flux:text>
                 <div class="ml-auto shrink-0">
                     @include('intranet-app-base::dashboard.widgets-flyout', [
                         'modalName' => 'assets-dashboard-widgets-flyout',

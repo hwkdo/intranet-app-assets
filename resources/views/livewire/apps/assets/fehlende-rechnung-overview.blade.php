@@ -4,7 +4,8 @@
     subheading="Assets mit „Rechnungsnr. noch nicht bekannt“ (beim Anlegen angegeben oder nach Ablauf der automatischen D3-Suche) – bitte Rechnungsnummer nachtragen"
 >
     <div class="space-y-4">
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
@@ -33,16 +34,19 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7" class="text-center text-zinc-500 py-8">
-                            Keine Assets mit fehlender Rechnungsnummer.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="7" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Assets mit fehlender Rechnungsnummer." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $assets->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

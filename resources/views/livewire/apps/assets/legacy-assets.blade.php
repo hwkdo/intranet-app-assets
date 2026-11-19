@@ -343,7 +343,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
         }"
         x-on:{{ \Hwkdo\IntranetAppAssets\Support\BulkSelectionUi::CLEAR_SELECTED_IDS_EVENT }}.window="selectedIds = []"
     >
-        <flux:card>
+        <section class="glass-card overflow-hidden p-5">
             <flux:accordion exclusive transition>
                 <flux:accordion.item>
                     <flux:accordion.heading>
@@ -364,9 +364,9 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                     </flux:accordion.content>
                 </flux:accordion.item>
             </flux:accordion>
-        </flux:card>
+        </section>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 flex-wrap items-center gap-3">
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
@@ -386,13 +386,14 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
             </div>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 <flux:table.column>
                     <label class="inline-flex cursor-pointer items-center">
                         <input
                             type="checkbox"
-                            class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                            class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                             :checked="pageFullySelected"
                             x-on:change="togglePage($event.target.checked)"
                         />
@@ -414,7 +415,7 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                                 <label class="inline-flex cursor-pointer items-center">
                                     <input
                                         type="checkbox"
-                                        class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                        class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                         :checked="selectedIds.includes({{ (int) $row['legacy_id'] }})"
                                         x-on:change="toggleRow({{ (int) $row['legacy_id'] }}, $event.target.checked)"
                                     />
@@ -426,17 +427,17 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                         <flux:table.cell>
                             <div class="font-medium">{{ $row['modell'] ?: '—' }}</div>
                             @if(filled($row['name']))
-                                <div class="text-xs text-zinc-500">{{ $row['name'] }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $row['name'] }}</div>
                             @endif
                         </flux:table.cell>
                         @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $row['sn'] ?? ''])
                         <flux:table.cell>
                             @if($row['is_missing'])
-                                <flux:badge color="amber" size="sm">Fehlt im neuen System</flux:badge>
+                                <x-intranet-app-assets::hwk-badge color="amber" size="sm">Fehlt im neuen System</x-intranet-app-assets::hwk-badge>
                             @elseif($row['is_trashed'] ?? false)
-                                <flux:badge color="zinc" size="sm">Gelöscht im neuen System</flux:badge>
+                                <x-intranet-app-assets::hwk-badge color="zinc" size="sm">Gelöscht im neuen System</x-intranet-app-assets::hwk-badge>
                             @else
-                                <flux:badge color="green" size="sm">Vorhanden</flux:badge>
+                                <x-intranet-app-assets::hwk-badge color="green" size="sm">Vorhanden</x-intranet-app-assets::hwk-badge>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>{{ $row['updated_at'] ?: '—' }}</flux:table.cell>
@@ -452,16 +453,19 @@ new #[Layout('components.layouts.app')] #[Title('Legacy-Assets')] class extends 
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="8" class="text-center text-zinc-500 py-8">
-                            Keine Legacy-Assets für den aktuellen Filter gefunden.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="8" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Legacy-Assets für den aktuellen Filter gefunden." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $this->rows->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $this->rows->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

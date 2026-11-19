@@ -1,5 +1,5 @@
 <div>
-    <flux:card class="overflow-hidden transition-colors hover:border-zinc-400/60 dark:hover:border-zinc-500/60">
+    <section class="glass-card overflow-hidden transition-colors hover:border-[#073070]/20 dark:hover:border-white/20">
         <flux:accordion exclusive transition>
             <flux:accordion.item>
                 <flux:accordion.heading class="cursor-pointer select-none font-medium">
@@ -14,7 +14,7 @@
                     @endif
                     @if($configmgrError)
                         @if(filled($configmgrSerialNumber))
-                            <dl class="mb-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <dl class="hwk-rows">
                                 <dt class="font-semibold">Seriennummer (BIOS)</dt>
                                 <dd class="font-mono text-xs">{{ $configmgrSerialNumber }}</dd>
                             </dl>
@@ -27,7 +27,7 @@
                             $first = $configmgrRows[0];
                             $macAddresses = array_values(array_unique(array_filter(array_map(fn ($row) => $row->mac_adresse ?? null, $configmgrRows))));
                         @endphp
-                        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <dl class="hwk-rows">
                             <dt class="font-semibold">Rechnername</dt>
                             <dd class="font-mono text-xs">{{ $first->rechnername ?? '—' }}</dd>
                             <dt class="font-semibold">SMBIOS-GUID</dt>
@@ -50,15 +50,15 @@
                             </dd>
                         </dl>
                     @elseif(filled($configmgrSerialNumber))
-                        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <dl class="hwk-rows">
                             <dt class="font-semibold">Seriennummer (BIOS)</dt>
                             <dd class="font-mono text-xs">{{ $configmgrSerialNumber }}</dd>
                         </dl>
                     @else
-                        <p class="text-sm text-zinc-500">Keine ConfigMgr-Daten für diesen Computernamen.</p>
+                        <p class="text-sm text-slate-600 dark:text-white/70">Keine ConfigMgr-Daten für diesen Computernamen.</p>
                     @endif
                 </flux:accordion.content>
             </flux:accordion.item>
         </flux:accordion>
-    </flux:card>
+    </section>
 </div>

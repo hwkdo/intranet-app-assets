@@ -219,9 +219,9 @@ new class extends Component
 };
 ?>
 
-<flux:card class="glass-card">
+<section class="glass-card overflow-hidden p-5 sm:p-6">
     <flux:heading size="lg" class="mb-2">KI-Einstellungen</flux:heading>
-    <flux:text class="mb-6 text-sm text-zinc-500">
+    <flux:text class="mb-6 text-sm text-slate-600 dark:text-white/70">
         Gateway-Overrides für die Rechnungsanalyse und der Assets-KI-Chat. Leere Override-Felder nutzen die globalen Einstellungen unter Manager → Base Settings.
     </flux:text>
 
@@ -229,15 +229,18 @@ new class extends Component
         <div>
             <flux:heading size="sm" class="mb-3">Gateway (Text, Bild, Vision)</flux:heading>
 
-            <flux:callout class="mb-4" icon="information-circle">
-                <flux:callout.heading>Globale KI-Standards</flux:callout.heading>
-                <flux:callout.text>
-                    Text: <strong>{{ $this->baseAiTextSummary }}</strong><br>
-                    Bilder: <strong>{{ $this->baseAiImageSummary }}</strong><br>
+            <div class="mb-4 flex items-start gap-3 rounded-xl bg-[#d0e3f9]/50 px-4 py-3 text-sm text-[#073070] dark:bg-white/10 dark:text-white">
+                <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-[#073070]/10 text-[#073070] dark:bg-white/10 dark:text-white">
+                    <flux:icon icon="information-circle" variant="micro" class="size-5" />
+                </span>
+                <p>
+                    <span class="font-semibold">Globale KI-Standards.</span>
+                    Text: <strong>{{ $this->baseAiTextSummary }}</strong>,
+                    Bilder: <strong>{{ $this->baseAiImageSummary }}</strong>,
                     Klassifikation: <strong>{{ $this->baseAiClassificationSummary }}</strong>
                     — änderbar unter Manager → Base Settings.
-                </flux:callout.text>
-            </flux:callout>
+                </p>
+            </div>
 
             <x-intranet-app-base::admin-ai-settings
                 ai-text-provider-override="aiTextProviderOverride"
@@ -252,7 +255,7 @@ new class extends Component
                 ai-classification-model-override="aiClassificationModelOverride"
             />
 
-            <flux:text class="mt-4 text-sm text-zinc-500">
+            <flux:text class="mt-4 text-sm text-slate-600 dark:text-white/70">
                 Aktuell wirksam für Assets:
                 Text <strong>{{ $this->effectiveAiTextSummary }}</strong>,
                 Bilder <strong>{{ $this->effectiveAiImageSummary }}</strong>,
@@ -265,7 +268,7 @@ new class extends Component
 
         <div>
             <flux:heading size="sm" class="mb-3">Assets-KI-Chat</flux:heading>
-            <flux:text class="mb-4 text-sm text-zinc-500">
+            <flux:text class="mb-4 text-sm text-slate-600 dark:text-white/70">
                 Interaktiver Chat (prism-chat / Open Web UI) — separat vom zentralen Gateway.
             </flux:text>
 
@@ -294,4 +297,4 @@ new class extends Component
             KI-Einstellungen speichern
         </flux:button>
     </div>
-</flux:card>
+</section>

@@ -314,40 +314,40 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
         :render-app-index-auto="false"
     >
         <div class="space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-wrap items-center justify-between gap-3" style="--glass-opacity: 0.92; overflow: visible">
                 <flux:button :href="route('apps.assets.invoice-mails')" wire:navigate icon="arrow-left" variant="ghost" size="sm">Zur Liste</flux:button>
                 <flux:button wire:click="reclassify" wire:confirm="Mail neu klassifizieren? Die Anhänge werden danach neu analysiert." icon="arrow-path" size="sm">Neu klassifizieren</flux:button>
             </div>
 
-            <flux:card class="glass-card">
-                <dl class="grid grid-cols-1 gap-x-6 gap-y-3 text-sm md:grid-cols-3">
+            <section class="glass-card overflow-hidden p-5">
+                <dl class="hwk-rows">
                     <div>
-                        <dt class="text-zinc-500">Von</dt>
+                        <dt class="text-slate-600 dark:text-white/70">Von</dt>
                         <dd class="font-medium">{{ $mail->from_name }} &lt;{{ $mail->from_address }}&gt;</dd>
                     </div>
                     <div>
-                        <dt class="text-zinc-500">An</dt>
+                        <dt class="text-slate-600 dark:text-white/70">An</dt>
                         <dd>{{ implode(', ', $mail->to_recipients ?? []) ?: '–' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-zinc-500">Eingang</dt>
+                        <dt class="text-slate-600 dark:text-white/70">Eingang</dt>
                         <dd>{{ $mail->received_at?->timezone($tz)->format('d.m.Y H:i') }} · {{ $mail->source->label() }}</dd>
                     </div>
                     <div>
-                        <dt class="text-zinc-500">Verarbeitung</dt>
+                        <dt class="text-slate-600 dark:text-white/70">Verarbeitung</dt>
                         <dd class="flex flex-wrap items-center gap-1">
-                            <flux:badge size="sm" :color="$mail->status->color()">{{ $mail->status->label() }}</flux:badge>
+                            <x-intranet-app-assets::hwk-badge size="sm" :color="$mail->status->color()">{{ $mail->status->label() }}</x-intranet-app-assets::hwk-badge>
                             @if($mail->report_mode)
-                                <flux:badge size="sm" color="sky">Report-Modus</flux:badge>
+                                <x-intranet-app-assets::hwk-badge size="sm" color="sky">Report-Modus</x-intranet-app-assets::hwk-badge>
                             @endif
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-zinc-500">JEV-Relevanz</dt>
+                        <dt class="text-slate-600 dark:text-white/70">JEV-Relevanz</dt>
                         <dd>
                             {{ $this->percent($mail->relevance_probability) }}
                             @if($mail->threshold_used !== null)
-                                <span class="text-zinc-500">(Schwelle {{ $this->percent($mail->threshold_used) }})</span>
+                                <span class="text-slate-600 dark:text-white/70">(Schwelle {{ $this->percent($mail->threshold_used) }})</span>
                             @endif
                             · {{ $mail->is_relevant === null ? 'offen' : ($mail->is_relevant ? 'relevant' : 'nicht relevant') }}
                             @if($mail->relevance_kind)
@@ -356,7 +356,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-zinc-500">Postfach-Aktion</dt>
+                        <dt class="text-slate-600 dark:text-white/70">Postfach-Aktion</dt>
                         <dd>{{ $mail->mailbox_action_at ? $mail->mailbox_action?->label().' am '.$mail->mailbox_action_at->timezone($tz)->format('d.m.Y H:i') : '–' }}</dd>
                     </div>
                 </dl>
@@ -369,20 +369,20 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         <flux:callout.text>{{ $mail->last_error }}</flux:callout.text>
                     </flux:callout>
                 @endif
-            </flux:card>
+            </section>
 
             @foreach($this->attachments as $attachment)
                 @php($result = $attachment->agent_result ?? [])
                 @php($assigned = $attachment->effectiveUser())
-                <flux:card class="glass-card space-y-4" wire:key="attachment-{{ $attachment->id }}">
+                <section class="glass-card overflow-hidden glass-card space-y-4" wire:key="attachment-{{ $attachment->id }}">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <flux:link :href="route('apps.assets.invoice-mails.attachment', $attachment->id)" target="_blank" class="font-medium">
                                 <flux:icon.paper-clip class="inline size-4" /> {{ $attachment->filename }}
                             </flux:link>
-                            <div class="mt-1 flex flex-wrap items-center gap-1 text-xs text-zinc-500">
+                            <div class="mt-1 flex flex-wrap items-center gap-1 text-xs text-slate-600 dark:text-white/70">
                                 {{ $attachment->mime_type }} · {{ number_format($attachment->size / 1024, 0, ',', '.') }} KB
-                                <flux:badge size="sm" :color="$attachment->status->color()">{{ $attachment->status->label() }}</flux:badge>
+                                <x-intranet-app-assets::hwk-badge size="sm" :color="$attachment->status->color()">{{ $attachment->status->label() }}</x-intranet-app-assets::hwk-badge>
                                 @if($attachment->d3_status !== InvoiceMailD3Status::Uploaded && $attachment->isCandidate())
                                     <flux:select wire:model.live="kindByAttachment.{{ $attachment->id }}" class="max-w-44">
                                         <flux:select.option value="">Art wählen …</flux:select.option>
@@ -391,7 +391,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                                         @endforeach
                                     </flux:select>
                                 @elseif($attachment->document_kind)
-                                    <flux:badge size="sm" color="zinc">{{ $this->kindLabel($attachment->document_kind) }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" color="zinc">{{ $this->kindLabel($attachment->document_kind) }}</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($attachment->text_source)
                                     <span>Text: {{ $attachment->text_source === 'pdf_text' ? 'PDF-Text' : 'OCR' }}</span>
@@ -421,29 +421,29 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                             <div class="space-y-2 text-sm">
                                 <flux:heading size="sm">Empfänger</flux:heading>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <flux:badge size="sm" :color="$attachment->match_status->color()">{{ $attachment->match_status->label() }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" :color="$attachment->match_status->color()">{{ $attachment->match_status->label() }}</x-intranet-app-assets::hwk-badge>
                                     @if($assigned)
                                         <span class="font-medium">{{ InvoiceMailRecipientMatcher::displayName($assigned) }}</span>
                                     @endif
                                     @if($attachment->wasCorrected())
-                                        <flux:badge size="sm" color="amber">korrigiert von {{ $attachment->correctedBy?->name }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge size="sm" color="amber">korrigiert von {{ $attachment->correctedBy?->name }}</x-intranet-app-assets::hwk-badge>
                                         <flux:button wire:click="resetCorrection({{ $attachment->id }})" size="xs" variant="ghost">Zurücksetzen</flux:button>
                                     @elseif($attachment->suggested_confidence !== null)
-                                        <span class="text-zinc-500">Sicherheit {{ $this->percent($attachment->suggested_confidence) }}</span>
+                                        <span class="text-slate-600 dark:text-white/70">Sicherheit {{ $this->percent($attachment->suggested_confidence) }}</span>
                                     @endif
                                 </div>
                                 @if($attachment->wasCorrected() && $attachment->suggestedUser)
-                                    <div class="text-xs text-zinc-500">Vorschlag war: {{ InvoiceMailRecipientMatcher::displayName($attachment->suggestedUser) }}</div>
+                                    <div class="text-xs text-slate-600 dark:text-white/70">Vorschlag war: {{ InvoiceMailRecipientMatcher::displayName($attachment->suggestedUser) }}</div>
                                 @endif
 
                                 @if(! empty($attachment->candidates))
                                     <div class="mt-2 space-y-1">
-                                        <div class="text-xs text-zinc-500">Kandidaten</div>
+                                        <div class="text-xs text-slate-600 dark:text-white/70">Kandidaten</div>
                                         @foreach($attachment->candidates as $candidate)
-                                            <div class="flex items-center justify-between gap-2 rounded border border-zinc-200 px-2 py-1 dark:border-zinc-700">
+                                            <div class="flex items-center justify-between gap-2 rounded border border-[#d0e3f9] px-2 py-1 dark:border-white/10">
                                                 <div>
                                                     <span class="font-medium">{{ $candidate['name'] }}</span>
-                                                    <span class="text-xs text-zinc-500">{{ $this->percent($candidate['score']) }} · {{ implode(', ', $candidate['reasons'] ?? []) }}</span>
+                                                    <span class="text-xs text-slate-600 dark:text-white/70">{{ $this->percent($candidate['score']) }} · {{ implode(', ', $candidate['reasons'] ?? []) }}</span>
                                                 </div>
                                                 @if($attachment->d3_status !== InvoiceMailD3Status::Uploaded && $assigned?->id !== $candidate['user_id'])
                                                     <flux:button wire:click="correct({{ $attachment->id }}, {{ $candidate['user_id'] }})" size="xs" variant="ghost">Übernehmen</flux:button>
@@ -455,13 +455,13 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
 
                                 @if(! empty($result['recipients']))
                                     <div class="mt-2 space-y-1">
-                                        <div class="text-xs text-zinc-500">Fundstellen der KI</div>
+                                        <div class="text-xs text-slate-600 dark:text-white/70">Fundstellen der KI</div>
                                         @foreach($result['recipients'] as $hint)
                                             <div class="text-xs">
                                                 <span class="font-medium">{{ $hint['name'] ?? $hint['email'] ?? '?' }}</span>
                                                 ({{ ($hint['source'] ?? '') === 'mail' ? 'Mail' : 'Dokument' }}, {{ $this->percent((float) ($hint['weight'] ?? 0)) }})
                                                 @if(! empty($hint['evidence']))
-                                                    <span class="text-zinc-500">„{{ $hint['evidence'] }}“</span>
+                                                    <span class="text-slate-600 dark:text-white/70">„{{ $hint['evidence'] }}“</span>
                                                 @endif
                                             </div>
                                         @endforeach
@@ -474,22 +474,22 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
 
                             <div class="space-y-2 text-sm">
                                 <flux:heading size="sm">Belegdaten</flux:heading>
-                                <dl class="grid grid-cols-2 gap-x-4 gap-y-1">
-                                    <dt class="text-zinc-500">Lieferant</dt><dd>{{ $result['supplier']['name'] ?? '–' }}</dd>
-                                    <dt class="text-zinc-500">Lieferantennr.</dt><dd>{{ $result['supplier']['number'] ?? '–' }}</dd>
-                                    <dt class="text-zinc-500">Rechnungsnr.</dt><dd>{{ $result['invoice']['number'] ?? '–' }}</dd>
-                                    <dt class="text-zinc-500">Belegdatum</dt><dd>{{ $result['invoice']['date'] ?? '–' }}</dd>
-                                    <dt class="text-zinc-500">Netto</dt><dd>{{ $this->amount($result['invoice']['net'] ?? null) }}</dd>
-                                    <dt class="text-zinc-500">MwSt.</dt><dd>{{ $this->amount($result['invoice']['tax'] ?? null) }}</dd>
-                                    <dt class="text-zinc-500">Brutto</dt><dd>{{ $this->amount($result['invoice']['gross'] ?? null) }}</dd>
+                                <dl class="hwk-rows">
+                                    <dt class="text-slate-600 dark:text-white/70">Lieferant</dt><dd>{{ $result['supplier']['name'] ?? '–' }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">Lieferantennr.</dt><dd>{{ $result['supplier']['number'] ?? '–' }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">Rechnungsnr.</dt><dd>{{ $result['invoice']['number'] ?? '–' }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">Belegdatum</dt><dd>{{ $result['invoice']['date'] ?? '–' }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">Netto</dt><dd>{{ $this->amount($result['invoice']['net'] ?? null) }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">MwSt.</dt><dd>{{ $this->amount($result['invoice']['tax'] ?? null) }}</dd>
+                                    <dt class="text-slate-600 dark:text-white/70">Brutto</dt><dd>{{ $this->amount($result['invoice']['gross'] ?? null) }}</dd>
                                 </dl>
 
                                 <flux:heading size="sm" class="pt-2">D3</flux:heading>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <flux:badge size="sm" :color="$attachment->d3_status->color()">{{ $attachment->d3_status->label() }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" :color="$attachment->d3_status->color()">{{ $attachment->d3_status->label() }}</x-intranet-app-assets::hwk-badge>
                                     @if($attachment->d3_document_id)
                                         <span class="font-mono">{{ $attachment->d3_document_id }}</span>
-                                        <span class="text-xs text-zinc-500">{{ $attachment->d3_uploaded_at?->timezone($tz)->format('d.m.Y H:i') }}, {{ $attachment->d3UploadedBy?->name ?? 'automatisch' }}</span>
+                                        <span class="text-xs text-slate-600 dark:text-white/70">{{ $attachment->d3_uploaded_at?->timezone($tz)->format('d.m.Y H:i') }}, {{ $attachment->d3UploadedBy?->name ?? 'automatisch' }}</span>
                                     @endif
                                 </div>
                                 @if($attachment->d3_error)
@@ -498,10 +498,10 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                             </div>
                         </div>
                     @endif
-                </flux:card>
+                </section>
             @endforeach
 
-            <flux:card class="glass-card">
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="sm" class="mb-3">Mail</flux:heading>
                 <div class="overflow-y-auto rounded-lg border border-[#d0e3f9]/60 bg-white/60 p-4 dark:border-white/10 dark:bg-[#04214e]/60" style="max-height: 70vh;">
                     @if($mail->body_type === 'html')
@@ -517,19 +517,19 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         <pre class="whitespace-pre-wrap break-words font-sans text-sm">{{ $mail->body }}</pre>
                     @endif
                 </div>
-            </flux:card>
+            </section>
 
-            <flux:card class="glass-card">
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="sm" class="mb-3">Verlauf</flux:heading>
                 <div class="space-y-2">
                     @forelse($this->events as $event)
                         <div class="flex gap-3 text-sm" wire:key="event-{{ $event->id }}">
-                            <div class="w-32 shrink-0 text-xs text-zinc-500">{{ $event->created_at?->timezone($tz)->format('d.m.Y H:i:s') }}</div>
-                            <flux:badge size="sm" :color="$event->level->color()" class="shrink-0">{{ $event->step }}</flux:badge>
+                            <div class="w-32 shrink-0 text-xs text-slate-600 dark:text-white/70">{{ $event->created_at?->timezone($tz)->format('d.m.Y H:i:s') }}</div>
+                            <x-intranet-app-assets::hwk-badge size="sm" :color="$event->level->color()" class="shrink-0">{{ $event->step }}</x-intranet-app-assets::hwk-badge>
                             <div class="min-w-0">
                                 <div @class(['text-red-600 dark:text-red-400' => $event->level === InvoiceMailEventLevel::Error])>{{ $event->message }}</div>
                                 @if($event->duration_ms !== null)
-                                    <div class="text-xs text-zinc-500">{{ number_format($event->duration_ms / 1000, 1, ',', '') }} s</div>
+                                    <div class="text-xs text-slate-600 dark:text-white/70">{{ number_format($event->duration_ms / 1000, 1, ',', '') }} s</div>
                                 @endif
                             </div>
                         </div>
@@ -537,7 +537,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         <flux:text>Noch keine Einträge.</flux:text>
                     @endforelse
                 </div>
-            </flux:card>
+            </section>
         </div>
     </x-intranet-app-assets::assets-layout>
 
@@ -551,10 +551,10 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         type="button"
                         wire:key="user-result-{{ $user->id }}"
                         wire:click="correct({{ (int) $correctionAttachmentId }}, {{ $user->id }})"
-                        class="flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        class="flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm hover:bg-[#d0e3f9]/70 dark:hover:bg-zinc-800"
                     >
                         <span class="font-medium">{{ InvoiceMailRecipientMatcher::displayName($user) }}</span>
-                        <span class="text-xs text-zinc-500">{{ $user->email }}</span>
+                        <span class="text-xs text-slate-600 dark:text-white/70">{{ $user->email }}</span>
                     </button>
                 @endforeach
                 @if(mb_strlen(trim($userSearch)) >= 2 && $this->userResults->isEmpty())
@@ -575,9 +575,9 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mail')] class extends
                         <flux:callout.text>{{ $this->uploadPreview['error'] }}</flux:callout.text>
                     </flux:callout>
                 @else
-                    <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <dl class="hwk-rows">
                         @foreach($this->uploadPreview['fields'] as $field => $value)
-                            <dt class="text-zinc-500">{{ $field }}</dt>
+                            <dt class="text-slate-600 dark:text-white/70">{{ $field }}</dt>
                             <dd>{{ is_array($value) ? implode(', ', $value) : ($value === '' || $value === null ? '–' : $value) }}</dd>
                         @endforeach
                     </dl>

@@ -48,14 +48,14 @@
             }"
             x-on:{{ \Hwkdo\IntranetAppAssets\Support\BulkSelectionUi::CLEAR_SELECTED_IDS_EVENT }}.window="selectedIds = []"
         >
-            <flux:card
-                class="overflow-hidden transition-all duration-200"
-                x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-amber-50/90 shadow-sm dark:ring-amber-400/80 dark:ring-offset-zinc-950 dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
+            <section
+                class="glass-card overflow-hidden p-4 transition-all duration-200"
+                x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-[#d0e3f9]/80 shadow-sm dark:ring-amber-400/80 dark:ring-offset-[#04214e] dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
             >
                 <flux:accordion exclusive transition>
                     <flux:accordion.item>
                         <flux:accordion.heading
-                            class="cursor-pointer select-none font-medium rounded-md px-1 py-0.5 -mx-1 transition-colors"
+                            class="cursor-pointer select-none rounded-lg px-2 py-2.5 font-medium transition-colors"
                             x-bind:class="selectedIds.length > 0 ? 'bg-amber-100/90 text-amber-950 dark:bg-amber-900/45 dark:text-amber-50' : ''"
                         >
                             <span x-text="selectedIds.length"></span> ausgewählt
@@ -106,15 +106,16 @@
                         </flux:accordion.content>
                     </flux:accordion.item>
                 </flux:accordion>
-            </flux:card>
+            </section>
 
-            <flux:table>
+            <div class="glass-card overflow-hidden">
+<flux:table>
                 <flux:table.columns>
                     <flux:table.column>
                         <label class="inline-flex cursor-pointer items-center">
                             <input
                                 type="checkbox"
-                                class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                 :checked="pageFullySelected"
                                 x-on:change="togglePage($event.target.checked)"
                             />
@@ -134,7 +135,7 @@
                                 <label class="inline-flex cursor-pointer items-center">
                                     <input
                                         type="checkbox"
-                                        class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                        class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                         :checked="selectedIds.includes({{ (int) $return->id }})"
                                         x-on:change="toggleRow({{ (int) $return->id }}, $event.target.checked)"
                                     />
@@ -143,7 +144,7 @@
                             <flux:table.cell>
                                 @if($a)
                                     <div class="font-medium">{{ $a->display_name }}</div>
-                                    <div class="font-mono text-xs text-zinc-500">{{ $a->serial_number }}</div>
+                                    <div class="font-mono text-xs text-slate-600 dark:text-white/70">{{ $a->serial_number }}</div>
                                 @else
                                     —
                                 @endif
@@ -151,18 +152,18 @@
                             <flux:table.cell>
                                 {{ $return->initiatedBy?->name ?? $h?->recipient?->name ?? '—' }}
                             </flux:table.cell>
-                            <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
+                            <flux:table.cell class="text-sm text-slate-600 dark:text-white/70">
                                 @if($return->isScheduled())
                                     <div>{{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) }}</div>
                                     @php $badge = \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::scheduleBadge($return); @endphp
                                     @if($badge)
-                                        <flux:badge size="sm" :color="$badge['color']">{{ $badge['label'] }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge size="sm" :color="$badge['color']">{{ $badge['label'] }}</x-intranet-app-assets::hwk-badge>
                                     @endif
                                 @else
                                     —
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
+                            <flux:table.cell class="text-sm text-slate-600 dark:text-white/70">
                                 {{ $return->created_at?->format('d.m.Y H:i') ?? '—' }}
                             </flux:table.cell>
                             <flux:table.cell>
@@ -178,16 +179,19 @@
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
-                                Keine offenen Rückgaben.
-                            </flux:table.cell>
+                            <flux:table.cell colspan="6" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine offenen Rückgaben." />
+</flux:table.cell>
                         </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+</div>
 
             <div>
-                {{ $returns->links() }}
+                <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                    {{ $returns->links() }}
+                </div>
             </div>
         </div>
     </x-intranet-app-assets::assets-layout>

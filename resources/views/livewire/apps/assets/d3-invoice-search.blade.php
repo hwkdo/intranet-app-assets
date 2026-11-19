@@ -216,9 +216,9 @@ new class extends Component
     @if(count($results) > 0)
         <div class="space-y-2">
             <flux:heading size="sm">Treffer ({{ count($results) }})</flux:heading>
-            <ul class="divide-y divide-zinc-200 dark:divide-zinc-700 rounded-lg border border-zinc-200 dark:border-zinc-700 max-h-96 overflow-y-auto">
+            <ul class="divide-y divide-zinc-200 dark:divide-zinc-700 rounded-lg border border-[#d0e3f9] dark:border-white/10 max-h-96 overflow-y-auto">
                 @foreach($results as $idx => $doc)
-                    <li wire:key="d3-doc-{{ $doc['id'] }}" class="flex items-center justify-between gap-3 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <li wire:key="d3-doc-{{ $doc['id'] }}" class="flex items-center justify-between gap-3 px-3 py-2 hover:bg-[#d0e3f9]/40 dark:hover:bg-zinc-800/50">
                         <div class="min-w-0 flex-1">
                             <a
                                 href="{{ $doc['link'] }}"
@@ -228,7 +228,7 @@ new class extends Component
                             >
                                 {{ $doc['caption'] ?: $doc['id'] }}
                             </a>
-                            <span class="text-xs font-mono text-zinc-500">{{ $doc['id'] }}</span>
+                            <span class="text-xs font-mono text-slate-600 dark:text-white/70">{{ $doc['id'] }}</span>
                         </div>
                         @if($assetId)
                             <span class="flex items-center gap-2 shrink-0">
@@ -255,6 +255,6 @@ new class extends Component
             </ul>
         </div>
     @elseif($initialSearchDone && $search !== '' && !$searchError)
-        <flux:text class="text-zinc-500">Keine Dokumente gefunden. Anderen Suchbegriff versuchen.</flux:text>
+        <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Dokumente gefunden. Anderen Suchbegriff versuchen." />
     @endif
 </div>

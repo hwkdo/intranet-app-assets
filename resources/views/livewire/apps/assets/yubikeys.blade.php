@@ -1,7 +1,7 @@
 <div>
 <x-intranet-app-assets::assets-layout heading="Yubikeys" subheading="Aktive Benutzer und zugewiesene Yubikeys">
     <div class="space-y-4">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 flex-wrap items-center gap-3">
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
@@ -24,7 +24,8 @@
             </flux:dropdown>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
@@ -44,18 +45,18 @@
 
                     @if($yubikeys->isEmpty())
                         <flux:table.row wire:key="yubikey-user-{{ $user->id }}">
-                            <flux:table.cell class="text-zinc-500">—</flux:table.cell>
-                            <flux:table.cell class="text-zinc-500">—</flux:table.cell>
-                            <flux:table.cell class="text-zinc-500">—</flux:table.cell>
-                            <flux:table.cell class="text-zinc-500">—</flux:table.cell>
+                            <flux:table.cell class="text-slate-600 dark:text-white/70">—</flux:table.cell>
+                            <flux:table.cell class="text-slate-600 dark:text-white/70">—</flux:table.cell>
+                            <flux:table.cell class="text-slate-600 dark:text-white/70">—</flux:table.cell>
+                            <flux:table.cell class="text-slate-600 dark:text-white/70">—</flux:table.cell>
                             <flux:table.cell>
                                 <div class="font-medium">{{ $user->name }}</div>
-                                <div class="text-xs text-zinc-500">{{ $user->username }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $user->username }}</div>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge color="zinc" size="sm">Kein Yubikey</flux:badge>
+                                <x-intranet-app-assets::hwk-badge color="zinc" size="sm">Kein Yubikey</x-intranet-app-assets::hwk-badge>
                             </flux:table.cell>
-                            <flux:table.cell class="text-end text-zinc-500">—</flux:table.cell>
+                            <flux:table.cell class="text-end text-slate-600 dark:text-white/70">—</flux:table.cell>
                             <flux:table.cell></flux:table.cell>
                         </flux:table.row>
                     @else
@@ -69,10 +70,10 @@
                                 <flux:table.cell>{{ $yubikey->vendor?->name ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>
                                     <div class="font-medium">{{ $user->name }}</div>
-                                    <div class="text-xs text-zinc-500">{{ $user->username }}</div>
+                                    <div class="text-xs text-slate-600 dark:text-white/70">{{ $user->username }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge color="green" size="sm">Zugewiesen</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="green" size="sm">Zugewiesen</x-intranet-app-assets::hwk-badge>
                                 </flux:table.cell>
                                 @include('intranet-app-assets::partials.created-at-cell', ['asset' => $yubikey])
                                 <flux:table.cell>
@@ -83,22 +84,27 @@
                     @endif
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="8" class="text-center text-zinc-500 py-8">
-                            @if($onlyWithoutYubikey)
+                        <flux:table.cell colspan="8" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass">
+@if($onlyWithoutYubikey)
                                 Keine aktiven Benutzer ohne Yubikey gefunden.
                             @elseif(filled($search))
                                 Keine Treffer für „{{ $search }}“.
                             @else
                                 Keine aktiven Benutzer gefunden.
                             @endif
-                        </flux:table.cell>
+</x-intranet-app-assets::hwk-empty>
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $users->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $users->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

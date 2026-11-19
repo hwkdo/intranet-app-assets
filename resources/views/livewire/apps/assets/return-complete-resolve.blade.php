@@ -13,7 +13,7 @@
         subheading="{{ $asset?->display_name ?? 'Asset' }}"
     >
         <div class="mx-auto max-w-2xl space-y-6">
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <flux:heading size="lg" class="dark:text-white">Asset</flux:heading>
                     @if($asset)
@@ -29,9 +29,9 @@
                         </flux:button>
                     @endif
                 </div>
-                <dl class="grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Anzeigename</dt>
-                    <dd class="text-zinc-900 dark:text-white">
+                <dl class="hwk-rows">
+                    <dt class="font-semibold text-slate-600 dark:text-white">Anzeigename</dt>
+                    <dd class="text-[#073070] dark:text-white">
                         @if($asset)
                             <a
                                 href="{{ route('apps.assets.show', [$asset, 'from' => 'liste']) }}"
@@ -45,33 +45,33 @@
                             —
                         @endif
                     </dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Seriennummer</dt>
-                    <dd class="font-mono text-zinc-900 dark:text-white">{{ $asset?->serial_number ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Besitzer (laut System)</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $asset?->owner?->name ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-white">{{ $locationDisplay['label'] ?? 'Standort' }}</dt>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Seriennummer</dt>
+                    <dd class="font-mono text-[#073070] dark:text-white">{{ $asset?->serial_number ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Besitzer (laut System)</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $asset?->owner?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">{{ $locationDisplay['label'] ?? 'Standort' }}</dt>
                     @if($asset)
-                        <x-intranet-app-assets::asset-location-display :asset="$asset" class="text-zinc-900 dark:text-white" />
+                        <x-intranet-app-assets::asset-location-display :asset="$asset" class="text-[#073070] dark:text-white" />
                     @else
-                        <dd class="text-zinc-900 dark:text-white">—</dd>
+                        <dd class="text-[#073070] dark:text-white">—</dd>
                     @endif
-                    <dt class="font-semibold text-zinc-500 dark:text-white">{{ $isLoanReturn ? 'Verliehen an' : 'Zurückgegeben von' }}</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $h?->recipient?->name ?? $assetReturn->initiatedBy?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">{{ $isLoanReturn ? 'Verliehen an' : 'Zurückgegeben von' }}</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $h?->recipient?->name ?? $assetReturn->initiatedBy?->name ?? '—' }}</dd>
                     @if($isLoanReturn && $assetReturn->scheduled_at)
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Rückgabe-Termin</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $assetReturn->scheduled_at->format('d.m.Y H:i') }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Rückgabe-Termin</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $assetReturn->scheduled_at->format('d.m.Y H:i') }}</dd>
                     @endif
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Eingeleitet am</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $assetReturn->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Eingeleitet am</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $assetReturn->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                 </dl>
-            </flux:card>
+            </section>
 
             @php $lastNote = $assetReturn->notes()->latest('id')->first(); @endphp
             @if($lastNote)
-                <flux:card class="space-y-2 text-sm">
+                <section class="glass-card overflow-hidden space-y-2 text-sm">
                     <flux:heading size="sm" class="dark:text-white">Hinweis</flux:heading>
-                    <flux:text class="whitespace-pre-wrap text-zinc-600 dark:text-zinc-300">{{ $lastNote->note }}</flux:text>
-                </flux:card>
+                    <flux:text class="whitespace-pre-wrap text-slate-600 dark:text-white/70">{{ $lastNote->note }}</flux:text>
+                </section>
             @endif
 
             @if($isLoanReturn)
@@ -86,19 +86,19 @@
             @endif
 
             @if($asset && ! $asset->trashed() && ! $isLoanReturn)
-                <flux:card class="space-y-3 border-red-200 dark:border-red-900/40">
+                <section class="glass-card overflow-hidden space-y-3 border-red-200 dark:border-red-900/40">
                     <flux:heading size="sm" class="dark:text-white">Asset löschen</flux:heading>
-                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                    <flux:text class="text-sm text-slate-600 dark:text-white/70">
                         Zur regulären Löschseite mit Löschgrund, Verlauf und LDAP-Bestätigung.
                     </flux:text>
                     <flux:button href="{{ route('apps.assets.delete', $asset) }}" variant="danger" icon="trash">
                         Zur Löschseite
                     </flux:button>
-                </flux:card>
+                </section>
             @endif
 
-            <form wire:submit="submit" class="space-y-6">
-                <flux:card class="space-y-4 dark:[&_[data-flux-label]]:text-white dark:[&_legend]:text-white">
+            <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
+                <section class="glass-card overflow-hidden space-y-4 dark:[&_[data-flux-label]]:text-white dark:[&_legend]:text-white">
                     <flux:checkbox
                         wire:model="acknowledgeReceipt"
                         label="Ich bestätige den physischen Empfang des Geräts."
@@ -154,9 +154,9 @@
                             @enderror
                         @endif
                     @endif
-                </flux:card>
+                </section>
 
-                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.
                 </flux:text>
 

@@ -9,7 +9,7 @@
         <div class="mx-auto max-w-2xl space-y-6">
             <x-intranet-app-assets::handover-asset-summary :handover="$handover" />
 
-            <flux:card class="space-y-3 text-sm">
+            <section class="glass-card overflow-hidden space-y-3 text-sm">
                 <flux:heading size="sm">Übergabe</flux:heading>
                 <flux:text>Empfänger: <span class="font-medium">{{ $handover->recipient?->name ?? '—' }}</span></flux:text>
                 <flux:text>Abgelehnt am: <span class="font-medium">{{ $handover->rejected_at?->format('d.m.Y H:i') ?? '—' }}</span></flux:text>
@@ -17,15 +17,15 @@
                 @if($lastNote)
                     <div>
                         <flux:heading size="sm" class="mb-1">Letzte Notiz</flux:heading>
-                        <flux:text class="whitespace-pre-wrap text-zinc-600 dark:text-zinc-300">{{ $lastNote->note }}</flux:text>
+                        <flux:text class="whitespace-pre-wrap text-slate-600 dark:text-white/70">{{ $lastNote->note }}</flux:text>
                     </div>
                 @endif
-            </flux:card>
+            </section>
 
             @if($handover->asset && ! $handover->asset->trashed())
-                <flux:card class="space-y-3 border-red-200 dark:border-red-900/40">
+                <section class="glass-card overflow-hidden space-y-3 border-red-200 dark:border-red-900/40">
                     <flux:heading size="sm">Asset löschen</flux:heading>
-                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                    <flux:text class="text-sm text-slate-600 dark:text-white/70">
                         Wenn das Asset dauerhaft entfernt werden soll, nutzen Sie die reguläre Löschung: Löschgrund, Verlauf und ggf. Itexia-Hinweis wie gewohnt; Sie werden zur Bestätigung mit Ihrem LDAP-/Windows-Passwort aufgefordert.
                     </flux:text>
                     <flux:button
@@ -35,11 +35,11 @@
                     >
                         Zur Löschseite
                     </flux:button>
-                </flux:card>
+                </section>
             @endif
 
-            <form wire:submit="submit" class="space-y-6">
-                <flux:card class="space-y-4">
+            <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
+                <section class="glass-card overflow-hidden space-y-4">
                     <flux:checkbox
                         wire:model="acknowledgeNotWithUser"
                         label="Ich bestätige, dass das Asset physisch nicht beim genannten Benutzer liegt."
@@ -93,9 +93,9 @@
                             <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                         @enderror
                     @endif
-                </flux:card>
+                </section>
 
-                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.
                 </flux:text>
 

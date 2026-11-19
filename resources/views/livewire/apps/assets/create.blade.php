@@ -299,17 +299,17 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 }; ?>
 <div>
 <x-intranet-app-assets::assets-layout heading="Neues Asset" subheading="Asset anlegen">
-    <form wire:submit="save" class="space-y-8">
+    <form wire:submit="save" class="hwk-fields glass-card space-y-8 p-5 sm:p-6" style="overflow: visible">
         <flux:fieldset legend="Allgemeine Angaben" description="Modell, Typ und Hersteller gelten für alle angelegten Assets.">
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:field>
-                    <flux:label>Modell <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                    <flux:label>Modell <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                     <flux:input wire:model="model" placeholder="z.B. ThinkPad X1 Carbon" />
                     <flux:error name="model" />
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Typ <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                    <flux:label>Typ <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                     <flux:select variant="listbox" searchable wire:model="asset_type_id" placeholder="Typ auswählen…">
                         @foreach($this->assetTypes as $type)
                             <flux:select.option value="{{ $type->id }}">{{ $type->name }}</flux:select.option>
@@ -319,7 +319,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Hersteller <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                    <flux:label>Hersteller <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                     <flux:select variant="listbox" searchable wire:model="asset_vendor_id" placeholder="Hersteller auswählen…">
                         @foreach($this->assetVendors as $vendor)
                             <flux:select.option value="{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
@@ -336,7 +336,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <flux:heading size="lg">Einzelne Assets</flux:heading>
-                    <flux:text class="mt-1 text-zinc-500 dark:text-zinc-400">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt.</flux:text>
+                    <flux:text class="mt-1 text-slate-600 dark:text-white/70">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt.</flux:text>
                 </div>
                 <flux:button type="button" wire:click="addUnit" variant="outline" icon="plus">
                     Weiteres Asset
@@ -344,11 +344,11 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
             </div>
 
             @foreach($this->units as $index => $unit)
-                <flux:card class="space-y-6">
+                <section class="glass-card overflow-hidden space-y-6">
                     <div class="flex items-center justify-between gap-4">
                         <flux:heading size="md">Asset {{ $index + 1 }}</flux:heading>
                         @if(count($this->units) > 1)
-                            <flux:button type="button" wire:click="removeUnit({{ $index }})" variant="ghost" icon="x-mark" size="sm" class="text-zinc-500">
+                            <flux:button type="button" wire:click="removeUnit({{ $index }})" variant="ghost" icon="x-mark" size="sm" class="text-slate-600 dark:text-white/70">
                                 Einheit entfernen
                             </flux:button>
                         @endif
@@ -356,7 +356,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <flux:field>
-                            <flux:label>Seriennummer <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                            <flux:label>Seriennummer <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                             <flux:input wire:model="units.{{ $index }}.serial_number" placeholder="z.B. SN-12345" />
                             <flux:error name="units.{{ $index }}.serial_number" />
                         </flux:field>
@@ -369,8 +369,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
 
                         <flux:field class="sm:col-span-2">
                             <flux:label>Bild</flux:label>
-                            <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
-                            <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
+                            <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-slate-600 dark:text-white/70" />
+                            <flux:text class="mt-1 text-xs text-slate-600 dark:text-white/70">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
                             <flux:error name="unit_images.{{ $index }}" />
                         </flux:field>
 
@@ -430,7 +430,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset')] class extends Co
                         <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                         <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                     </div>
-                </flux:card>
+                </section>
             @endforeach
         </div>
 

@@ -125,7 +125,7 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
 <div>
 <x-intranet-app-assets::assets-layout heading="Domain-Abgleich" subheading="Vergleich: Assets vs. Computer in Active Directory">
     <div class="space-y-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="glass-card p-4" style="--glass-opacity: 0.92; overflow: visible">
             <flux:select wire:model.live="connection" variant="listbox" label="Domäne" class="max-w-xs">
                 <flux:select.option value="default">{{ config('intranet-app-assets.domain_connections.default', 'Verwaltung') }}</flux:select.option>
                 <flux:select.option value="schulung">{{ config('intranet-app-assets.domain_connections.schulung', 'Schulung') }}</flux:select.option>
@@ -142,7 +142,7 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
             </flux:callout>
         @else
             {{-- (a) Assets ohne Domänen-Eintrag --}}
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4">Assets ohne Domänen-Eintrag</flux:heading>
                 <flux:text class="mb-4">Diese Computer-Assets haben die gewählte Domain-Connection, sind aber in der Domäne (in den konfigurierten OUs) nicht gefunden worden.</flux:text>
                 <flux:table>
@@ -166,17 +166,17 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="5" class="text-center text-zinc-500 py-6">
-                                    Keine passenden Assets gefunden – alle Domain-Assets mit dieser Connection sind in der Domäne vorhanden.
-                                </flux:table.cell>
+                                <flux:table.cell colspan="5" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine passenden Assets gefunden – alle Domain-Assets mit dieser Connection sind in der Domäne vorhanden." />
+</flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
-            </flux:card>
+            </section>
 
             {{-- (b) Domänen-Computer ohne Asset --}}
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4">Domänen-Computer ohne Asset</flux:heading>
                 <flux:text class="mb-4">Diese Computer wurden in der Domäne (in den konfigurierten OUs) gefunden, haben aber kein zugehöriges Asset mit diesem Namen und dieser Connection.</flux:text>
                 <flux:table>
@@ -192,17 +192,17 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="2" class="text-center text-zinc-500 py-6">
-                                    Keine Computer in der Domäne ohne zugehöriges Asset.
-                                </flux:table.cell>
+                                <flux:table.cell colspan="2" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Computer in der Domäne ohne zugehöriges Asset." />
+</flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
-            </flux:card>
+            </section>
 
             {{-- Optional: Computer in AD ohne Itexia-ID --}}
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4">Computer in AD ohne Itexia-ID</flux:heading>
                 <flux:text class="mb-4">Diese Computer wurden in der Domäne gefunden, haben aber keine Itexia-ID im AD-Attribut gesetzt.</flux:text>
                 <flux:table>
@@ -216,14 +216,14 @@ new #[Layout('components.layouts.app')] #[Title('Domain-Abgleich')] class extend
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell class="text-center text-zinc-500 py-6">
+                                <flux:table.cell class="text-center text-slate-600 dark:text-white/70 py-6">
                                     Alle gefundenen Computer haben eine Itexia-ID in AD.
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
-            </flux:card>
+            </section>
         @endif
     </div>
 </x-intranet-app-assets::assets-layout>

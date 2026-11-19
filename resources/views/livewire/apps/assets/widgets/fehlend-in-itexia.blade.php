@@ -58,7 +58,7 @@ new class extends Component
 ?>
 
 @placeholder
-    <flux:card class="h-full">
+    <section class="glass-card overflow-hidden h-full">
         <div class="mb-3 space-y-2">
             <flux:skeleton class="h-4 w-40" />
             <flux:skeleton class="h-3 w-64" />
@@ -68,7 +68,7 @@ new class extends Component
             <flux:skeleton class="h-14 w-full rounded-md" />
             <flux:skeleton class="h-14 w-full rounded-md" />
         </div>
-    </flux:card>
+    </section>
 @endplaceholder
 
 <x-intranet-app-base::dashboard.widget-card
@@ -79,13 +79,13 @@ new class extends Component
         <a
             href="{{ route('apps.assets.show', [$asset, 'from' => 'itexiageraete']) }}"
             wire:navigate
-            class="group block cursor-pointer rounded-md border border-zinc-200 px-3 py-2 transition-colors duration-150 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/40 dark:hover:bg-white/15"
+            class="group block cursor-pointer rounded-md border border-[#d0e3f9] px-3 py-2 transition-colors duration-150 hover:bg-[#d0e3f9]/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/15"
         >
-            <div class="font-medium group-hover:text-zinc-900 dark:group-hover:text-white">{{ $asset->display_name }}</div>
-            <div class="text-xs text-zinc-500 dark:text-white">{{ $asset->serial_number ?? '—' }}</div>
+            <div class="font-medium group-hover:text-[#073070] dark:group-hover:text-white">{{ $asset->display_name }}</div>
+            <div class="text-xs text-slate-600 dark:text-white">{{ $asset->serial_number ?? '—' }}</div>
         </a>
     @empty
-        <flux:text class="text-zinc-500 dark:text-white">Keine fehlenden Itexia-Zuordnungen vorhanden.</flux:text>
+        <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine fehlenden Itexia-Zuordnungen vorhanden." />
     @endforelse
 
     @if($this->hasMore)

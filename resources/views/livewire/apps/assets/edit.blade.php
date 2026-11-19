@@ -318,22 +318,22 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
     heading="Asset bearbeiten"
     subheading="{{ $asset->display_name }}"
 >
-    <form wire:submit="save" class="space-y-6">
+    <form wire:submit="save" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <flux:field>
-                <flux:label>Seriennummer <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                <flux:label>Seriennummer <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                 <flux:input wire:model="serial_number" placeholder="z.B. SN-12345" />
                 <flux:error name="serial_number" />
             </flux:field>
 
             <flux:field>
-                <flux:label>Modell <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                <flux:label>Modell <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                 <flux:input wire:model="model" placeholder="z.B. ThinkPad X1 Carbon" />
                 <flux:error name="model" />
             </flux:field>
 
             <flux:field>
-                <flux:label>Typ <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                <flux:label>Typ <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                 <flux:select variant="listbox" searchable wire:model="asset_type_id" placeholder="Typ auswählen…">
                     @foreach($this->assetTypes as $type)
                         <flux:select.option value="{{ $type->id }}">{{ $type->name }}</flux:select.option>
@@ -363,7 +363,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
             @endif
 
             <flux:field>
-                <flux:label>Hersteller <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                <flux:label>Hersteller <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                 <flux:select variant="listbox" searchable wire:model="asset_vendor_id" placeholder="Hersteller auswählen…">
                     @foreach($this->assetVendors as $vendor)
                         <flux:select.option value="{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
@@ -399,7 +399,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                         @endforeach
                     </flux:select>
                     <flux:error name="user_id" />
-                    <flux:text class="text-xs text-zinc-500">Ohne Besitzer bleibt das Asset im Pool; mit Auswahl wird eine Übergabe erzeugt.</flux:text>
+                    <flux:text class="text-xs text-slate-600 dark:text-white/70">Ohne Besitzer bleibt das Asset im Pool; mit Auswahl wird eine Übergabe erzeugt.</flux:text>
                 </flux:field>
             @else
                 <flux:field class="sm:col-span-2">
@@ -410,11 +410,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                             · <strong>{{ $this->locationDisplay['label'] }}:</strong>
                             @if(filled($this->locationDisplay['value']))
                                 {{ $this->locationDisplay['value'] }}
-                                <span class="text-zinc-500">({{ $this->locationDisplay['hint'] }})</span>
+                                <span class="text-slate-600 dark:text-white/70">({{ $this->locationDisplay['hint'] }})</span>
                             @else
                                 —
                                 @if(filled($this->locationDisplay['hint']))
-                                    <span class="text-zinc-500">({{ $this->locationDisplay['hint'] }})</span>
+                                    <span class="text-slate-600 dark:text-white/70">({{ $this->locationDisplay['hint'] }})</span>
                                 @endif
                             @endif
                             · <strong>Vermisst:</strong> {{ $asset->is_missing ? 'Ja' : 'Nein' }}
@@ -422,13 +422,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                             · <strong>Auf Lager:</strong> {{ $asset->is_in_stock ? 'Ja' : 'Nein' }}
                             @if($this->ownerChangeAction)
                                 <br>
-                                <a href="{{ $this->ownerChangeAction['href'] }}" wire:navigate class="text-primary-600 underline hover:no-underline dark:text-primary-400">
+                                <a href="{{ $this->ownerChangeAction['href'] }}" wire:navigate class="text-[#073070] underline hover:no-underline dark:text-[#d0e3f9]">
                                     {{ $this->ownerChangeAction['label'] }}
                                 </a>
-                                <span class="text-zinc-500">- {{ $this->ownerChangeAction['hint'] }}</span>
+                                <span class="text-slate-600 dark:text-white/70">- {{ $this->ownerChangeAction['hint'] }}</span>
                             @else
                                 <br>
-                                <span class="text-zinc-500">Kein direkter Spezialfall gefunden. Bei Bedarf bitte über Rückgabeprozess neu zuordnen.</span>
+                                <span class="text-slate-600 dark:text-white/70">Kein direkter Spezialfall gefunden. Bei Bedarf bitte über Rückgabeprozess neu zuordnen.</span>
                             @endif
                         </flux:callout.text>
                     </flux:callout>
@@ -457,11 +457,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset bearbeiten')] class exten
                 <flux:label>Bild</flux:label>
                 @if($asset->getFirstMedia('image'))
                     <a href="{{ $asset->getFirstMedia('image')->getFullUrl() }}" target="_blank" rel="noopener noreferrer" class="inline-block mb-2">
-                        <img src="{{ $asset->getFirstMedia('thumbnail')?->getFullUrl() ?? $asset->getFirstMedia('image')->getFullUrl() }}" alt="Aktuelles Asset-Bild" class="h-28 w-28 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700" />
+                        <img src="{{ $asset->getFirstMedia('thumbnail')?->getFullUrl() ?? $asset->getFirstMedia('image')->getFullUrl() }}" alt="Aktuelles Asset-Bild" class="h-28 w-28 rounded-lg object-cover border border-[#d0e3f9] dark:border-white/10" />
                     </a>
                 @endif
-                <input type="file" wire:model="image" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
-                <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optional: Neues Bild hochladen, um das aktuelle zu ersetzen (max. 10 MB).</flux:text>
+                <input type="file" wire:model="image" accept="image/*" class="block w-full text-sm text-slate-600 dark:text-white/70" />
+                <flux:text class="mt-1 text-xs text-slate-600 dark:text-white/70">Optional: Neues Bild hochladen, um das aktuelle zu ersetzen (max. 10 MB).</flux:text>
                 <flux:error name="image" />
             </flux:field>
         </div>

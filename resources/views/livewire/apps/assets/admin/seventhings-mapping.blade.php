@@ -1,11 +1,11 @@
 <div class="space-y-4">
-    <flux:card>
+    <section class="glass-card overflow-hidden p-5">
         <flux:heading size="lg">Zuordnung definieren</flux:heading>
-        <flux:text class="mt-1 text-zinc-500">
+        <flux:text class="mt-1 text-slate-600 dark:text-white/70">
             Ordnen Sie lokale Asset-Felder den Itexia/Seventhings-Feldern zu. Diese Zuordnung wird beim „Itexia-Daten vergleichen“ auf der Asset-Detailseite verwendet.
         </flux:text>
 
-        <form wire:submit="addMapping" class="mt-4 flex flex-wrap items-end gap-3">
+        <form wire:submit="addMapping" class="glass-card mt-4 flex flex-wrap items-end gap-3 p-4" style="overflow: visible">
             <flux:field class="min-w-[200px]">
                 <flux:label>Lokales Feld</flux:label>
                 <flux:select wire:model="local_attribute" placeholder="Feld wählen">
@@ -24,12 +24,12 @@
             </flux:field>
             <flux:button type="submit" variant="primary" size="sm">Zuordnung hinzufügen</flux:button>
         </form>
-    </flux:card>
+    </section>
 
-    <flux:card>
+    <section class="glass-card overflow-hidden p-5">
         <flux:heading size="lg">Aktuelle Zuordnungen</flux:heading>
         @if($this->mappings->isEmpty())
-            <flux:text class="mt-2 text-zinc-500">Noch keine Zuordnungen definiert.</flux:text>
+            <flux:text class="mt-2 text-slate-600 dark:text-white/70">Noch keine Zuordnungen definiert.</flux:text>
         @else
             <flux:table class="mt-4">
                 <flux:table.columns>
@@ -56,5 +56,5 @@
                 </flux:table.rows>
             </flux:table>
         @endif
-    </flux:card>
+    </section>
 </div>

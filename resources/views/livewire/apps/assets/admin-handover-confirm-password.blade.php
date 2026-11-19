@@ -15,7 +15,7 @@
 
             <x-intranet-app-assets::handover-asset-summary :handover="$handover" />
 
-            <form wire:submit="submit" class="space-y-4">
+            <form wire:submit="submit" class="hwk-fields glass-card space-y-4 p-5 sm:p-6" style="overflow: visible">
                 <flux:input
                     wire:model="password"
                     type="password"

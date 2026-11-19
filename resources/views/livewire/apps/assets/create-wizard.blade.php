@@ -614,84 +614,84 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
     @if($step === 1)
         <div class="space-y-6">
             <flux:heading size="lg" class="dark:text-white">Woher stammt die Hardware?</flux:heading>
-            <flux:text class="text-zinc-500 dark:text-zinc-200">Wählen Sie die passende Einstiegsvariante.</flux:text>
+            <flux:text class="text-slate-600 dark:text-white/80">Wählen Sie die passende Einstiegsvariante.</flux:text>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectVariant('bestellung')">
+                <section class="glass-card overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-[#073070] dark:hover:ring-[#d0e3f9]" wire:click="selectVariant('bestellung')">
                     <div class="flex items-start gap-4">
                         <div class="shrink-0 rounded-lg bg-primary-100 p-3 dark:bg-primary-900/30">
-                            <flux:icon.shopping-cart class="size-8 text-primary-600 dark:text-primary-400" />
+                            <flux:icon.shopping-cart class="size-8 text-[#073070] dark:text-[#d0e3f9]" />
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Bestellung</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::bestellungCardDescription($this->appSettings) }}</flux:text>
+                            <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::bestellungCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
-                </flux:card>
-                <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectVariant('beschaffung')">
+                </section>
+                <section class="glass-card overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-[#073070] dark:hover:ring-[#d0e3f9]" wire:click="selectVariant('beschaffung')">
                     <div class="flex items-start gap-4">
                         <div class="shrink-0 rounded-lg bg-primary-100 p-3 dark:bg-primary-900/30">
-                            <flux:icon.truck class="size-8 text-primary-600 dark:text-primary-400" />
+                            <flux:icon.truck class="size-8 text-[#073070] dark:text-[#d0e3f9]" />
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Beschaffung</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::beschaffungCardDescription($this->appSettings) }}</flux:text>
+                            <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::beschaffungCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
-                </flux:card>
-                <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectVariant('mobilfunkvertrag')">
+                </section>
+                <section class="glass-card overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-[#073070] dark:hover:ring-[#d0e3f9]" wire:click="selectVariant('mobilfunkvertrag')">
                     <div class="flex items-start gap-4">
                         <div class="shrink-0 rounded-lg bg-primary-100 p-3 dark:bg-primary-900/30">
-                            <flux:icon.device-phone-mobile class="size-8 text-primary-600 dark:text-primary-400" />
+                            <flux:icon.device-phone-mobile class="size-8 text-[#073070] dark:text-[#d0e3f9]" />
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">Aus Mobilfunkvertrag</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::mobilfunkCardDescription($this->appSettings) }}</flux:text>
+                            <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::mobilfunkCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
-                </flux:card>
+                </section>
             </div>
         </div>
     @elseif($step === 2)
         <div class="space-y-6">
             <flux:heading size="lg" class="dark:text-white">Wert der Hardware laut Rechnung</flux:heading>
-            <flux:text class="text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueStepQuestion($this->appSettings) }}</flux:text>
+            <flux:text class="text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueStepQuestion($this->appSettings) }}</flux:text>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectValue(true)">
+                <section class="glass-card overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-[#073070] dark:hover:ring-[#d0e3f9]" wire:click="selectValue(true)">
                     <div class="flex items-center gap-4">
                         <div class="shrink-0 rounded-lg bg-primary-100 p-3 dark:bg-primary-900/30">
-                            <flux:icon.currency-euro class="size-8 text-primary-600 dark:text-primary-400" />
+                            <flux:icon.currency-euro class="size-8 text-[#073070] dark:text-[#d0e3f9]" />
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueOverCardHeading($this->appSettings) }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueOverCardDescription($this->appSettings) }}</flux:text>
+                            <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueOverCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
-                </flux:card>
-                <flux:card class="cursor-pointer transition hover:ring-2 hover:ring-primary-500 dark:hover:ring-primary-400" wire:click="selectValue(false)">
+                </section>
+                <section class="glass-card overflow-hidden cursor-pointer transition hover:ring-2 hover:ring-[#073070] dark:hover:ring-[#d0e3f9]" wire:click="selectValue(false)">
                     <div class="flex items-center gap-4">
                         <div class="shrink-0 rounded-lg bg-primary-100 p-3 dark:bg-primary-900/30">
-                            <flux:icon.banknotes class="size-8 text-primary-600 dark:text-primary-400" />
+                            <flux:icon.banknotes class="size-8 text-[#073070] dark:text-[#d0e3f9]" />
                         </div>
                         <div>
                             <flux:heading size="md" class="dark:text-white">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueUnderCardHeading($this->appSettings) }}</flux:heading>
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueUnderCardDescription($this->appSettings) }}</flux:text>
+                            <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/80">{{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::valueUnderCardDescription($this->appSettings) }}</flux:text>
                         </div>
                     </div>
-                </flux:card>
+                </section>
             </div>
             <flux:button type="button" variant="ghost" wire:click="back">Zurück</flux:button>
         </div>
     @else
-        <form wire:submit="save" class="space-y-8">
+        <form wire:submit="save" class="hwk-fields glass-card space-y-8 p-5 sm:p-6" style="overflow: visible">
             <flux:fieldset legend="Allgemeine Angaben" description="Modell, Typ und Hersteller gelten für alle angelegten Assets.">
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     <flux:field>
-                        <flux:label>Modell <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                        <flux:label>Modell <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                         <flux:input wire:model="model" placeholder="z.B. ThinkPad X1 Carbon" />
                         <flux:error name="model" />
                     </flux:field>
                     <flux:field>
-                        <flux:label>Typ <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                        <flux:label>Typ <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                         <flux:select
                             wire:model="asset_type_id"
                             variant="combobox"
@@ -716,7 +716,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                         <flux:error name="asset_type_search" />
                     </flux:field>
                     <flux:field>
-                        <flux:label>Hersteller <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                        <flux:label>Hersteller <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                         <flux:select
                             wire:model="asset_vendor_id"
                             variant="combobox"
@@ -748,15 +748,15 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Einzelne Assets</flux:heading>
-                    <flux:text class="mt-1 text-zinc-500 dark:text-zinc-200">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt. Namen mit Zahl am Ende (z. B. Device01) werden beim Hinzufügen hochgezählt.</flux:text>
+                    <flux:text class="mt-1 text-slate-600 dark:text-white/80">Pro Einheit wird ein Asset mit den allgemeinen Daten angelegt. Namen mit Zahl am Ende (z. B. Device01) werden beim Hinzufügen hochgezählt.</flux:text>
                 </div>
 
                 @foreach($this->units as $index => $unit)
-                    <flux:card class="space-y-6">
+                    <section class="glass-card overflow-hidden space-y-6">
                         <div class="flex items-center justify-between gap-4">
                             <flux:heading size="md">Asset {{ $index + 1 }}</flux:heading>
                             @if(count($this->units) > 1)
-                                <flux:button type="button" wire:click="removeUnit({{ $index }})" variant="ghost" icon="x-mark" size="sm" class="text-zinc-500">
+                                <flux:button type="button" wire:click="removeUnit({{ $index }})" variant="ghost" icon="x-mark" size="sm" class="text-slate-600 dark:text-white/70">
                                     Einheit entfernen
                                 </flux:button>
                             @endif
@@ -764,7 +764,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
 
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <flux:field>
-                                <flux:label>Seriennummer <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                                <flux:label>Seriennummer <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                                 <flux:input wire:model="units.{{ $index }}.serial_number" placeholder="z.B. SN-12345" />
                                 <flux:error name="units.{{ $index }}.serial_number" />
                             </flux:field>
@@ -775,8 +775,8 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             </flux:field>
                             <flux:field class="sm:col-span-2">
                                 <flux:label>Bild</flux:label>
-                                <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-zinc-600 dark:text-zinc-300" />
-                                <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
+                                <input type="file" wire:model="unit_images.{{ $index }}" accept="image/*" class="block w-full text-sm text-slate-600 dark:text-white/70" />
+                                <flux:text class="mt-1 text-xs text-slate-600 dark:text-white/70">Optionales Bild für dieses Asset (max. 10 MB).</flux:text>
                                 <flux:error name="unit_images.{{ $index }}" />
                             </flux:field>
                             <x-intranet-app-assets::owner-choice-fields
@@ -833,12 +833,12 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                                     @endif
                                     @if($this->showItexiaId)
                                         <flux:field>
-                                            <flux:label>Itexia-ID @if($this->itexiaIdRequired)<flux:badge size="sm" color="red">Pflicht</flux:badge>@endif</flux:label>
+                                            <flux:label>Itexia-ID @if($this->itexiaIdRequired)<x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge>@endif</flux:label>
                                             <flux:input
                                                 wire:model="units.{{ $index }}.itexia_id"
                                                 :placeholder="\Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::itexiaIdPlaceholder()"
                                             />
-                                            <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
+                                            <flux:description class="mt-1 text-sm text-slate-600 dark:text-white/80">
                                                 {{ \Hwkdo\IntranetAppAssets\Support\AssetCreateWizardCopy::itexiaIdRequirementHint($this->itexiaIdRequired, $variant, $valueOver250, $this->appSettings) }}
                                             </flux:description>
                                             <flux:error name="units.{{ $index }}.itexia_id" />
@@ -852,7 +852,7 @@ new #[Layout('components.layouts.app')] #[Title('Neues Asset – Assistent')] cl
                             <flux:checkbox wire:model="units.{{ $index }}.is_clarification" label="In Klärung" />
                             <flux:checkbox wire:model="units.{{ $index }}.is_missing" label="Vermisst" />
                         </div>
-                    </flux:card>
+                    </section>
                 @endforeach
 
                 <flux:button type="button" wire:click="addUnit" variant="outline" icon="plus">

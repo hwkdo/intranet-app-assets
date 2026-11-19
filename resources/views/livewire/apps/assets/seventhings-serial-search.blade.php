@@ -251,7 +251,7 @@ new class extends Component {
     @if($result !== null)
         <div class="space-y-2">
             <flux:heading size="sm">Treffer in Seventhings</flux:heading>
-            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 space-y-2">
+            <div class="rounded-lg border border-[#d0e3f9] dark:border-white/10 p-3 space-y-2">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
                     <span class="font-semibold">Barcode (Itexia-ID)</span>
                     <span class="font-mono">{{ $result['barcode'] }}</span>
@@ -295,7 +295,7 @@ new class extends Component {
             </div>
         </div>
     @elseif($initialSearchDone && $search !== '' && !$searchError)
-        <flux:text class="text-zinc-500">
+        <flux:text class="text-slate-600 dark:text-white/70">
             @if($lastSearchByRechnungsnummer)
                 Kein Objekt mit dieser Rechnungsnummer in Seventhings gefunden.
             @else

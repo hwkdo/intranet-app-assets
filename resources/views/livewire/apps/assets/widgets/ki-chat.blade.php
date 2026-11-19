@@ -77,15 +77,14 @@ new class extends Component
             title="KI-Chat"
             description="OpenWebUI API-Token in den globalen Einstellungen hinterlegen."
         >
-            <flux:callout variant="warning">
-                <flux:heading size="sm">API-Token fehlt</flux:heading>
-                <flux:text>
-                    Ohne Token ist der KI-Chat nicht nutzbar.
-                </flux:text>
-            </flux:callout>
-            <flux:button variant="primary" class="mt-2" href="{{ route('settings.all') }}">
-                Zu den Einstellungen
-            </flux:button>
+            <x-intranet-app-assets::hwk-empty bare icon="key" title="API-Token fehlt">
+                Ohne Token ist der KI-Chat nicht nutzbar.
+                <div class="mt-4">
+                    <flux:button variant="primary" href="{{ route('settings.all') }}">
+                        Zu den Einstellungen
+                    </flux:button>
+                </div>
+            </x-intranet-app-assets::hwk-empty>
         </x-intranet-app-base::dashboard.widget-card>
     @endif
 </div>

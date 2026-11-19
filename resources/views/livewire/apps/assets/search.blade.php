@@ -156,37 +156,44 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
 
 <div>
     <x-intranet-app-assets::assets-layout heading="Asset-Suche" subheading="Suche über Asset-Daten, Verlauf und Notizen">
-        <div class="space-y-6">
-            <div class="space-y-2">
-                <flux:heading size="lg">Assets durchsuchen</flux:heading>
-                <flux:text class="text-zinc-700 dark:text-zinc-200">
-                    Suche in Kernfeldern, Asset-Historie und Notizen.
-                </flux:text>
+        <div class="space-y-4">
+            <div class="glass-card sticky top-3 z-20" style="--glass-opacity: 0.92; overflow: visible">
+                <div class="flex items-center gap-3 border-b border-[#d0e3f9] px-5 py-4 dark:border-white/10">
+                    <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-[#073070]/10 text-[#073070] dark:bg-white/10 dark:text-white">
+                        <flux:icon icon="magnifying-glass" variant="micro" class="size-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-semibold text-[#073070] dark:text-white">Assets durchsuchen</h2>
+                        <p class="text-xs text-slate-600 dark:text-white/70">Kernfelder, Verlauf und Notizen.</p>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <flux:input
+                        wire:model.live.debounce.300ms="searchQuery"
+                        placeholder="Name, Seriennummer, Besitzer, Notiztext ..."
+                        icon="magnifying-glass"
+                        class="w-full"
+                        aria-label="Assets durchsuchen"
+                    />
+                </div>
             </div>
 
-            <flux:input
-                wire:model.live.debounce.300ms="searchQuery"
-                placeholder="Name, Seriennummer, Besitzer, Notiztext ..."
-                icon="magnifying-glass"
-                class="w-full"
-            />
-
             @if (trim($searchQuery) !== '' && mb_strlen(trim($searchQuery)) < 2)
-                <flux:callout variant="info">
+                <x-intranet-app-assets::hwk-empty icon="magnifying-glass" title="Suche starten">
                     Geben Sie mindestens 2 Zeichen ein, um die Suche zu starten.
-                </flux:callout>
+                </x-intranet-app-assets::hwk-empty>
             @endif
 
             @if (!empty(trim($searchQuery)) && mb_strlen(trim($searchQuery)) >= 2)
-                <div class="flex items-center gap-2">
+                <div class="glass-card flex items-center gap-2 px-5 py-3" style="--glass-opacity: 0.92">
                     <flux:heading size="md">Treffer</flux:heading>
-                    <flux:badge variant="outline">{{ $this->resultCards->count() }}</flux:badge>
+                    <x-intranet-app-assets::hwk-badge variant="outline">{{ $this->resultCards->count() }}</x-intranet-app-assets::hwk-badge>
                 </div>
 
                 @if($this->resultCards->isEmpty())
-                    <flux:callout variant="info">
+                    <x-intranet-app-assets::hwk-empty icon="magnifying-glass" title="Keine Treffer">
                         Keine Treffer gefunden. Bitte versuchen Sie einen anderen Suchbegriff.
-                    </flux:callout>
+                    </x-intranet-app-assets::hwk-empty>
                 @else
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         @foreach($this->resultCards as $card)
@@ -194,16 +201,16 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
                                 /** @var \Hwkdo\IntranetAppAssets\Models\Asset $asset */
                                 $asset = $card['asset'];
                             @endphp
-                            <flux:card wire:key="asset-search-result-{{ $asset->id }}" class="space-y-3">
+                            <section wire:key="asset-search-result-{{ $asset->id }}" class="glass-card overflow-hidden space-y-3 p-5">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <div class="flex flex-wrap items-center gap-2">
                                             <flux:heading size="sm">{{ $asset->display_name }}</flux:heading>
                                             @if($asset->configmgrSerialMismatches())
-                                                <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
+                                                <x-intranet-app-assets::hwk-badge color="amber" size="sm">SN weicht ab</x-intranet-app-assets::hwk-badge>
                                             @endif
                                         </div>
-                                        <flux:text class="text-sm text-zinc-500">
+                                        <flux:text class="text-sm text-slate-600 dark:text-white/70">
                                             {{ $asset->type?->name ?? '—' }} · {{ $asset->vendor?->name ?? '—' }}
                                         </flux:text>
                                     </div>
@@ -225,8 +232,8 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
                                 </div>
 
                                 @if(collect($card['fieldMatches'])->isNotEmpty())
-                                    <div class="space-y-2 rounded-lg bg-emerald-50 p-3 text-sm dark:bg-emerald-900/20">
-                                        <div class="font-medium text-emerald-800 dark:text-emerald-200">Treffer in Asset-Feldern</div>
+                                    <div class="space-y-2 rounded-lg bg-[#d0e3f9]/50 p-3 text-sm dark:bg-white/10">
+                                        <div class="font-medium text-[#073070] dark:text-white">Treffer in Asset-Feldern</div>
                                         @foreach($card['fieldMatches'] as $match)
                                             <div>
                                                 <span class="font-medium">{{ $match['label'] }}:</span>
@@ -237,14 +244,14 @@ new #[Layout('components.layouts.app')] #[Title('Asset-Suche')] class extends Co
                                 @endif
 
                                 @if(collect($card['snippets'])->isNotEmpty())
-                                    <div class="space-y-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-900/20">
-                                        <div class="font-medium text-amber-800 dark:text-amber-200">Treffer in Verlauf / Notizen</div>
+                                    <div class="space-y-2 rounded-lg bg-[#a0c7f2]/35 p-3 text-sm dark:bg-white/10">
+                                        <div class="font-medium text-[#073070] dark:text-white">Treffer in Verlauf / Notizen</div>
                                         @foreach($card['snippets'] as $snippet)
                                             <div>{!! $snippet !!}</div>
                                         @endforeach
                                     </div>
                                 @endif
-                            </flux:card>
+                            </section>
                         @endforeach
                     </div>
                 @endif

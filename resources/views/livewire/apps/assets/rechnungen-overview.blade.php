@@ -328,26 +328,30 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
         :render-app-index-auto="false"
     >
         <div class="space-y-6">
-            <flux:field>
-                <flux:label>Suche</flux:label>
-                <flux:input wire:model.live.debounce.400ms="search" placeholder="T-Nummer …" class="max-w-md" />
-            </flux:field>
+            <div class="glass-card space-y-4 p-4" style="--glass-opacity: 0.92; overflow: visible">
+                <flux:field>
+                    <flux:label>Suche</flux:label>
+                    <flux:input wire:model.live.debounce.400ms="search" placeholder="T-Nummer …" class="max-w-md" />
+                </flux:field>
 
-            <flux:button.group>
-                <flux:button wire:click="$set('tab', 'analyzed')" :variant="$tab === 'analyzed' ? 'primary' : 'ghost'">
-                    Gespeicherte Analysen
-                </flux:button>
-                <flux:button wire:click="$set('tab', 'pending')" :variant="$tab === 'pending' ? 'primary' : 'ghost'">
-                    Analyse offen
-                </flux:button>
-            </flux:button.group>
+                <flux:button.group>
+                    <flux:button wire:click="$set('tab', 'analyzed')" :variant="$tab === 'analyzed' ? 'primary' : 'ghost'">
+                        Gespeicherte Analysen
+                    </flux:button>
+                    <flux:button wire:click="$set('tab', 'pending')" :variant="$tab === 'pending' ? 'primary' : 'ghost'">
+                        Analyse offen
+                    </flux:button>
+                </flux:button.group>
+
+                @if($tab === 'analyzed')
+                    <flux:checkbox wire:model.live="onlyFailed" label="Nur fehlgeschlagene anzeigen" />
+                @endif
+            </div>
 
             @if($tab === 'analyzed')
-                <div class="flex items-center gap-3">
-                    <flux:checkbox wire:model.live="onlyFailed" label="Nur fehlgeschlagene anzeigen" />
-                </div>
 
-                <flux:table>
+                <div class="glass-card overflow-hidden">
+<flux:table>
                     <flux:table.columns>
                         @include('intranet-app-assets::partials.sortable-column', ['column' => 'd3_document_id', 'label' => 'D3-ID'])
                         @include('intranet-app-assets::partials.sortable-column', ['column' => 'status', 'label' => 'Status'])
@@ -369,10 +373,10 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge :variant="$this->statusVariant($row)">{{ $this->statusLabel($row) }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge :variant="$this->statusVariant($row)">{{ $this->statusLabel($row) }}</x-intranet-app-assets::hwk-badge>
                                 </flux:table.cell>
                                 <flux:table.cell>{{ $row->assets_count }}</flux:table.cell>
-                                <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">
+                                <flux:table.cell class="text-sm text-slate-600 dark:text-white/70">
                                     {{ $row->vision_model ?? '—' }}
                                 </flux:table.cell>
                                 <flux:table.cell class="text-sm">
@@ -402,19 +406,23 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="6" class="py-8 text-center text-zinc-500">
-                                    Keine Einträge im Cache.
-                                </flux:table.cell>
+                                <flux:table.cell colspan="6" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Einträge im Cache." />
+</flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
+</div>
 
                 <div>
-                    {{ $this->analysesPaginator->links() }}
+                    <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                        {{ $this->analysesPaginator->links() }}
+                    </div>
                 </div>
             @else
-                <flux:table>
+                <div class="glass-card overflow-hidden">
+<flux:table>
                     <flux:table.columns>
                         @include('intranet-app-assets::partials.sortable-column', ['column' => 'd3_document_id', 'label' => 'D3-ID'])
                         @include('intranet-app-assets::partials.sortable-column', ['column' => 'queue_status', 'label' => 'Queue-Status'])
@@ -435,12 +443,12 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     @if($item->row)
-                                        <flux:badge :variant="$this->statusVariant($item->row)">{{ $this->statusLabel($item->row) }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge :variant="$this->statusVariant($item->row)">{{ $this->statusLabel($item->row) }}</x-intranet-app-assets::hwk-badge>
                                         @if($item->row->status === \Hwkdo\IntranetAppAssets\Enums\D3InvoiceAnalysisStatus::Failed && $item->row->error_message)
                                             <div class="mt-1 max-w-md text-xs text-red-600 dark:text-red-400">{{ \Illuminate\Support\Str::limit($item->row->error_message, 120) }}</div>
                                         @endif
                                     @else
-                                        <flux:badge variant="zinc">Noch nicht gestartet</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge variant="zinc">Noch nicht gestartet</x-intranet-app-assets::hwk-badge>
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>{{ $item->asset_count }}</flux:table.cell>
@@ -457,16 +465,19 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="4" class="py-8 text-center text-zinc-500">
-                                    Keine offenen T-Nummern (alle hinterlegten Rechnungen haben eine gültige abgeschlossene Analyse).
-                                </flux:table.cell>
+                                <flux:table.cell colspan="4" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine offenen T-Nummern (alle hinterlegten Rechnungen haben eine gültige abgeschlossene Analyse)." />
+</flux:table.cell>
                             </flux:table.row>
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
+</div>
 
                 <div>
-                    {{ $this->pendingPaginator()->links() }}
+                    <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                        {{ $this->pendingPaginator()->links() }}
+                    </div>
                 </div>
             @endif
         </div>
@@ -477,11 +488,11 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
             @php($da = $this->detailAnalysis)
             <div class="space-y-4">
                 <flux:heading size="lg">Analyse {{ $da->d3_document_id }}</flux:heading>
-                <flux:text class="text-zinc-500">
+                <flux:text class="text-slate-600 dark:text-white/70">
                     Modell: {{ $da->vision_model ?? '—' }} · Stand: {{ $da->analyzed_at?->format('d.m.Y H:i') ?? '—' }}
                 </flux:text>
-                <div class="max-h-[70vh] overflow-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-                    <pre class="whitespace-pre-wrap break-words text-xs font-mono text-zinc-800 dark:text-zinc-200">{{ json_encode($da->result_json ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                <div class="max-h-[70vh] overflow-auto rounded-lg border border-[#d0e3f9] bg-[#d0e3f9]/40 p-4 dark:border-white/10 dark:bg-white/5">
+                    <pre class="whitespace-pre-wrap break-words text-xs font-mono text-[#073070] dark:text-white/80">{{ json_encode($da->result_json ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                 </div>
                 <div class="flex justify-end gap-2">
                     <flux:button wire:click="closeDetail" variant="ghost">Schließen</flux:button>
@@ -495,7 +506,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungen')] class extends Com
             @php($ea = $this->errorAnalysis)
             <div class="space-y-4">
                 <flux:heading size="lg">Fehler {{ $ea->d3_document_id }}</flux:heading>
-                <flux:text class="text-zinc-500">
+                <flux:text class="text-slate-600 dark:text-white/70">
                     Status: {{ $this->statusLabel($ea) }} · Zeit: {{ $ea->failed_at?->format('d.m.Y H:i') ?? '—' }}
                 </flux:text>
                 <div class="max-h-[60vh] overflow-auto rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/20">

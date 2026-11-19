@@ -91,25 +91,25 @@ new #[Layout('components.layouts.app')] #[Title('Asset löschen')] class extends
             </flux:callout>
         @endif
 
-        <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-3 text-sm">
+        <div class="rounded-lg border border-[#d0e3f9] dark:border-white/10 p-4 space-y-3 text-sm">
             <flux:heading size="sm">Zu löschendes Asset</flux:heading>
-            <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
-                <dt class="font-medium text-zinc-500">Name / Modell</dt>
+            <dl class="hwk-rows">
+                <dt class="font-medium text-slate-600 dark:text-white/70">Name / Modell</dt>
                 <dd class="font-medium">{{ $asset->display_name }}</dd>
 
-                <dt class="font-medium text-zinc-500">Seriennummer</dt>
+                <dt class="font-medium text-slate-600 dark:text-white/70">Seriennummer</dt>
                 <dd class="font-mono">{{ $asset->serial_number }}</dd>
 
-                <dt class="font-medium text-zinc-500">Typ</dt>
+                <dt class="font-medium text-slate-600 dark:text-white/70">Typ</dt>
                 <dd>{{ $asset->type?->name ?? '—' }}</dd>
 
-                <dt class="font-medium text-zinc-500">Hersteller</dt>
+                <dt class="font-medium text-slate-600 dark:text-white/70">Hersteller</dt>
                 <dd>{{ $asset->vendor?->name ?? '—' }}</dd>
 
-                <dt class="font-medium text-zinc-500">Besitzer</dt>
+                <dt class="font-medium text-slate-600 dark:text-white/70">Besitzer</dt>
                 <dd>{{ $asset->owner?->name ?? '—' }}</dd>
 
-                <dt class="font-medium text-zinc-500">Itexia-ID</dt>
+                <dt class="font-medium text-slate-600 dark:text-white/70">Itexia-ID</dt>
                 <dd class="font-mono text-red-600">{{ $asset->itexia_id }}</dd>
             </dl>
         </div>

@@ -65,8 +65,8 @@ new class extends Component
 ?>
 
 @placeholder
-    <div class="rounded-xl border border-zinc-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/50">
-        <div class="flex items-center gap-2 text-zinc-500">
+    <div class="rounded-xl border border-[#d0e3f9] bg-white px-4 py-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+        <div class="flex items-center gap-2 text-slate-600 dark:text-white/70">
             <flux:icon.loading variant="micro" />
             <span>Intune-Daten werden geladen…</span>
         </div>
@@ -74,7 +74,7 @@ new class extends Component
 @endplaceholder
 
 <div>
-    <flux:card class="overflow-hidden transition-colors hover:border-zinc-400/60 dark:hover:border-zinc-500/60">
+    <section class="glass-card overflow-hidden transition-colors hover:border-[#073070]/20 dark:hover:border-white/20">
         <flux:accordion exclusive transition>
             <flux:accordion.item>
                 <flux:accordion.heading class="cursor-pointer select-none font-medium">
@@ -83,7 +83,7 @@ new class extends Component
                 <flux:accordion.content>
                 <div wire:intersect.once="loadIntuneData" class="min-h-[2rem]">
                     @if($loaded === null)
-                        <div class="flex items-center gap-2 text-zinc-500">
+                        <div class="flex items-center gap-2 text-slate-600 dark:text-white/70">
                             <flux:icon.loading variant="micro" wire:loading.delay.shortest />
                             <span wire:loading.delay.shortest>Lade Intune-Daten…</span>
                         </div>
@@ -92,7 +92,7 @@ new class extends Component
                             <flux:callout.text>{{ $intuneError }}</flux:callout.text>
                         </flux:callout>
                     @elseif($intuneData !== null)
-                        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                        <dl class="hwk-rows">
                             <dt class="font-semibold">Geräte-ID (lokal)</dt>
                             <dd class="font-mono text-xs">{{ $intuneDeviceId ?? 'N/A' }}</dd>
                             @foreach(static::$labels as $key => $label)
@@ -109,13 +109,13 @@ new class extends Component
                             @endforeach
                         </dl>
                     @else
-                        <flux:callout variant="warning" icon="exclamation-triangle">
-                            <flux:callout.text>Kein Gerät mit dieser Seriennummer in Intune gefunden.</flux:callout.text>
-                        </flux:callout>
+                        <x-intranet-app-assets::hwk-empty bare icon="device-phone-mobile" title="Kein Gerät gefunden">
+                            Kein Gerät mit dieser Seriennummer in Intune gefunden.
+                        </x-intranet-app-assets::hwk-empty>
                     @endif
                 </div>
                 </flux:accordion.content>
             </flux:accordion.item>
         </flux:accordion>
-    </flux:card>
+    </section>
 </div>

@@ -194,7 +194,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
 <div>
 <x-intranet-app-assets::assets-layout heading="Mobilgeräte" subheading="Assets vom Typ Mobilgerät (is_intune_object)">
     <div class="space-y-4">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 gap-3">
                 <div class="flex-1 max-w-sm">
                     <flux:input
@@ -211,7 +211,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                     search:placeholder="Typ suchen…"
                     placeholder="Typen filtern…"
                     size="sm"
-                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-[#073070] dark:[&_[data-flux-pillbox-placeholder]]:text-white/70"
                 >
                     @foreach($this->intuneAssetTypes as $type)
                         <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
@@ -234,7 +234,8 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
             </flux:dropdown>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
@@ -252,7 +253,7 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                             @if($asset->itexia_id)
-                                <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
                         @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
@@ -263,15 +264,15 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->intune_device_id)
-                                    <flux:badge color="blue" size="sm">Intune</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="blue" size="sm">Intune</x-intranet-app-assets::hwk-badge>
                                 @else
-                                    <flux:badge color="zinc" size="sm">Nicht-Intune</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="zinc" size="sm">Nicht-Intune</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_missing)
-                                    <flux:badge color="red" size="sm">Vermisst</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="red" size="sm">Vermisst</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_clarification)
-                                    <flux:badge color="amber" size="sm">Klärung</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">Klärung</x-intranet-app-assets::hwk-badge>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -282,16 +283,19 @@ new #[Layout('components.layouts.app')] #[Title('Mobilgeräte')] class extends C
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="9" class="text-center text-zinc-500 py-8">
-                            Keine Mobilgeräte gefunden.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="9" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Mobilgeräte gefunden." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $this->assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $this->assets->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

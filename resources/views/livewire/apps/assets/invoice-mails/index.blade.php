@@ -376,13 +376,13 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
         :render-app-index-auto="false"
     >
         <div class="space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="glass-card flex flex-wrap items-center justify-between gap-4 p-4" style="--glass-opacity: 0.92; overflow: visible">
                 <div class="flex items-center gap-3">
                     <flux:switch wire:model.live="reportMode" label="Report-Modus" />
                     @if($reportMode)
-                        <flux:badge color="sky" icon="eye">Nur Bericht, kein automatischer D3-Upload</flux:badge>
+                        <x-intranet-app-assets::hwk-badge color="sky" icon="eye">Nur Bericht, kein automatischer D3-Upload</x-intranet-app-assets::hwk-badge>
                     @else
-                        <flux:badge color="amber" icon="bolt">Automatischer D3-Upload aktiv</flux:badge>
+                        <x-intranet-app-assets::hwk-badge color="amber" icon="bolt">Automatischer D3-Upload aktiv</x-intranet-app-assets::hwk-badge>
                     @endif
                 </div>
 
@@ -402,10 +402,10 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                     </x-slot>
                 </flux:callout>
             @else
-                <flux:text class="text-sm text-zinc-500">
+                <div class="glass-card px-5 py-3 text-sm text-slate-600 dark:text-white/70" style="--glass-opacity: 0.92">
                     Subscription aktiv{{ $subscription['expires_at'] ? ', läuft bis '.$subscription['expires_at'].' (wird automatisch erneuert)' : '' }}.
                     <flux:link wire:click="ensureSubscription" class="cursor-pointer">Jetzt prüfen</flux:link>
-                </flux:text>
+                </div>
             @endif
 
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -419,18 +419,18 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                     ['Braucht Prüfung', $this->kpis['attention'], 'amber'],
                     ['Nach D3 hochgeladen', $this->kpis['uploaded'], 'green'],
                 ] as [$label, $value, $color])
-                    <flux:card class="glass-card p-4">
+                    <section class="glass-card overflow-hidden glass-card p-4">
                         <flux:text class="text-xs">{{ $label }}</flux:text>
                         <flux:heading size="xl" @class([
                             'mt-1',
                             'text-red-600 dark:text-red-400' => $color === 'red' && $value > 0,
                             'text-amber-600 dark:text-amber-400' => $color === 'amber' && $value > 0,
                         ])>{{ $value }}</flux:heading>
-                    </flux:card>
+                    </section>
                 @endforeach
             </div>
 
-            <div class="flex flex-wrap items-end gap-3">
+            <div class="glass-card flex flex-wrap items-end gap-3 p-4" style="--glass-opacity: 0.92; overflow: visible">
                 <flux:input wire:model.live.debounce.400ms="search" icon="magnifying-glass" placeholder="Betreff oder Absender …" class="max-w-xs" />
                 <flux:select wire:model.live="status" class="max-w-48">
                     <flux:select.option value="">Alle Status</flux:select.option>
@@ -452,7 +452,8 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                 <flux:checkbox wire:model.live="onlyAttention" label="Nur zu prüfen" />
             </div>
 
-            <flux:table :paginate="$this->mails">
+            <div class="glass-card overflow-hidden">
+<flux:table :paginate="$this->mails">
                 <flux:table.columns>
                     <flux:table.column>Eingang</flux:table.column>
                     <flux:table.column>Absender / Betreff</flux:table.column>
@@ -470,27 +471,27 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                             <flux:table.cell class="whitespace-nowrap text-sm">
                                 {{ $mail->received_at?->timezone(config('app.timezone'))->format('d.m.Y H:i') }}
                                 @if($mail->source === InvoiceMailSource::Import)
-                                    <flux:badge size="sm" color="zinc" class="ml-1">Import</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" color="zinc" class="ml-1">Import</x-intranet-app-assets::hwk-badge>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell class="max-w-md">
                                 <flux:link :href="route('apps.assets.invoice-mails.show', $mail)" wire:navigate class="block truncate font-medium">
                                     {{ $mail->subject ?: '(kein Betreff)' }}
                                 </flux:link>
-                                <div class="truncate text-xs text-zinc-500">{{ $mail->from_name }} &lt;{{ $mail->from_address }}&gt;</div>
+                                <div class="truncate text-xs text-slate-600 dark:text-white/70">{{ $mail->from_name }} &lt;{{ $mail->from_address }}&gt;</div>
                             </flux:table.cell>
                             <flux:table.cell class="text-sm tabular-nums">{{ $this->percent($mail->relevance_probability) }}</flux:table.cell>
                             <flux:table.cell>
                                 @if($mail->is_relevant === true)
-                                    <flux:badge size="sm" color="green">Ja</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" color="green">Ja</x-intranet-app-assets::hwk-badge>
                                 @elseif($mail->is_relevant === false)
-                                    <flux:badge size="sm" color="zinc" title="{{ $mail->irrelevant_reason }}">Nein</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" color="zinc" title="{{ $mail->irrelevant_reason }}">Nein</x-intranet-app-assets::hwk-badge>
                                 @else
-                                    <span class="text-zinc-400">–</span>
+                                    <span class="text-slate-600 dark:text-white/70">–</span>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge size="sm" :color="$mail->status->color()" :icon="$mail->status->isInProgress() ? 'arrow-path' : null">{{ $mail->status->label() }}</flux:badge>
+                                <x-intranet-app-assets::hwk-badge size="sm" :color="$mail->status->color()" :icon="$mail->status->isInProgress() ? 'arrow-path' : null">{{ $mail->status->label() }}</x-intranet-app-assets::hwk-badge>
                                 @if($mail->last_error)
                                     <div class="mt-1 max-w-48 truncate text-xs text-red-600 dark:text-red-400" title="{{ $mail->last_error }}">{{ $mail->last_error }}</div>
                                 @endif
@@ -501,40 +502,43 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                                         <div class="font-medium">{{ $assigned->ldap_displayname ?: $assigned->name }}</div>
                                     @endif
                                     <div class="flex items-center gap-1">
-                                        <flux:badge size="sm" :color="$attachment->match_status->color()">{{ $attachment->match_status->label() }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge size="sm" :color="$attachment->match_status->color()">{{ $attachment->match_status->label() }}</x-intranet-app-assets::hwk-badge>
                                         @if($attachment->document_kind)
-                                            <flux:badge size="sm" color="zinc">{{ \Hwkdo\IntranetAppAssets\Enums\InvoiceMailDocumentKind::tryFrom($attachment->document_kind)?->label() }}</flux:badge>
+                                            <x-intranet-app-assets::hwk-badge size="sm" color="zinc">{{ \Hwkdo\IntranetAppAssets\Enums\InvoiceMailDocumentKind::tryFrom($attachment->document_kind)?->label() }}</x-intranet-app-assets::hwk-badge>
                                         @endif
                                         @if($attachment->wasCorrected())
-                                            <flux:badge size="sm" color="amber">korrigiert</flux:badge>
+                                            <x-intranet-app-assets::hwk-badge size="sm" color="amber">korrigiert</x-intranet-app-assets::hwk-badge>
                                         @elseif($attachment->suggested_confidence !== null)
-                                            <span class="text-xs text-zinc-500">{{ $this->percent($attachment->suggested_confidence) }}</span>
+                                            <span class="text-xs text-slate-600 dark:text-white/70">{{ $this->percent($attachment->suggested_confidence) }}</span>
                                         @endif
                                     </div>
                                 @else
-                                    <span class="text-zinc-400">–</span>
+                                    <span class="text-slate-600 dark:text-white/70">–</span>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
                                 @if($attachment && $attachment->d3_status !== InvoiceMailD3Status::None)
-                                    <flux:badge size="sm" :color="$attachment->d3_status->color()">{{ $attachment->d3_status->label() }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" :color="$attachment->d3_status->color()">{{ $attachment->d3_status->label() }}</x-intranet-app-assets::hwk-badge>
                                 @else
-                                    <span class="text-zinc-400">–</span>
+                                    <span class="text-slate-600 dark:text-white/70">–</span>
                                 @endif
                             </flux:table.cell>
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="7" class="py-8 text-center text-zinc-500">Keine Mails gefunden.</flux:table.cell>
+                            <flux:table.cell colspan="7" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Mails gefunden." />
+</flux:table.cell>
                         </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+</div>
         </div>
     </x-intranet-app-assets::assets-layout>
 
     <flux:modal wire:model="showSettingsModal" class="w-full max-w-xl">
-        <form wire:submit="saveSettings" class="space-y-5">
+        <form wire:submit="saveSettings" class="glass-card space-y-5" style="overflow: visible">
             <flux:heading size="lg">Einstellungen Rechnungs-Mails</flux:heading>
 
             <flux:input wire:model="relevanceThreshold" type="number" step="0.01" min="0" max="1" label="Relevanz-Schwelle (JEV, 0–1)" description="Ab dieser Wahrscheinlichkeit gilt eine Mail als relevant." />
@@ -580,7 +584,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                 <flux:text class="mt-1">Holt einmalig die Mails der gewählten Ordner im Zeitraum. Bereits erfasste Mails werden übersprungen.</flux:text>
             </div>
 
-            <form wire:submit="startImport" class="space-y-4">
+            <form wire:submit="startImport" class="hwk-fields glass-card space-y-4 p-5 sm:p-6" style="overflow: visible">
                 <div class="flex flex-wrap items-end gap-3">
                     <flux:input wire:model="importFrom" type="date" label="Von" />
                     <flux:input wire:model="importTo" type="date" label="Bis" />
@@ -594,7 +598,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                     @if($importFolders === [])
                         <flux:text class="text-sm">Ordner werden geladen …</flux:text>
                     @else
-                        <div class="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                        <div class="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-[#d0e3f9] p-3 dark:border-white/10">
                             @foreach($importFolders as $folder)
                                 <flux:checkbox
                                     wire:model="importFolderIds"
@@ -621,7 +625,8 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
             </form>
 
             @if($this->imports->isNotEmpty())
-                <flux:table>
+                <div class="glass-card overflow-hidden">
+<flux:table>
                     <flux:table.columns>
                         <flux:table.column>Zeitraum</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
@@ -635,13 +640,13 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                             <flux:table.row wire:key="import-{{ $import->id }}">
                                 <flux:table.cell class="text-sm">
                                     {{ $import->received_from?->timezone(config('app.timezone'))->format('d.m.Y') }} – {{ $import->received_to?->timezone(config('app.timezone'))->format('d.m.Y') }}
-                                    <div class="text-xs text-zinc-500">{{ $import->starter?->name }}, {{ $import->created_at?->format('d.m.Y H:i') }}</div>
+                                    <div class="text-xs text-slate-600 dark:text-white/70">{{ $import->starter?->name }}, {{ $import->created_at?->format('d.m.Y H:i') }}</div>
                                     @if(is_array($import->folders) && $import->folders !== [])
-                                        <div class="text-xs text-zinc-500">{{ collect($import->folders)->pluck('path')->filter()->implode(', ') }}</div>
+                                        <div class="text-xs text-slate-600 dark:text-white/70">{{ collect($import->folders)->pluck('path')->filter()->implode(', ') }}</div>
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge size="sm" :color="$import->status->color()">{{ $import->status->label() }}</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge size="sm" :color="$import->status->color()">{{ $import->status->label() }}</x-intranet-app-assets::hwk-badge>
                                     @if($import->last_error)
                                         <div class="mt-1 max-w-48 truncate text-xs text-red-600" title="{{ $import->last_error }}">{{ $import->last_error }}</div>
                                     @endif
@@ -654,6 +659,7 @@ new #[Layout('components.layouts.app')] #[Title('Rechnungs-Mails')] class extend
                         @endforeach
                     </flux:table.rows>
                 </flux:table>
+</div>
             @endif
         </div>
     </flux:modal>

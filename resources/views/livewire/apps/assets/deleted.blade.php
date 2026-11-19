@@ -87,7 +87,7 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
 <div>
     <x-intranet-app-assets::assets-layout heading="Gelöschte Assets" subheading="Archivierte Assets mit Verlauf und Aktionen">
         <div class="space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-wrap items-center justify-between gap-3" style="--glass-opacity: 0.92; overflow: visible">
                 <div class="max-w-sm flex-1 min-w-[12rem]">
                     <flux:input
                         wire:model.live.debounce.300ms="search"
@@ -107,7 +107,8 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
                 />
             </div>
 
-            <flux:table>
+            <div class="glass-card overflow-hidden">
+<flux:table>
                 <flux:table.columns>
                     @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Asset'])
                     @include('intranet-app-assets::partials.sortable-column', ['column' => 'deleted_at', 'label' => 'Gelöscht am'])
@@ -126,7 +127,7 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
                         <flux:table.row wire:key="deleted-asset-{{ $asset->id }}">
                             <flux:table.cell>
                                 <div class="font-medium">{{ $asset->display_name }}</div>
-                                <div class="text-xs text-zinc-500">{{ $asset->serial_number }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->serial_number }}</div>
                             </flux:table.cell>
                             <flux:table.cell>{{ $asset->deleted_at?->format('d.m.Y H:i') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ $deletedEntry?->user?->name ?? '—' }}</flux:table.cell>
@@ -153,16 +154,19 @@ new #[Layout('components.layouts.app')] #[Title('Gelöschte Assets')] class exte
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="5" class="text-center text-zinc-500 py-8">
-                                Keine gelöschten Assets gefunden.
-                            </flux:table.cell>
+                            <flux:table.cell colspan="5" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine gelöschten Assets gefunden." />
+</flux:table.cell>
                         </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+</div>
 
             <div>
-                {{ $this->assets->links() }}
+                <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                    {{ $this->assets->links() }}
+                </div>
             </div>
         </div>
     </x-intranet-app-assets::assets-layout>

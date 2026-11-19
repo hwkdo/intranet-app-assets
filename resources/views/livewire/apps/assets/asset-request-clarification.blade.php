@@ -12,15 +12,15 @@
                 </flux:callout.text>
             </flux:callout>
 
-            <flux:card class="space-y-4">
+            <section class="glass-card overflow-hidden space-y-4">
                 <div class="text-sm">
                     <flux:heading size="sm">Asset</flux:heading>
-                    <flux:text class="text-zinc-600 dark:text-zinc-300">
+                    <flux:text class="text-slate-600 dark:text-white/70">
                         {{ $asset->display_name }} · {{ $asset->serial_number }}
                     </flux:text>
                 </div>
 
-                <form wire:submit="submit" class="space-y-4">
+                <form wire:submit="submit" class="hwk-fields glass-card space-y-4 p-5 sm:p-6" style="overflow: visible">
                     <flux:textarea
                         wire:model="reason"
                         label="Begründung"
@@ -39,7 +39,7 @@
                         </flux:button>
                     </div>
                 </form>
-            </flux:card>
+            </section>
         </div>
     </x-intranet-app-assets::assets-layout>
 </div>

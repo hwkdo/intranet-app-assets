@@ -312,7 +312,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
     <div class="space-y-8">
 
         {{-- Aktionsleiste --}}
-        <div class="flex items-center gap-3">
+        <div class="glass-card sticky top-3 z-20 flex flex-wrap items-center gap-2 p-3" style="--glass-opacity: 0.92">
             @php
                 $isAdmin = auth()->user()?->can('manage-app-assets') ?? false;
                 $canInitiateReturnFromShow = (($asset->user_id !== null && (int) $asset->user_id === (int) auth()->id()) || $isAdmin);
@@ -385,11 +385,11 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
 
         {{-- Asset-Stammdaten --}}
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <flux:card class="overflow-hidden transition-colors hover:border-zinc-400/60 dark:hover:border-zinc-500/60">
+            <section class="glass-card overflow-hidden transition-colors hover:border-[#073070]/20 dark:hover:border-white/20">
                 <div class="space-y-4">
                     <flux:heading size="lg">Stammdaten</flux:heading>
 
-                    <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <dl class="hwk-rows">
                     @if(filled($asset->name))
                         <dt class="font-semibold">Name</dt>
                         <dd>{{ $asset->name }}</dd>
@@ -454,7 +454,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @else
                             —
                             @if($asset->type?->itexia_creation_allowed)
-                                <flux:text class="text-xs text-zinc-500">Bitte zuerst Itexia-ID (Barcode) eintragen.</flux:text>
+                                <flux:text class="text-xs text-slate-600 dark:text-white/70">Bitte zuerst Itexia-ID (Barcode) eintragen.</flux:text>
                             @endif
                         @endif
                     </dd>
@@ -468,7 +468,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <dd>
                         @php $orderLink = $this->orderNumberLink($asset->order_number); @endphp
                         @if($orderLink)
-                            <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->order_number }}</a>
+                            <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-[#073070] dark:text-[#d0e3f9] underline hover:no-underline">{{ $asset->order_number }}</a>
                         @else
                             {{ $asset->order_number ?? '—' }}
                         @endif
@@ -479,7 +479,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @if(filled($asset->invoice_number))
                             @php $invoiceLink = $this->invoiceNumberLink($asset->invoice_number); @endphp
                             @if($invoiceLink)
-                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="font-mono text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->invoice_number }}</a>
+                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="font-mono text-[#073070] dark:text-[#d0e3f9] underline hover:no-underline">{{ $asset->invoice_number }}</a>
                             @else
                                 <span class="font-mono">{{ $asset->invoice_number }}</span>
                             @endif
@@ -507,24 +507,24 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     <dd>{{ $asset->updated_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                 </dl>
                 </div>
-            </flux:card>
+            </section>
 
-            <flux:card class="overflow-hidden transition-colors hover:border-zinc-400/60 dark:hover:border-zinc-500/60">
+            <section class="glass-card overflow-hidden transition-colors hover:border-[#073070]/20 dark:hover:border-white/20">
                 <div class="space-y-4">
                     <div class="flex flex-wrap items-center gap-2">
                         <flux:heading size="lg">Status</flux:heading>
                         @if($asset->is_missing)
-                            <flux:badge color="red" size="lg" icon="exclamation-triangle">Vermisst</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="red" size="lg" icon="exclamation-triangle">Vermisst</x-intranet-app-assets::hwk-badge>
                         @endif
                         @if($asset->is_clarification)
-                            <flux:badge color="amber" size="lg" icon="question-mark-circle">In Klärung</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="amber" size="lg" icon="question-mark-circle">In Klärung</x-intranet-app-assets::hwk-badge>
                         @endif
                         @if($asset->is_in_stock)
-                            <flux:badge color="blue" size="lg" icon="archive-box">Auf Lager</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="blue" size="lg" icon="archive-box">Auf Lager</x-intranet-app-assets::hwk-badge>
                         @elseif($asset->user_id === null)
-                            <flux:badge color="zinc" size="lg" icon="building-office-2">Gemeinschaftsgerät</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="zinc" size="lg" icon="building-office-2">Gemeinschaftsgerät</x-intranet-app-assets::hwk-badge>
                         @elseif(! $asset->is_missing && ! $asset->is_clarification)
-                            <flux:badge color="green" size="lg" icon="check-circle">Aktiv</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="green" size="lg" icon="check-circle">Aktiv</x-intranet-app-assets::hwk-badge>
                         @endif
                         @php
                             $activeLoanReturn = $asset->handovers
@@ -533,9 +533,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 ->first(fn ($r) => $r->completed_at === null && $r->isLoan());
                         @endphp
                         @if($activeLoanReturn)
-                            <flux:badge color="sky" size="lg" icon="clock">
+                            <x-intranet-app-assets::hwk-badge color="sky" size="lg" icon="clock">
                                 Verliehen bis {{ $activeLoanReturn->scheduled_at?->format('d.m.Y H:i') ?? '—' }}
-                            </flux:badge>
+                            </x-intranet-app-assets::hwk-badge>
                         @endif
                     </div>
 
@@ -546,7 +546,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 href="{{ $this->assetImageUrl }}"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="inline-block overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 transition hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
+                                class="inline-block overflow-hidden rounded-lg border border-[#d0e3f9] bg-[#d0e3f9]/40 transition hover:border-[#d0e3f9] dark:border-white/10 dark:bg-white/5"
                             >
                                 <img
                                     src="{{ $this->assetThumbnailUrl }}"
@@ -561,7 +561,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     @if($asset->type?->is_domain_object)
                     <div class="mt-4 space-y-3">
                         <flux:heading size="sm" class="font-semibold">Domain</flux:heading>
-                        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                        <dl class="hwk-rows">
                             <dt class="font-semibold">Last Seen</dt>
                             <dd>{{ $asset->domain_last_seen?->format('d.m.Y H:i') ?? 'N/A' }}</dd>
 
@@ -628,14 +628,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     @endif
                 </div>
                 </div>
-            </flux:card>
+            </section>
         </div>
 
-        {{-- Übergaben --}}
-        <div class="space-y-3">
-            <flux:heading size="lg">Übergaben</flux:heading>
+        <x-intranet-app-assets::hwk-card title="Übergaben" icon="arrow-right-circle" description="Bisherige Ausgaben dieses Assets.">
             @if($this->handoversSorted->isEmpty())
-                <flux:text class="text-zinc-500">Noch keine Übergaben für dieses Asset.</flux:text>
+                <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Noch keine Übergaben für dieses Asset." />
             @else
                 <flux:table>
                     <flux:table.columns>
@@ -654,9 +652,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 <flux:table.cell>
                                     @php $handoverStatus = $handover->displayStatus(); @endphp
                                     <div class="flex flex-col gap-1">
-                                        <flux:badge color="{{ $handoverStatus['color'] }}" size="sm">{{ $handoverStatus['label'] }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge color="{{ $handoverStatus['color'] }}" size="sm">{{ $handoverStatus['label'] }}</x-intranet-app-assets::hwk-badge>
                                         @if(filled($handoverStatus['hint']))
-                                            <span class="text-xs text-zinc-500">{{ $handoverStatus['hint'] }}</span>
+                                            <span class="text-xs text-slate-600 dark:text-white/70">{{ $handoverStatus['hint'] }}</span>
                                         @endif
                                     </div>
                                 </flux:table.cell>
@@ -670,12 +668,10 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     </flux:table.rows>
                 </flux:table>
             @endif
-        </div>
+        </x-intranet-app-assets::hwk-card>
 
-        {{-- Notiz hinzufügen --}}
-        <div class="space-y-3">
-            <flux:heading size="lg">Notiz hinzufügen</flux:heading>
-            <form wire:submit="addNote" class="flex gap-3 items-start">
+        <x-intranet-app-assets::hwk-card title="Notiz hinzufügen" icon="chat-bubble-left" description="Die Notiz erscheint anschließend im Verlauf." padded>
+            <form wire:submit="addNote" class="flex items-start gap-3">
                 <div class="flex-1">
                     <flux:textarea
                         wire:model="newNote"
@@ -688,14 +684,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     Hinzufügen
                 </flux:button>
             </form>
-        </div>
+        </x-intranet-app-assets::hwk-card>
 
-        {{-- History Timeline --}}
-        <div class="space-y-3">
-            <flux:heading size="lg">Verlauf</flux:heading>
+        <x-intranet-app-assets::hwk-card title="Verlauf" icon="clock" description="Änderungen, Übergaben, Notizen und Anhänge.">
 
             @if($this->history->isEmpty())
-                <flux:text class="text-zinc-500">Noch keine Ereignisse vorhanden.</flux:text>
+                <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Noch keine Ereignisse vorhanden." />
             @else
                 <flux:timeline>
                     @foreach($this->history as $entry)
@@ -734,12 +728,12 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $histIndicatorColor = match ($histEvent) {
                                     $histDeleted => 'red',
                                     $histRestored => 'green',
-                                    $histMailSent => 'blue',
+                                    $histMailSent => 'zinc',
                                     $histMailFailed => 'red',
                                     $histItexiaMissing => 'amber',
                                     $histSeventhingsOff => 'zinc',
                                     $histHandoverRejected => 'red',
-                                    $histRejectionAck => 'blue',
+                                    $histRejectionAck => 'zinc',
                                     $histRejectionNewOwner, $histRejectionLocation, $histRejectionMissing => 'green',
                                     $histOwnerClarification, $histAdminClarification => 'amber',
                                     $histClarClear, $histClarNewOwner, $histClarLocation, $histClarMissing => 'green',
@@ -747,7 +741,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                     $histReturnInitiated => 'amber',
                                     $histReturnCompleted => 'green',
                                     $histHandoverConfirmCleared, $histHandoverAssisted => 'green',
-                                    $histAdminHandoverStarted, $histAdminLoanStarted, $histLoanReturnScheduled => 'blue',
+                                    $histAdminHandoverStarted, $histAdminLoanStarted, $histLoanReturnScheduled => 'zinc',
                                     default => 'zinc',
                                 };
                             @endphp
@@ -859,7 +853,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         @if($historyEntry->user)
                                             <flux:text inline> von {{ $historyEntry->user->name }}</flux:text>
                                         @endif
-                                        <flux:text inline class="text-zinc-400"> · {{ $historyEntry->created_at->format('d.m.Y H:i') }}</flux:text>
+                                        <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $historyEntry->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
                                     @if($histEvent === $histDeleted && filled($historyEntry->reason))
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
@@ -879,7 +873,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         <flux:text class="mt-1">{{ $historyEntry->reason }}</flux:text>
                                     @endif
                                     @if(filled($historyEntry->meta))
-                                        <flux:text class="mt-1 font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ json_encode($historyEntry->meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</flux:text>
+                                        <flux:text class="mt-1 font-mono text-xs text-slate-600 dark:text-white/70">{{ json_encode($historyEntry->meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</flux:text>
                                     @endif
                                 </flux:timeline.content>
                             </flux:timeline.item>
@@ -890,7 +884,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                 $handoverStatus = $handover->displayStatus();
                             @endphp
                             <flux:timeline.item>
-                                <flux:timeline.indicator color="{{ $handoverStatus['color'] === 'zinc' ? 'zinc' : ($handoverStatus['color'] === 'blue' ? 'blue' : 'green') }}">
+                                <flux:timeline.indicator color="{{ $handoverStatus['color'] === 'zinc' || $handoverStatus['color'] === 'blue' ? 'zinc' : 'green' }}">
                                     <flux:icon.arrow-right-circle variant="micro" />
                                 </flux:timeline.indicator>
                                 <flux:timeline.content>
@@ -901,17 +895,17 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             @if($handover->issuer)
                                                 <flux:text inline> durch {{ $handover->issuer->name }}</flux:text>
                                             @endif
-                                            <flux:text inline class="text-zinc-400"> · {{ $handover->created_at->format('d.m.Y H:i') }}</flux:text>
+                                            <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $handover->created_at->format('d.m.Y H:i') }}</flux:text>
                                         </a>
                                     </flux:heading>
                                     <div class="mt-1 flex flex-wrap items-center gap-2">
-                                        <flux:badge size="sm" color="{{ $handoverStatus['color'] }}">{{ $handoverStatus['label'] }}</flux:badge>
+                                        <x-intranet-app-assets::hwk-badge size="sm" color="{{ $handoverStatus['color'] }}">{{ $handoverStatus['label'] }}</x-intranet-app-assets::hwk-badge>
                                         @if($handover->signature)
-                                            <flux:badge size="sm" color="green" icon="check">Unterschrift vorhanden</flux:badge>
+                                            <x-intranet-app-assets::hwk-badge size="sm" color="green" icon="check">Unterschrift vorhanden</x-intranet-app-assets::hwk-badge>
                                         @endif
                                     </div>
                                     @if(filled($handoverStatus['hint']))
-                                        <flux:text class="mt-1 text-sm text-zinc-500">{{ $handoverStatus['hint'] }}</flux:text>
+                                        <flux:text class="mt-1 text-sm text-slate-600 dark:text-white/70">{{ $handoverStatus['hint'] }}</flux:text>
                                     @endif
                                 </flux:timeline.content>
                             </flux:timeline.item>
@@ -919,7 +913,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                         @elseif($entry['type'] === 'return')
                             @php $return = $entry['model']; @endphp
                             <flux:timeline.item>
-                                <flux:timeline.indicator color="{{ $return->completed_at ? 'blue' : 'amber' }}">
+                                <flux:timeline.indicator color="{{ $return->completed_at ? 'green' : 'amber' }}">
                                     <flux:icon.arrow-left-circle variant="micro" />
                                 </flux:timeline.indicator>
                                 <flux:timeline.content>
@@ -929,7 +923,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             @if($return->recipient)
                                                 <flux:text inline> · entgegengenommen von {{ $return->recipient->name }}</flux:text>
                                             @endif
-                                            <flux:text inline class="text-zinc-400"> · {{ $return->completed_at->format('d.m.Y H:i') }}</flux:text>
+                                            <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $return->completed_at->format('d.m.Y H:i') }}</flux:text>
                                         @else
                                             @if($return->isScheduled())
                                                 Geplante Rückgabe eingeleitet
@@ -939,9 +933,9 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                             @if($return->initiatedBy)
                                                 <flux:text inline> von {{ $return->initiatedBy->name }}</flux:text>
                                             @endif
-                                            <flux:text inline class="text-zinc-400"> · {{ $return->created_at->format('d.m.Y H:i') }}</flux:text>
+                                            <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $return->created_at->format('d.m.Y H:i') }}</flux:text>
                                             @if($return->isScheduled())
-                                                <flux:text inline class="text-zinc-400"> · Termin {{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) }}</flux:text>
+                                                <flux:text inline class="text-slate-600 dark:text-white/70"> · Termin {{ \Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter::formattedScheduledAt($return->scheduled_at) }}</flux:text>
                                             @endif
                                         @endif
                                     </flux:heading>
@@ -960,7 +954,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         @if($note->author)
                                             <flux:text inline> von {{ $note->author->name }}</flux:text>
                                         @endif
-                                        <flux:text inline class="text-zinc-400"> · {{ $note->created_at->format('d.m.Y H:i') }}</flux:text>
+                                        <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $note->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
                                     <flux:text class="mt-1">{!! nl2br(e($note->note)) !!}</flux:text>
                                 </flux:timeline.content>
@@ -978,7 +972,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                                         @if($attachment->uploader)
                                             <flux:text inline> von {{ $attachment->uploader->name }}</flux:text>
                                         @endif
-                                        <flux:text inline class="text-zinc-400"> · {{ $attachment->created_at->format('d.m.Y H:i') }}</flux:text>
+                                        <flux:text inline class="text-slate-600 dark:text-white/70"> · {{ $attachment->created_at->format('d.m.Y H:i') }}</flux:text>
                                     </flux:heading>
                                     <flux:text class="font-mono text-sm">{{ basename($attachment->file) }}</flux:text>
                                 </flux:timeline.content>
@@ -987,13 +981,13 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
                     @endforeach
                 </flux:timeline>
             @endif
-        </div>
+        </x-intranet-app-assets::hwk-card>
 
         {{-- D3 Rechnungssuche Modal --}}
         <flux:modal wire:model="showD3InvoiceModal" class="md:max-w-2xl" variant="flyout">
             <div class="space-y-4">
                 <flux:heading size="lg">Rechnung in D3 suchen</flux:heading>
-                <p class="text-sm text-zinc-500">Suchbegriff (z. B. BEN, Seriennummer, IMEI) eingeben oder die vorgeschlagene Suche nutzen. Treffer in D3 prüfen und bei Bedarf als Rechnungsnummer übernehmen.</p>
+                <p class="text-sm text-slate-600 dark:text-white/70">Suchbegriff (z. B. BEN, Seriennummer, IMEI) eingeben oder die vorgeschlagene Suche nutzen. Treffer in D3 prüfen und bei Bedarf als Rechnungsnummer übernehmen.</p>
                 @if($showD3InvoiceModal)
                     <livewire:intranet-app-assets::apps.assets.d3-invoice-search
                         :asset-id="$asset->id"

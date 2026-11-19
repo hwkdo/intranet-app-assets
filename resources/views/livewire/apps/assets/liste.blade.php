@@ -585,14 +585,14 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
         }"
         x-on:{{ \Hwkdo\IntranetAppAssets\Support\BulkSelectionUi::CLEAR_SELECTED_IDS_EVENT }}.window="selectedIds = []"
     >
-        <flux:card
-            class="overflow-hidden transition-all duration-200"
-            x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-amber-50/90 shadow-sm dark:ring-amber-400/80 dark:ring-offset-zinc-950 dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
+        <section
+            class="glass-card overflow-hidden p-4 transition-all duration-200"
+            x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-[#d0e3f9]/80 shadow-sm dark:ring-amber-400/80 dark:ring-offset-[#04214e] dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
         >
             <flux:accordion exclusive transition>
                 <flux:accordion.item>
                     <flux:accordion.heading
-                        class="cursor-pointer select-none font-medium rounded-md px-1 py-0.5 -mx-1 transition-colors"
+                        class="cursor-pointer select-none rounded-lg px-2 py-2.5 font-medium transition-colors"
                         x-bind:class="selectedIds.length > 0 ? 'bg-amber-100/90 text-amber-950 dark:bg-amber-900/45 dark:text-amber-50' : ''"
                     >
                         <span x-text="selectedIds.length"></span> ausgewählt
@@ -625,9 +625,9 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:accordion.content>
                 </flux:accordion.item>
             </flux:accordion>
-        </flux:card>
+        </section>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 flex-wrap items-center gap-3">
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
@@ -645,7 +645,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     search:placeholder="Typ suchen…"
                     placeholder="Typen filtern…"
                     size="sm"
-                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-[#073070] dark:[&_[data-flux-pillbox-placeholder]]:text-white/70"
                 >
                     @foreach($this->assetTypes as $type)
                         <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
@@ -689,13 +689,14 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
             </div>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 <flux:table.column>
                     <label class="inline-flex cursor-pointer items-center">
                         <input
                             type="checkbox"
-                            class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                            class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                             :checked="pageFullySelected"
                             x-on:change="togglePage($event.target.checked)"
                         />
@@ -729,7 +730,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                                 <label class="inline-flex cursor-pointer items-center">
                                     <input
                                         type="checkbox"
-                                        class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                        class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                         :checked="selectedIds.includes({{ (int) $asset->id }})"
                                         x-on:change="toggleRow({{ (int) $asset->id }}, $event.target.checked)"
                                     />
@@ -739,7 +740,7 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                             @if($asset->itexia_id)
-                                <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
                         @if($showModel)
@@ -790,20 +791,20 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->is_missing)
-                                    <flux:badge color="red" size="sm">Vermisst</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="red" size="sm">Vermisst</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_clarification)
-                                    <flux:badge color="amber" size="sm">Klärung</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">Klärung</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_in_stock)
-                                    <flux:badge color="blue" size="sm">Auf Lager</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="blue" size="sm">Auf Lager</x-intranet-app-assets::hwk-badge>
                                 @elseif($asset->user_id === null)
-                                    <flux:badge color="zinc" size="sm">Gemeinschaftsgerät</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="zinc" size="sm">Gemeinschaftsgerät</x-intranet-app-assets::hwk-badge>
                                 @elseif(! $asset->is_missing && ! $asset->is_clarification)
-                                    <flux:badge color="green" size="sm">OK</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="green" size="sm">OK</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->configmgrSerialMismatches())
-                                    <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">SN weicht ab</x-intranet-app-assets::hwk-badge>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -904,16 +905,19 @@ new #[Layout('components.layouts.app')] #[Title('Alle Assets')] class extends Co
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="{{ $showModel ? 11 : 10 }}" class="text-center text-zinc-500 py-8">
-                            Keine Assets gefunden.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="{{ $showModel ? 11 : 10 }}" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Assets gefunden." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $this->assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $this->assets->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

@@ -10,7 +10,7 @@
         <flux:label>
             Gerätetyp
             @if($required)
-                <flux:badge size="sm" color="red">Pflicht</flux:badge>
+                <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge>
             @endif
         </flux:label>
     @endif

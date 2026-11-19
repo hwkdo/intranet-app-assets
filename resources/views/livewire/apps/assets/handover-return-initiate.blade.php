@@ -20,13 +20,13 @@
                 </flux:callout>
             @endif
 
-            <flux:card class="space-y-4 text-sm">
+            <section class="glass-card overflow-hidden space-y-4 text-sm">
                 <flux:heading size="sm">Übergabe</flux:heading>
                 <flux:text>Asset: <span class="font-medium">{{ $handover->asset?->display_name ?? '—' }}</span></flux:text>
                 <flux:text>Seriennummer: <span class="font-mono">{{ $handover->asset?->serial_number ?? '—' }}</span></flux:text>
-            </flux:card>
+            </section>
 
-            <form wire:submit="submit" class="space-y-4">
+            <form wire:submit="submit" class="hwk-fields glass-card space-y-4 p-5 sm:p-6" style="overflow: visible">
                 <flux:radio.group wire:model.live="scheduleType" label="Art der Rückgabe">
                     <flux:radio value="{{ \Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType::Immediate->value }}" label="Sofort" description="Rückgabe wird unmittelbar eingeleitet." />
                     <flux:radio value="{{ \Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType::Scheduled->value }}" label="Geplant" description="Termin mit Erinnerungen vor der Rückgabe." />

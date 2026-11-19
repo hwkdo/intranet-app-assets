@@ -52,14 +52,14 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe per Signopad bestäti
 }; ?>
 <div>
     <x-intranet-app-assets::assets-layout heading="Unterschrift mit Signopad" subheading="{{ $handover->asset?->display_name ?? 'Asset' }}">
-        <flux:card>
+        <section class="glass-card overflow-hidden p-5">
             <flux:heading size="sm" class="mb-4">Bitte unterschreiben Sie die Übergabe</flux:heading>
             <livewire:signopad.signpad
                 :fields="[]"
                 textOben="Übergabe bestätigen"
                 textUnten="Bitte hier unterschreiben"
             />
-        </flux:card>
+        </section>
         <flux:button href="{{ route('apps.assets.handover.confirm', $handover) }}" variant="ghost" icon="arrow-left">
             Zurück
         </flux:button>

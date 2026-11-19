@@ -13,7 +13,8 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
 <div>
 <x-intranet-app-assets::assets-layout heading="Assets App" subheading="Admin">
     <flux:tab.group>
-        <flux:tabs wire:model.live="activeTab">
+        <div class="glass-card sticky top-3 z-20 mb-4 p-3" style="--glass-opacity: 0.92">
+        <flux:tabs variant="pills" class="hwk-pills" wire:model.live="activeTab">
             <flux:tab name="typen" icon="tag">Typen</flux:tab>
             <flux:tab name="hersteller" icon="building-office-2">Hersteller</flux:tab>
             <flux:tab name="seventhings" icon="arrows-right-left">Seventhings Mapping</flux:tab>
@@ -23,6 +24,7 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
             <flux:tab name="statistiken" icon="chart-bar">Statistiken</flux:tab>
             <flux:tab name="hintergrund" icon="clock">Hintergrund</flux:tab>
         </flux:tabs>
+        </div>
 
         <flux:tab.panel name="typen">
             @livewire('intranet-app-assets::apps.assets.admin.asset-types')
@@ -93,24 +95,24 @@ new #[Layout('components.layouts.app')] #[Title('Assets - Admin')] class extends
 
         <flux:tab.panel name="statistiken">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <flux:card>
+                <section class="glass-card overflow-hidden p-5">
                     <flux:heading>Assets gesamt</flux:heading>
-                    <div class="mt-2 text-3xl font-bold">
+                    <div class="mt-2 text-3xl font-semibold tabular-nums text-[#073070] dark:text-white">
                         {{ \Hwkdo\IntranetAppAssets\Models\Asset::count() }}
                     </div>
-                </flux:card>
-                <flux:card>
+                </section>
+                <section class="glass-card overflow-hidden p-5">
                     <flux:heading>Übergaben gesamt</flux:heading>
-                    <div class="mt-2 text-3xl font-bold">
+                    <div class="mt-2 text-3xl font-semibold tabular-nums text-[#073070] dark:text-white">
                         {{ \Hwkdo\IntranetAppAssets\Models\Handover::count() }}
                     </div>
-                </flux:card>
-                <flux:card>
+                </section>
+                <section class="glass-card overflow-hidden p-5">
                     <flux:heading>Vermisste Assets</flux:heading>
-                    <div class="mt-2 text-3xl font-bold text-red-600">
+                    <div class="mt-2 text-3xl font-semibold tabular-nums text-red-700 dark:text-red-300">
                         {{ \Hwkdo\IntranetAppAssets\Models\Asset::where('is_missing', true)->count() }}
                     </div>
-                </flux:card>
+                </section>
             </div>
         </flux:tab.panel>
     <flux:tab.panel name="hintergrund">

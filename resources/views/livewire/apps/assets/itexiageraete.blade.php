@@ -319,7 +319,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
 <div>
 <x-intranet-app-assets::assets-layout heading="Itexia-Geräte" subheading="Assets mit Itexia-ID (Barcode) und Seventhings-UUID">
     <div class="space-y-4">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 flex-wrap items-center gap-3">
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
@@ -336,7 +336,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                     search:placeholder="Typ suchen…"
                     placeholder="Typen filtern…"
                     size="sm"
-                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-zinc-700 dark:[&_[data-flux-pillbox-placeholder]]:text-zinc-300"
+                    class="min-w-52 max-w-md shrink-0 [&_[data-flux-pillbox-placeholder]]:text-[#073070] dark:[&_[data-flux-pillbox-placeholder]]:text-white/70"
                 >
                     @foreach($this->assetTypes as $type)
                         <flux:pillbox.option value="{{ $type->id }}">{{ $type->name }}</flux:pillbox.option>
@@ -380,7 +380,8 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
             </flux:dropdown>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
@@ -419,7 +420,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         <flux:table.cell class="text-sm">
                             @php $invoiceLink = $this->invoiceNumberLink($asset->invoice_number); @endphp
                             @if($invoiceLink)
-                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->invoice_number ?? '—' }}</a>
+                                <a href="{{ $invoiceLink }}" target="_blank" rel="noopener noreferrer" class="text-[#073070] dark:text-[#d0e3f9] underline hover:no-underline">{{ $asset->invoice_number ?? '—' }}</a>
                             @else
                                 {{ $asset->invoice_number ?? '—' }}
                             @endif
@@ -427,7 +428,7 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         <flux:table.cell class="text-sm">
                             @php $orderLink = $this->orderNumberLink($asset->order_number); @endphp
                             @if($orderLink)
-                                <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 underline hover:no-underline">{{ $asset->order_number ?? '—' }}</a>
+                                <a href="{{ $orderLink }}" target="_blank" rel="noopener noreferrer" class="text-[#073070] dark:text-[#d0e3f9] underline hover:no-underline">{{ $asset->order_number ?? '—' }}</a>
                             @else
                                 {{ $asset->order_number ?? '—' }}
                             @endif
@@ -443,15 +444,15 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->itexia_uuid)
-                                    <flux:badge color="green" size="sm">Gefunden</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="green" size="sm">Gefunden</x-intranet-app-assets::hwk-badge>
                                 @else
-                                    <flux:badge color="amber" size="sm">Nicht gefunden</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">Nicht gefunden</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_missing)
-                                    <flux:badge color="red" size="sm">Vermisst</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="red" size="sm">Vermisst</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_clarification)
-                                    <flux:badge color="amber" size="sm">Klärung</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">Klärung</x-intranet-app-assets::hwk-badge>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -462,16 +463,19 @@ new #[Layout('components.layouts.app')] #[Title('Itexia-Geräte')] class extends
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="12" class="text-center text-zinc-500 py-8">
-                            Keine Itexia-Geräte gefunden.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="12" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Itexia-Geräte gefunden." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $this->assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $this->assets->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

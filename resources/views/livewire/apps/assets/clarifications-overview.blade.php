@@ -48,14 +48,14 @@
             }"
             x-on:{{ \Hwkdo\IntranetAppAssets\Support\BulkSelectionUi::CLEAR_SELECTED_IDS_EVENT }}.window="selectedIds = []"
         >
-            <flux:card
-                class="overflow-hidden transition-all duration-200"
-                x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-amber-50/90 shadow-sm dark:ring-amber-400/80 dark:ring-offset-zinc-950 dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
+            <section
+                class="glass-card overflow-hidden p-4 transition-all duration-200"
+                x-bind:class="selectedIds.length > 0 ? 'ring-2 ring-amber-500/90 ring-offset-2 ring-offset-white border-amber-400/90 bg-[#d0e3f9]/80 shadow-sm dark:ring-amber-400/80 dark:ring-offset-[#04214e] dark:border-amber-500/60 dark:bg-amber-950/35' : ''"
             >
                 <flux:accordion exclusive transition>
                     <flux:accordion.item>
                         <flux:accordion.heading
-                            class="cursor-pointer select-none font-medium rounded-md px-1 py-0.5 -mx-1 transition-colors"
+                            class="cursor-pointer select-none rounded-lg px-2 py-2.5 font-medium transition-colors"
                             x-bind:class="selectedIds.length > 0 ? 'bg-amber-100/90 text-amber-950 dark:bg-amber-900/45 dark:text-amber-50' : ''"
                         >
                             <span x-text="selectedIds.length"></span> ausgewählt
@@ -106,24 +106,27 @@
                         </flux:accordion.content>
                     </flux:accordion.item>
                 </flux:accordion>
-            </flux:card>
+            </section>
 
-            <div class="min-w-64 max-w-sm">
-                <flux:input
-                    wire:model.live.debounce.300ms="search"
-                    placeholder="Suchen nach SN, Modell, Name, Typ, Hersteller, Besitzer, Standort…"
-                    icon="magnifying-glass"
-                    clearable
-                />
+            <div class="glass-card p-3" style="--glass-opacity: 0.92; overflow: visible">
+                <div class="min-w-64 max-w-sm">
+                    <flux:input
+                        wire:model.live.debounce.300ms="search"
+                        placeholder="Suchen nach SN, Modell, Name, Typ, Hersteller, Besitzer, Standort…"
+                        icon="magnifying-glass"
+                        clearable
+                    />
+                </div>
             </div>
 
-            <flux:table>
+            <div class="glass-card overflow-hidden">
+<flux:table>
                 <flux:table.columns>
                     <flux:table.column>
                         <label class="inline-flex cursor-pointer items-center">
                             <input
                                 type="checkbox"
-                                class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                 :checked="pageFullySelected"
                                 x-on:change="togglePage($event.target.checked)"
                             />
@@ -143,7 +146,7 @@
                                 <label class="inline-flex cursor-pointer items-center">
                                     <input
                                         type="checkbox"
-                                        class="size-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:ring-offset-zinc-900"
+                                        class="size-4 rounded border-[#d0e3f9] text-amber-600 focus:ring-amber-500 dark:border-white/10 dark:bg-white/5 dark:ring-offset-[#04214e]"
                                         :checked="selectedIds.includes({{ (int) $asset->id }})"
                                         x-on:change="toggleRow({{ (int) $asset->id }}, $event.target.checked)"
                                     />
@@ -152,7 +155,7 @@
                             <flux:table.cell>
                                 <div class="font-medium">{{ $asset->display_name }}</div>
                                 @if($asset->itexia_id)
-                                    <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
+                                    <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->itexia_id }}</div>
                                 @endif
                             </flux:table.cell>
                             @include('intranet-app-assets::partials.serial-number-cell', ['serialNumber' => $asset->serial_number])
@@ -185,16 +188,19 @@
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="7" class="py-8 text-center text-zinc-500">
-                                Keine Assets in Klärung.
-                            </flux:table.cell>
+                            <flux:table.cell colspan="7" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Assets in Klärung." />
+</flux:table.cell>
                         </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+</div>
 
             <div>
-                {{ $assets->links() }}
+                <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                    {{ $assets->links() }}
+                </div>
             </div>
         </div>
     </x-intranet-app-assets::assets-layout>

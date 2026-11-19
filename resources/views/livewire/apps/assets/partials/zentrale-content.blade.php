@@ -5,9 +5,9 @@
         </flux:callout>
     @endif
 
-    <flux:card>
+    <section class="glass-card overflow-hidden p-5">
         <flux:heading size="lg" class="dark:text-white">Warteschlange Signopad</flux:heading>
-        <flux:text class="mt-1 text-zinc-500 dark:text-zinc-300">
+        <flux:text class="mt-1 text-slate-600 dark:text-white/70">
             Offene Übergaben, die an der Zentrale per Signopad bestätigt werden sollen.
         </flux:text>
 
@@ -23,10 +23,10 @@
                 @forelse ($this->pendingHandovers as $handover)
                     <flux:table.row wire:key="zentrale-handover-{{ $handover->id }}">
                         <flux:table.cell>
-                            <div class="font-medium text-zinc-900 dark:text-white">
+                            <div class="font-medium text-[#073070] dark:text-white">
                                 {{ $handover->asset?->display_name ?? '—' }}
                             </div>
-                            <div class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                            <div class="font-mono text-xs text-slate-600 dark:text-white/70">
                                 {{ $handover->asset?->serial_number ?? '' }}
                             </div>
                         </flux:table.cell>
@@ -57,29 +57,29 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="5" class="text-zinc-500 dark:text-zinc-400">
-                            Keine Übergaben in der Zentrale-Warteschlange.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="5" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine Übergaben in der Zentrale-Warteschlange." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
-    </flux:card>
+    </section>
 
     <flux:modal wire:model="showConfirmModal" class="md:w-xl">
         <flux:heading size="lg">Übergabe per Signopad bestätigen</flux:heading>
 
         @if ($showConfirmModal && $this->selectedHandover)
             <div class="mt-4 space-y-4">
-                <dl class="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-300">Asset</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $this->selectedHandover->asset?->display_name ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-300">Seriennummer</dt>
-                    <dd class="font-mono text-zinc-900 dark:text-white">{{ $this->selectedHandover->asset?->serial_number ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-300">Empfänger (unterschreibt)</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $this->selectedHandover->recipient?->name ?? '—' }}</dd>
-                    <dt class="font-semibold text-zinc-500 dark:text-zinc-300">Ausgestellt von</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $this->selectedHandover->issuer?->name ?? '—' }}</dd>
+                <dl class="hwk-rows">
+                    <dt class="font-semibold text-slate-600 dark:text-white/70">Asset</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $this->selectedHandover->asset?->display_name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white/70">Seriennummer</dt>
+                    <dd class="font-mono text-[#073070] dark:text-white">{{ $this->selectedHandover->asset?->serial_number ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white/70">Empfänger (unterschreibt)</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $this->selectedHandover->recipient?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white/70">Ausgestellt von</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $this->selectedHandover->issuer?->name ?? '—' }}</dd>
                 </dl>
 
                 <div wire:key="zentrale-signopad-{{ $selectedHandoverId }}">
@@ -96,7 +96,7 @@
                         <flux:callout.text>Unterschrift erfasst. Sie können die Übergabe jetzt bestätigen.</flux:callout.text>
                     </flux:callout>
                 @else
-                    <flux:text class="text-zinc-500 dark:text-zinc-400">
+                    <flux:text class="text-slate-600 dark:text-white/70">
                         Bitte zuerst die Unterschrift des Empfängers am Signopad erfassen.
                     </flux:text>
                 @endif

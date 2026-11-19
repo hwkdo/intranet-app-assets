@@ -166,43 +166,41 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
     <div class="space-y-4">
         @can('manage-app-assets')
             <div class="grid gap-4 sm:grid-cols-2">
-                {{-- Helles Infopanel bewusst auch im Dark Mode: immer dunkle Schrift (Flux würde sonst helle Dark-Textfarbe auf hellem Grund erzwingen). --}}
-                <div class="rounded-xl border-2 border-amber-400/90 bg-amber-50 p-4 text-zinc-900 shadow-sm dark:border-amber-500/70 dark:bg-amber-50 dark:text-zinc-900">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex gap-3">
-                            <flux:icon icon="arrows-right-left" class="size-10 shrink-0 text-amber-800 dark:text-amber-800" />
+                <section class="glass-card p-5">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="flex min-w-0 gap-3">
+                            <flux:icon icon="arrows-right-left" class="size-10 shrink-0 text-[#073070] dark:text-white" />
                             <div class="min-w-0">
-                                {{-- Kein flux:heading/flux:text: Flux erzwingt Dark-Mode-Textfarben, die auf dem hellen amber-Panel unsichtbar werden. --}}
-                                <h3 class="text-sm font-semibold leading-snug text-zinc-900">Domain-Abgleich (AD vs. Assets)</h3>
-                                <p class="mt-1.5 text-sm leading-relaxed text-zinc-800">
+                                <h3 class="text-sm font-semibold leading-snug text-[#073070] dark:text-white">Domain-Abgleich (AD vs. Assets)</h3>
+                                <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-white/70">
                                     Vergleichen Sie diese Liste mit den Computerkonten in Active Directory (Verwaltung/Schulung) und finden Sie fehlende oder zusätzliche Einträge.
                                 </p>
                             </div>
                         </div>
-                        <flux:button :href="route('apps.assets.domain-compare')" variant="primary" icon="arrows-right-left" wire:navigate class="w-full shrink-0 sm:w-auto">
+                        <flux:button :href="route('apps.assets.domain-compare')" variant="primary" icon="arrows-right-left" wire:navigate class="w-full shrink-0 xl:w-auto">
                             Domain-Abgleich öffnen
                         </flux:button>
                     </div>
-                </div>
-                <div class="rounded-xl border-2 border-amber-400/90 bg-amber-50 p-4 text-zinc-900 shadow-sm dark:border-amber-500/70 dark:bg-amber-50 dark:text-zinc-900">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex gap-3">
-                            <flux:icon icon="server" class="size-10 shrink-0 text-amber-800 dark:text-amber-800" />
+                </section>
+                <section class="glass-card p-5">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div class="flex min-w-0 gap-3">
+                            <flux:icon icon="server" class="size-10 shrink-0 text-[#073070] dark:text-white" />
                             <div class="min-w-0">
-                                <h3 class="text-sm font-semibold leading-snug text-zinc-900">SCCM-Abgleich (AD vs. SCCM)</h3>
-                                <p class="mt-1.5 text-sm leading-relaxed text-zinc-800">
+                                <h3 class="text-sm font-semibold leading-snug text-[#073070] dark:text-white">SCCM-Abgleich (AD vs. SCCM)</h3>
+                                <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-white/70">
                                     Ermitteln Sie pro Domäne, welche Computer in den AD-OUs vorkommen, aber nicht in ConfigMgr/SCCM registriert sind.
                                 </p>
                             </div>
                         </div>
-                        <flux:button :href="route('apps.assets.sccm-compare')" variant="primary" icon="server" wire:navigate class="w-full shrink-0 sm:w-auto">
+                        <flux:button :href="route('apps.assets.sccm-compare')" variant="primary" icon="server" wire:navigate class="w-full shrink-0 xl:w-auto">
                             SCCM-Abgleich öffnen
                         </flux:button>
                     </div>
-                </div>
+                </section>
             </div>
         @endcan
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" style="--glass-opacity: 0.92; overflow: visible">
             <div class="flex flex-1 flex-wrap items-center gap-3">
                 <div class="min-w-64 max-w-sm flex-1">
                     <flux:input
@@ -225,7 +223,8 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
             </flux:dropdown>
         </div>
 
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Modell / Name'])
                 @if($showModel)
@@ -248,7 +247,7 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                             @if($asset->itexia_id)
-                                <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
                         @if($showModel)
@@ -276,16 +275,16 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                         <flux:table.cell>
                             <div class="flex gap-1">
                                 @if($asset->is_missing)
-                                    <flux:badge color="red" size="sm">Vermisst</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="red" size="sm">Vermisst</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->is_clarification)
-                                    <flux:badge color="amber" size="sm">Klärung</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">Klärung</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if(!$asset->is_missing && !$asset->is_clarification)
-                                    <flux:badge color="green" size="sm">OK</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="green" size="sm">OK</x-intranet-app-assets::hwk-badge>
                                 @endif
                                 @if($asset->configmgrSerialMismatches())
-                                    <flux:badge color="amber" size="sm">SN weicht ab</flux:badge>
+                                    <x-intranet-app-assets::hwk-badge color="amber" size="sm">SN weicht ab</x-intranet-app-assets::hwk-badge>
                                 @endif
                             </div>
                         </flux:table.cell>
@@ -296,16 +295,19 @@ new #[Layout('components.layouts.app')] #[Title('Domänengeräte')] class extend
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="{{ $showModel ? 12 : 11 }}" class="text-center text-zinc-500 py-8">
-                            Keine Domänengeräte gefunden.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="{{ $showModel ? 12 : 11 }}" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="magnifying-glass" title="Keine Domänengeräte gefunden." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div>
-            {{ $this->assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $this->assets->links() }}
+            </div>
         </div>
     </div>
 </x-intranet-app-assets::assets-layout>

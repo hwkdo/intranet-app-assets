@@ -65,21 +65,14 @@ new #[Title('Assets - KI-Chat')] class extends Component
             ],
         ])
     @else
-        <flux:card class="glass-card">
-            <flux:callout variant="warning" class="mb-4">
-                <flux:heading size="sm">API-Token fehlt</flux:heading>
-                <flux:text>
-                    Um den KI-Chat zu nutzen, müssen Sie einen OpenWebUI API-Token in Ihren globalen Einstellungen konfigurieren.
-                </flux:text>
-            </flux:callout>
-
-            <flux:button
-                variant="primary"
-                href="{{ route('settings.all') }}"
-            >
-                Zu den Einstellungen
-            </flux:button>
-        </flux:card>
+        <x-intranet-app-assets::hwk-empty icon="key" title="API-Token fehlt">
+            Um den KI-Chat zu nutzen, müssen Sie einen OpenWebUI API-Token in Ihren globalen Einstellungen konfigurieren.
+            <div class="mt-4">
+                <flux:button variant="primary" href="{{ route('settings.all') }}">
+                    Zu den Einstellungen
+                </flux:button>
+            </div>
+        </x-intranet-app-assets::hwk-empty>
     @endif
 </x-intranet-app-assets::assets-layout>
 </div>

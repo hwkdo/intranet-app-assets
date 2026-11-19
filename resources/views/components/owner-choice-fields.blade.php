@@ -16,7 +16,7 @@
 <flux:fieldset {{ $attributes->class(['sm:col-span-2']) }}>
     <flux:legend>
         Zuordnung
-        <flux:badge size="sm" color="red">Pflicht</flux:badge>
+        <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge>
     </flux:legend>
     <flux:description>
         Mit Besitzer = persönliches Gerät (Standort über Besitzer-Stammdaten). Ohne Besitzer: Gerätetyp und physischer Standort.
@@ -50,7 +50,7 @@
 
         @if($showUnownedFields)
             <flux:field class="max-w-xl">
-                <flux:label>Standort <flux:badge size="sm" color="red">Pflicht</flux:badge></flux:label>
+                <flux:label>Standort <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge></flux:label>
                 <flux:input wire:model="{{ $locationWireModel }}" placeholder="z. B. IT-Lager, Büro 2.13, Werkstatt …" />
                 @if($locationErrorName)
                     <flux:error name="{{ $locationErrorName }}" />

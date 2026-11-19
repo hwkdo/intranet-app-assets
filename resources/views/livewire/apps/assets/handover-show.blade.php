@@ -48,24 +48,24 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
         subheading="{{ $handover->asset?->display_name ?? 'Asset' }}"
     >
         <div class="space-y-6">
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4">Status</flux:heading>
                 <div class="flex flex-wrap items-center gap-2">
                     @if($handover->isRejected())
-                        <flux:badge color="red" size="lg" icon="x-circle">Abgelehnt</flux:badge>
+                        <x-intranet-app-assets::hwk-badge color="red" size="lg" icon="x-circle">Abgelehnt</x-intranet-app-assets::hwk-badge>
                     @elseif($handover->isConfirmed())
-                        <flux:badge color="green" size="lg" icon="check-circle">Bestätigt</flux:badge>
+                        <x-intranet-app-assets::hwk-badge color="green" size="lg" icon="check-circle">Bestätigt</x-intranet-app-assets::hwk-badge>
                         @if($this->confirmationMethodLabel())
-                            <flux:badge color="zinc" size="lg">{{ $this->confirmationMethodLabel() }}</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="zinc" size="lg">{{ $this->confirmationMethodLabel() }}</x-intranet-app-assets::hwk-badge>
                         @endif
                     @else
-                        <flux:badge color="amber" size="lg" icon="clock">Offen</flux:badge>
+                        <x-intranet-app-assets::hwk-badge color="amber" size="lg" icon="clock">Offen</x-intranet-app-assets::hwk-badge>
                         @if($this->pendingChannelLabel())
-                            <flux:badge color="zinc" size="lg">{{ $this->pendingChannelLabel() }}</flux:badge>
+                            <x-intranet-app-assets::hwk-badge color="zinc" size="lg">{{ $this->pendingChannelLabel() }}</x-intranet-app-assets::hwk-badge>
                         @endif
                     @endif
                 </div>
-            </flux:card>
+            </section>
 
             @php
                 $pendingReturn = $handover->assetReturns->first(fn ($r) => $r->completed_at === null);
@@ -112,17 +112,17 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     </flux:callout.text>
                     @if($scheduleBadge)
                         <div class="mt-2">
-                            <flux:badge :color="$scheduleBadge['color']">{{ $scheduleBadge['label'] }}</flux:badge>
+                            <x-intranet-app-assets::hwk-badge :color="$scheduleBadge['color']">{{ $scheduleBadge['label'] }}</x-intranet-app-assets::hwk-badge>
                         </div>
                     @endif
                 </flux:callout>
             @endif
 
-            <flux:card>
+            <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4 dark:text-white">Details</flux:heading>
-                <dl class="grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Asset</dt>
-                    <dd class="text-zinc-900 dark:text-white">
+                <dl class="hwk-rows">
+                    <dt class="font-semibold text-slate-600 dark:text-white">Asset</dt>
+                    <dd class="text-[#073070] dark:text-white">
                         @if($handover->asset)
                             <a
                                 href="{{ route('apps.assets.show', [$handover->asset, 'from' => 'meine-assets']) }}"
@@ -132,52 +132,52 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                             >
                                 {{ $handover->asset->display_name }}
                             </a>
-                            <span class="text-zinc-500 dark:text-zinc-300"> · {{ $handover->asset->serial_number }}</span>
+                            <span class="text-slate-600 dark:text-white/70"> · {{ $handover->asset->serial_number }}</span>
                         @else
                             —
                         @endif
                     </dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Empfänger</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Empfänger</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
 
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Ausgegeben / übergeben von</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Ausgegeben / übergeben von</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
 
                     @if($handover->isLoan())
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Verleih bis</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->loan_due_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Verleih bis</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->loan_due_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                     @endif
 
                     @if($handover->confirmedAssistedBy)
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Bestätigt an der Zentrale durch</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Bestätigt an der Zentrale durch</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
                     @endif
 
-                    <dt class="font-semibold text-zinc-500 dark:text-white">Erstellt am</dt>
-                    <dd class="text-zinc-900 dark:text-white">{{ $handover->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                    <dt class="font-semibold text-slate-600 dark:text-white">Erstellt am</dt>
+                    <dd class="text-[#073070] dark:text-white">{{ $handover->created_at?->format('d.m.Y H:i') ?? '—' }}</dd>
 
                     @if($handover->isRejected())
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Abgelehnt am</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->rejected_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Abgelehnt am</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->rejected_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                     @elseif($handover->isConfirmed())
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Bestätigt am</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmed_at?->format('d.m.Y H:i') ?? '—' }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Bestätigt am</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->confirmed_at?->format('d.m.Y H:i') ?? '—' }}</dd>
                     @endif
                 </dl>
-            </flux:card>
+            </section>
 
             @if($handover->signature)
-                <flux:card>
+                <section class="glass-card overflow-hidden p-5">
                     <flux:heading size="lg" class="mb-4">Unterschrift</flux:heading>
-                    <dl class="mb-4 grid gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Unterschrieben von</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
-                        <dt class="font-semibold text-zinc-500 dark:text-white">Ausgegeben / übergeben von</dt>
-                        <dd class="text-zinc-900 dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
+                    <dl class="hwk-rows">
+                        <dt class="font-semibold text-slate-600 dark:text-white">Unterschrieben von</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->recipient?->name ?? '—' }}</dd>
+                        <dt class="font-semibold text-slate-600 dark:text-white">Ausgegeben / übergeben von</dt>
+                        <dd class="text-[#073070] dark:text-white">{{ $handover->issuer?->name ?? '—' }}</dd>
                         @if($handover->confirmedAssistedBy)
-                            <dt class="font-semibold text-zinc-500 dark:text-white">Zentrale / Assistenz</dt>
-                            <dd class="text-zinc-900 dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
+                            <dt class="font-semibold text-slate-600 dark:text-white">Zentrale / Assistenz</dt>
+                            <dd class="text-[#073070] dark:text-white">{{ $handover->confirmedAssistedBy->name }}</dd>
                         @endif
                     </dl>
                     @php
@@ -189,9 +189,9 @@ new #[Layout('components.layouts.app')] #[Title('Übergabe')] class extends Comp
                     <img
                         src="{{ $src }}"
                         alt="Unterschrift von {{ $handover->recipient?->name ?? 'Empfänger' }}"
-                        class="max-h-48 rounded border border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
+                        class="max-h-48 rounded border border-[#d0e3f9] bg-white dark:border-white/10 dark:bg-white/5"
                     />
-                </flux:card>
+                </section>
             @endif
 
             <div class="flex flex-wrap gap-2">

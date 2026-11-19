@@ -88,22 +88,22 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben ablehnen')] class ex
                 </flux:callout.text>
             </flux:callout>
 
-            <flux:card class="space-y-4">
+            <section class="glass-card overflow-hidden space-y-4">
                 <flux:heading size="sm">Betroffene Assets</flux:heading>
-                <ul class="space-y-2 text-sm text-zinc-700 dark:text-zinc-200">
+                <ul class="space-y-2 text-sm text-[#073070] dark:text-white/80">
                     @foreach($this->handovers as $h)
-                        <li class="border-b border-zinc-200 pb-2 last:border-0 dark:border-zinc-700">
+                        <li class="border-b border-[#d0e3f9] pb-2 last:border-0 dark:border-white/10">
                             <span class="font-medium">{{ $h->asset?->display_name ?? '—' }}</span>
-                            <span class="font-mono text-zinc-500"> · {{ $h->asset?->serial_number ?? '—' }}</span>
+                            <span class="font-mono text-slate-600 dark:text-white/70"> · {{ $h->asset?->serial_number ?? '—' }}</span>
                         </li>
                     @endforeach
                 </ul>
-            </flux:card>
+            </section>
 
-            <flux:card class="space-y-2">
+            <section class="glass-card overflow-hidden space-y-2">
                 <flux:heading size="sm">Ihre Begründung</flux:heading>
-                <flux:text class="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300">{{ $this->rejectionReason }}</flux:text>
-            </flux:card>
+                <flux:text class="whitespace-pre-wrap text-sm text-slate-600 dark:text-white/70">{{ $this->rejectionReason }}</flux:text>
+            </section>
 
             <div class="flex flex-wrap gap-2">
                 <flux:button href="{{ route('apps.assets.handover.bulk.reject-commit') }}" variant="danger" icon="key">

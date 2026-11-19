@@ -3,7 +3,8 @@
         heading="Falsche Seriennummern"
         subheading="Assets, deren Seriennummer von der SCCM-BIOS-Seriennummer abweicht"
     >
-        <flux:table>
+        <div class="glass-card overflow-hidden">
+<flux:table>
             <flux:table.columns>
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'display_name', 'label' => 'Asset'])
                 @include('intranet-app-assets::partials.sortable-column', ['column' => 'serial_number', 'label' => 'Seriennummer'])
@@ -19,7 +20,7 @@
                         <flux:table.cell>
                             <div class="font-medium">{{ $asset->display_name }}</div>
                             @if($asset->itexia_id)
-                                <div class="text-xs text-zinc-500">{{ $asset->itexia_id }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $asset->itexia_id }}</div>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
@@ -63,16 +64,19 @@
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7" class="py-8 text-center text-zinc-500">
-                            Keine abweichenden SCCM-Seriennummern.
-                        </flux:table.cell>
+                        <flux:table.cell colspan="7" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine abweichenden SCCM-Seriennummern." />
+</flux:table.cell>
                     </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
+</div>
 
         <div class="mt-4">
-            {{ $assets->links() }}
+            <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                {{ $assets->links() }}
+            </div>
         </div>
     </x-intranet-app-assets::assets-layout>
 </div>

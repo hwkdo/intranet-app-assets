@@ -8,15 +8,15 @@
 <flux:field>
     <flux:label>
         Rechnungsnummer
-        <span class="ml-1 font-normal text-zinc-500 dark:text-zinc-200">(D3-Dokument-ID / T-Nummer)</span>
+        <span class="ml-1 font-normal text-slate-600 dark:text-white/80">(D3-Dokument-ID / T-Nummer)</span>
         @if($required)
-            <flux:badge size="sm" color="red">Pflicht</flux:badge>
+            <x-intranet-app-assets::hwk-badge size="sm" color="red">Pflicht</x-intranet-app-assets::hwk-badge>
         @endif
     </flux:label>
     <flux:input
         {{ $attributes->merge(['placeholder' => $placeholder]) }}
     />
-    <flux:description class="mt-1 text-sm text-zinc-500 dark:text-zinc-200">
+    <flux:description class="mt-1 text-sm text-slate-600 dark:text-white/80">
         @if(filled($requirementHint))
             {{ $requirementHint }}{{ ' ' }}
         @endif

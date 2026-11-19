@@ -52,7 +52,7 @@ new #[Layout('components.layouts.app')] #[Title('Archiv endgültig gelöschter A
         subheading="Metadaten-Snapshots von Assets nach endgültiger Löschung (z. B. aus „Gelöschte Assets“)"
     >
         <div class="space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="glass-card sticky top-3 z-20 p-3 shadow-lg shadow-[#073070]/10 flex flex-wrap items-center justify-between gap-3" style="--glass-opacity: 0.92; overflow: visible">
                 <flux:button
                     href="{{ route('apps.assets.deleted') }}"
                     variant="ghost"
@@ -72,7 +72,8 @@ new #[Layout('components.layouts.app')] #[Title('Archiv endgültig gelöschter A
                 </div>
             </div>
 
-            <flux:table>
+            <div class="glass-card overflow-hidden">
+<flux:table>
                 <flux:table.columns>
                     <flux:table.column>Ehem. ID</flux:table.column>
                     <flux:table.column>Asset</flux:table.column>
@@ -99,24 +100,27 @@ new #[Layout('components.layouts.app')] #[Title('Archiv endgültig gelöschter A
                             <flux:table.cell class="font-mono text-sm">{{ filled($p['itexia_id'] ?? null) ? $p['itexia_id'] : '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="text-sm">{{ $p['asset_type_name'] ?? '—' }}</div>
-                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $p['asset_vendor_name'] ?? '—' }}</div>
+                                <div class="text-xs text-slate-600 dark:text-white/70">{{ $p['asset_vendor_name'] ?? '—' }}</div>
                             </flux:table.cell>
                             <flux:table.cell>{{ $archive->archived_at?->format('d.m.Y H:i') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ $archive->deletedBy?->name ?? '—' }}</flux:table.cell>
-                            <flux:table.cell class="text-sm text-zinc-600 dark:text-zinc-300">{{ $archive->source }}</flux:table.cell>
+                            <flux:table.cell class="text-sm text-slate-600 dark:text-white/70">{{ $archive->source }}</flux:table.cell>
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="9" class="text-center text-zinc-500 py-8">
-                                Keine archivierten endgültigen Löschungen.
-                            </flux:table.cell>
+                            <flux:table.cell colspan="9" class="px-3 py-3">
+<x-intranet-app-assets::hwk-empty bare icon="inbox" title="Keine archivierten endgültigen Löschungen." />
+</flux:table.cell>
                         </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
+</div>
 
             <div>
-                {{ $this->archives->links() }}
+                <div class="glass-card px-4 py-3" style="--glass-opacity: 0.92">
+                    {{ $this->archives->links() }}
+                </div>
             </div>
         </div>
     </x-intranet-app-assets::assets-layout>

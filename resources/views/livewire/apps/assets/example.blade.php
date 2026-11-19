@@ -14,7 +14,7 @@ state(['exampleData' => [
 ?>
 <div>
 <x-intranet-app-assets::assets-layout heading="Beispiel-Seite" subheading="Demonstration der Assets-Funktionalität">
-    <flux:card>
+    <section class="glass-card overflow-hidden p-5">
         <flux:heading size="lg" class="mb-4">Beispiel-Content</flux:heading>
         <flux:text class="mb-6">
             Diese Seite zeigt, wie eine typische App-Seite aussehen könnte.
@@ -25,8 +25,8 @@ state(['exampleData' => [
                 <flux:heading size="md">{{ $exampleData['name'] }}</flux:heading>
                 <flux:text class="mt-2">{{ $exampleData['description'] }}</flux:text>
                 <div class="mt-2 flex items-center gap-2">
-                    <flux:badge variant="success">{{ $exampleData['status'] }}</flux:badge>
-                    <flux:text class="text-sm text-zinc-500">{{ $exampleData['created_at'] }}</flux:text>
+                    <x-intranet-app-assets::hwk-badge variant="success">{{ $exampleData['status'] }}</x-intranet-app-assets::hwk-badge>
+                    <flux:text class="text-sm text-slate-600 dark:text-white/70">{{ $exampleData['created_at'] }}</flux:text>
                 </div>
             </div>
             
@@ -41,6 +41,6 @@ state(['exampleData' => [
                 </div>
             </div>
         </div>
-    </flux:card>
+    </section>
 </x-intranet-app-assets::assets-layout>
 </div>

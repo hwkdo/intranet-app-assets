@@ -81,22 +81,22 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben per Signopad bestät
         heading="Unterschrift mit Signopad"
         subheading="{{ $this->handovers->count() }} Übergabe(n)"
     >
-        <flux:card class="mb-4">
+        <section class="glass-card overflow-hidden mb-4">
             <flux:heading size="sm" class="mb-2">Ausgewählte Übergaben</flux:heading>
-            <ul class="list-inside list-disc text-sm text-zinc-600 dark:text-zinc-300">
+            <ul class="list-inside list-disc text-sm text-slate-600 dark:text-white/70">
                 @foreach($this->handovers as $h)
                     <li>{{ $h->asset?->display_name ?? 'Übergabe #'.$h->id }}</li>
                 @endforeach
             </ul>
-        </flux:card>
-        <flux:card>
+        </section>
+        <section class="glass-card overflow-hidden p-5">
             <flux:heading size="sm" class="mb-4">Bitte unterschreiben Sie für alle Übergaben</flux:heading>
             <livewire:signopad.signpad
                 :fields="[]"
                 textOben="Übergaben bestätigen"
                 textUnten="Bitte hier unterschreiben"
             />
-        </flux:card>
+        </section>
         <flux:button href="{{ route('apps.assets.handover.bulk.confirm') }}" variant="ghost" icon="arrow-left" class="mt-4">
             Zurück
         </flux:button>

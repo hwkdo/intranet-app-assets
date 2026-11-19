@@ -124,7 +124,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
         subheading="{{ $this->handovers->count() }} ausgewählte Übergabe(n)"
     >
         <div class="space-y-6">
-            <flux:card class="space-y-3">
+            <section class="glass-card overflow-hidden space-y-3">
                 <flux:heading size="sm">Ausgewählte Assets</flux:heading>
                 <flux:table>
                     <flux:table.columns>
@@ -142,18 +142,18 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
                         @endforeach
                     </flux:table.rows>
                 </flux:table>
-            </flux:card>
+            </section>
 
             <flux:heading size="md" class="dark:text-white">Bestätigungsart wählen</flux:heading>
-            <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+            <flux:text class="text-sm text-slate-600 dark:text-white/70">
                 Die gewählte Methode gilt für alle oben gelisteten Übergaben.
             </flux:text>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 @if(config('intranet-app-assets.formwerk_handover_url'))
-                    <flux:card class="flex flex-col">
+                    <section class="glass-card overflow-hidden flex flex-col">
                         <flux:heading size="sm" class="mb-2 dark:text-white">Per Formwerk-Formular</flux:heading>
-                        <flux:text class="mb-4 flex-1 text-sm text-zinc-500 dark:text-white">
+                        <flux:text class="mb-4 flex-1 text-sm text-slate-600 dark:text-white">
                             Pro Übergabe ein Formular öffnen und unterschreiben.
                         </flux:text>
                         <div class="flex flex-col gap-2">
@@ -172,28 +172,28 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
                                 @endif
                             @endforeach
                         </div>
-                    </flux:card>
+                    </section>
                 @endif
 
-                <flux:card class="flex flex-col">
+                <section class="glass-card overflow-hidden flex flex-col">
                     <flux:heading size="sm" class="mb-2 dark:text-white">Mit Passwort bestätigen</flux:heading>
-                    <flux:text class="mb-4 flex-1 text-sm text-zinc-500 dark:text-white">Erhalt durch Eingabe Ihres LDAP-Passworts bestätigen.</flux:text>
+                    <flux:text class="mb-4 flex-1 text-sm text-slate-600 dark:text-white">Erhalt durch Eingabe Ihres LDAP-Passworts bestätigen.</flux:text>
                     <flux:button href="{{ route('apps.assets.handover.bulk.confirm-by-password') }}" variant="primary" icon="key">
                         Mit Passwort bestätigen
                     </flux:button>
-                </flux:card>
+                </section>
 
-                <flux:card class="flex flex-col">
+                <section class="glass-card overflow-hidden flex flex-col">
                     <flux:heading size="sm" class="mb-2 dark:text-white">Mit Signopad</flux:heading>
-                    <flux:text class="mb-4 flex-1 text-sm text-zinc-500 dark:text-white">Eine Unterschrift für alle Übergaben.</flux:text>
+                    <flux:text class="mb-4 flex-1 text-sm text-slate-600 dark:text-white">Eine Unterschrift für alle Übergaben.</flux:text>
                     <flux:button href="{{ route('apps.assets.handover.bulk.confirm-by-signopad') }}" variant="primary" icon="pencil-square">
                         Signopad öffnen
                     </flux:button>
-                </flux:card>
+                </section>
 
-                <flux:card class="flex flex-col">
+                <section class="glass-card overflow-hidden flex flex-col">
                     <flux:heading size="sm" class="mb-2 dark:text-white">Touchscreen-Unterschrift</flux:heading>
-                    <flux:text class="mb-4 flex-1 text-sm text-zinc-500 dark:text-white">Eine Unterschrift für alle Übergaben.</flux:text>
+                    <flux:text class="mb-4 flex-1 text-sm text-slate-600 dark:text-white">Eine Unterschrift für alle Übergaben.</flux:text>
                     @if(!$showCanvas)
                         <flux:button wire:click="$set('showCanvas', true)" variant="primary" icon="device-phone-mobile">
                             Unterschrift zeichnen
@@ -242,7 +242,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
                         }" x-init="init()">
                             <canvas
                                 x-ref="canvas"
-                                class="w-full rounded border border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
+                                class="w-full rounded border border-[#d0e3f9] bg-white dark:border-white/10 dark:bg-white/5"
                                 style="touch-action: none;"
                                 @mousedown="start($event)"
                                 @mousemove="move($event)"
@@ -259,7 +259,7 @@ new #[Layout('components.layouts.app')] #[Title('Übergaben bestätigen')] class
                             </div>
                         </div>
                     @endif
-                </flux:card>
+                </section>
             </div>
 
             <flux:button href="{{ route('apps.assets.meine-assets') }}" variant="ghost" icon="arrow-left" wire:navigate>
