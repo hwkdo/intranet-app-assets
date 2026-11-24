@@ -28,6 +28,7 @@ class HandoverRejectionAdminResolutionService
         ?int $newOwnerUserId,
         ?string $location,
         ?string $note = null,
+        bool $markInStock = true,
     ): void {
         if (! $handover->isRejected() || $handover->isConfirmed() || $handover->isSuperseded()) {
             throw new \InvalidArgumentException('Übergabe kann nicht aufgelöst werden.');
@@ -43,8 +44,8 @@ class HandoverRejectionAdminResolutionService
 
         $note = $note !== null ? trim($note) : '';
 
-        AssetAuditContext::runWith('assets.rejected_handover.resolve', function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note): void {
-            DB::transaction(function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note): void {
+        AssetAuditContext::runWith('assets.rejected_handover.resolve', function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note, $markInStock): void {
+            DB::transaction(function () use ($handover, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $recipientId, $recipientName, $note, $markInStock): void {
                 $baseMeta = [
                     'handover_id' => $handover->id,
                     'former_recipient_user_id' => $recipientId,
@@ -66,7 +67,7 @@ class HandoverRejectionAdminResolutionService
 
                 match ($resolution) {
                     self::ResolutionNewOwner => $this->applyNewOwner($asset, $handover, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                    self::ResolutionSetLocation => $this->applySetLocation($asset, $handover, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $handover, $adminUserId, $location, $baseMeta, $note, $markInStock),
                     self::ResolutionMarkMissing => $this->applyMarkMissing($asset, $handover, $adminUserId, $baseMeta, $note),
                     default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
                 };
@@ -104,7 +105,7 @@ class HandoverRejectionAdminResolutionService
     /**
      * @param  array<string, mixed>  $baseMeta
      */
-    private function applySetLocation(Asset $asset, Handover $handover, int $adminUserId, ?string $location, array $baseMeta, string $note): void
+    private function applySetLocation(Asset $asset, Handover $handover, int $adminUserId, ?string $location, array $baseMeta, string $note, bool $markInStock): void
     {
         $location = $location !== null ? trim($location) : '';
         if ($location === '') {
@@ -117,7 +118,7 @@ class HandoverRejectionAdminResolutionService
             'user_id' => null,
             'location' => $location,
             'is_missing' => false,
-            'is_in_stock' => true,
+            'is_in_stock' => $markInStock,
         ]);
 
         $asset->historyEntries()->create([
@@ -126,6 +127,7 @@ class HandoverRejectionAdminResolutionService
             'reason' => $note !== '' ? $note : 'Abgelehnte Übergabe: Besitzer entfernt, Standort gesetzt.',
             'meta' => array_merge($baseMeta, [
                 'location' => $location,
+                'mark_in_stock' => $markInStock,
             ]),
         ]);
     }

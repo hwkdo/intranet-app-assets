@@ -5,7 +5,9 @@ namespace Hwkdo\IntranetAppAssets\Livewire\Apps\Assets;
 use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -24,6 +26,8 @@ class ReturnCompleteResolve extends Component
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = AssetUnownedDeviceType::Pool;
 
     public function mount(AssetReturn $assetReturn): void
     {
@@ -49,8 +53,15 @@ class ReturnCompleteResolve extends Component
 
         $this->assetReturn = $assetReturn;
 
+        $asset = $assetReturn->handover?->asset;
+        $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
+            $asset?->user_id,
+            (bool) ($asset?->is_in_stock),
+        );
+
         if ($assetReturn->isLoan()) {
             $this->resolution = AssetReturnAdminCompletionService::ResolutionSetLocation;
+            $this->deviceType = AssetUnownedDeviceType::Pool;
         }
     }
 
@@ -87,6 +98,7 @@ class ReturnCompleteResolve extends Component
         }
         if ($this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -100,6 +112,9 @@ class ReturnCompleteResolve extends Component
             'resolution' => $this->resolution,
             'new_owner_user_id' => $this->resolution === AssetReturnAdminCompletionService::ResolutionNewOwner ? $newOwnerId : null,
             'location' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation ? trim($this->location) : null,
+            'mark_in_stock' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation
+                ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                : true,
         ]);
 
         $this->redirect(route('apps.assets.admin.return.complete-commit', $this->assetReturn), navigate: false);

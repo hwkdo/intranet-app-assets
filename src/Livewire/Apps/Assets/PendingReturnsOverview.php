@@ -7,10 +7,12 @@ use Hwkdo\IntranetAppAssets\Livewire\Concerns\SortsAssetTable;
 use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -51,6 +53,8 @@ class PendingReturnsOverview extends Component
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = AssetUnownedDeviceType::Pool;
 
     public string $bulkReason = '';
 
@@ -112,6 +116,7 @@ class PendingReturnsOverview extends Component
 
         if ($this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -125,6 +130,9 @@ class PendingReturnsOverview extends Component
                 'location' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation
                     ? trim($this->location)
                     : null,
+                'mark_in_stock' => $this->resolution === AssetReturnAdminCompletionService::ResolutionSetLocation
+                    ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                    : true,
                 'bulk_reason' => trim($this->bulkReason),
             ],
         );

@@ -95,6 +95,14 @@
 
                                     @if($resolution === \Hwkdo\IntranetAppAssets\Services\AssetReturnAdminCompletionService::ResolutionSetLocation)
                                         <flux:input wire:model="location" label="Standort" placeholder="z. B. Lager IT, Raum …" />
+                                        <x-intranet-app-assets::unowned-device-type-select
+                                            class="mt-3"
+                                            wire-model="deviceType"
+                                            error-name="deviceType"
+                                        />
+                                        <flux:text class="text-sm text-slate-600 dark:text-white/70">
+                                            Leihe-Rückgaben in der Auswahl werden immer als Auf Lager abgeschlossen.
+                                        </flux:text>
                                     @endif
 
                                     <div class="flex flex-wrap gap-2">

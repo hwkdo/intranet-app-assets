@@ -9,7 +9,7 @@
         heading="Vermisst-Fall bearbeiten"
         subheading="{{ $asset->display_name }}"
     >
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="space-y-4">
             <section class="glass-card overflow-hidden p-5">
                 <flux:heading size="lg" class="mb-4 dark:text-white">Asset</flux:heading>
                 <dl class="hwk-rows">
@@ -57,7 +57,7 @@
             @endif
 
             <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
-                <section class="glass-card overflow-hidden space-y-4 dark:[&_[data-flux-label]]:text-white dark:[&_legend]:text-white">
+                <div class="space-y-4">
                     <flux:checkbox
                         wire:model="acknowledgeReview"
                         label="Ich habe den Vermisst-Fall und den Verlauf geprüft."
@@ -126,7 +126,7 @@
                     @error('note')
                         <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                     @enderror
-                </section>
+                </div>
 
                 <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.

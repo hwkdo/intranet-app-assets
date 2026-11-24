@@ -117,6 +117,11 @@
                                             @endif
                                             @if($resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation)
                                                 <flux:input wire:model="location" label="Standort" placeholder="z. B. Lager IT, Raum …" />
+                                                <x-intranet-app-assets::unowned-device-type-select
+                                                    class="mt-3"
+                                                    wire-model="deviceType"
+                                                    error-name="deviceType"
+                                                />
                                             @endif
                                         @else
                                             <div class="grid gap-3 md:grid-cols-2">
@@ -136,6 +141,11 @@
                                             @endif
                                             @if($resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation)
                                                 <flux:input wire:model="location" label="Standort" placeholder="z. B. Lager IT, Raum …" />
+                                                <x-intranet-app-assets::unowned-device-type-select
+                                                    class="mt-3"
+                                                    wire-model="deviceType"
+                                                    error-name="deviceType"
+                                                />
                                             @endif
                                         @endif
                                         <div class="flex flex-wrap gap-2">

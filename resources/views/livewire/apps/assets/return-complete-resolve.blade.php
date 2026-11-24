@@ -12,7 +12,7 @@
         heading="{{ $isLoanReturn ? 'Leihe-Rückgabe bestätigen' : 'Rückgabe abschließen' }}"
         subheading="{{ $asset?->display_name ?? 'Asset' }}"
     >
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="space-y-4">
             <section class="glass-card overflow-hidden p-5">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <flux:heading size="lg" class="dark:text-white">Asset</flux:heading>
@@ -98,7 +98,7 @@
             @endif
 
             <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
-                <section class="glass-card overflow-hidden space-y-4 dark:[&_[data-flux-label]]:text-white dark:[&_legend]:text-white">
+                <div class="space-y-4">
                     <flux:checkbox
                         wire:model="acknowledgeReceipt"
                         label="Ich bestätige den physischen Empfang des Geräts."
@@ -121,8 +121,8 @@
                             />
                             <flux:radio
                                 value="{{ AssetReturnAdminCompletionService::ResolutionSetLocation }}"
-                                label="Kein neuer Besitzer — Standort setzen (Auf Lager)"
-                                description="Besitzer wird entfernt; Standort ist Pflicht (z. B. Lager). Asset wird als Auf Lager markiert."
+                                label="Kein neuer Besitzer — Standort setzen"
+                                description="Besitzer wird entfernt. Standort und Gerätetyp (Lager oder Gemeinschaftsgerät) sind Pflicht."
                             />
                         </flux:radio.group>
                         @error('resolution')
@@ -152,9 +152,14 @@
                             @error('location')
                                 <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                             @enderror
+                            <x-intranet-app-assets::unowned-device-type-select
+                                class="mt-4"
+                                wire-model="deviceType"
+                                error-name="deviceType"
+                            />
                         @endif
                     @endif
-                </section>
+                </div>
 
                 <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.

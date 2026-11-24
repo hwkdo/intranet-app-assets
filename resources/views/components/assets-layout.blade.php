@@ -152,6 +152,14 @@
                 grid-column: 1;
                 grid-row: 1;
             }
+
+            .hwk-assets form.hwk-fields [data-flux-field]:has([data-flux-radio-group]) {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .hwk-assets form.hwk-fields [data-flux-field]:has([data-flux-radio-group]) > * {
+                grid-column: 1;
+            }
         }
 
         .hwk-assets [data-flux-card] {

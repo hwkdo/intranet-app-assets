@@ -3,7 +3,9 @@
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Services\OpenHandoverAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -19,6 +21,8 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = '';
 
     public function mount(Handover $handover): void
     {
@@ -40,6 +44,10 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
         $handover->setRelation('asset', $asset);
 
         $this->handover = $handover;
+        $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
+            $asset?->user_id,
+            (bool) ($asset?->is_in_stock),
+        );
     }
 
     public function submit(): void
@@ -56,6 +64,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
         }
         if ($this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -69,6 +78,9 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
             'resolution' => $this->resolution,
             'new_owner_user_id' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionNewOwner ? $newOwnerId : null,
             'location' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+            'mark_in_stock' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation
+                ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                : true,
         ]);
 
         $this->redirect(route('apps.assets.admin.open-handover.resolve-commit', $this->handover), navigate: false);
@@ -91,7 +103,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
         heading="Offene Übergabe bearbeiten"
         subheading="{{ $handover->asset?->display_name ?? 'Asset' }}"
     >
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="space-y-4">
             <x-intranet-app-assets::handover-asset-summary :handover="$handover" />
 
             <section class="glass-card overflow-hidden space-y-3 text-sm">
@@ -114,7 +126,7 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
             @endif
 
             <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
-                <section class="glass-card overflow-hidden space-y-4">
+                <div class="space-y-4">
                     <flux:checkbox
                         wire:model="acknowledgeOpenState"
                         label="Ich bestätige, dass diese offene Übergabe adminseitig aufgelöst werden soll."
@@ -131,8 +143,8 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
                         />
                         <flux:radio
                             value="{{ OpenHandoverAdminResolutionService::ResolutionSetLocation }}"
-                            label="Besitzer entfernen und Standort setzen (Auf Lager)"
-                            description="Besitzer wird entfernt; offene Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort ist Pflicht. Asset wird als Auf Lager markiert."
+                            label="Besitzer entfernen und Standort setzen"
+                            description="Besitzer wird entfernt; offene Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort und Gerätetyp (Lager oder Gemeinschaftsgerät) sind Pflicht."
                         />
                         <flux:radio
                             value="{{ OpenHandoverAdminResolutionService::ResolutionMarkMissing }}"
@@ -167,8 +179,13 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe bearbeiten')] 
                         @error('location')
                             <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                         @enderror
+                        <x-intranet-app-assets::unowned-device-type-select
+                            class="mt-4"
+                            wire-model="deviceType"
+                            error-name="deviceType"
+                        />
                     @endif
-                </section>
+                </div>
 
                 <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.

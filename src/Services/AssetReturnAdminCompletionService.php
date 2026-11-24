@@ -23,6 +23,7 @@ class AssetReturnAdminCompletionService
         ?int $newOwnerUserId,
         ?string $location,
         ?string $note = null,
+        bool $markInStock = true,
     ): void {
         if ($assetReturn->isCompleted()) {
             throw new \InvalidArgumentException('Diese Rückgabe ist bereits abgeschlossen.');
@@ -42,6 +43,7 @@ class AssetReturnAdminCompletionService
         if ($assetReturn->isLoan()) {
             $resolution = self::ResolutionSetLocation;
             $newOwnerUserId = null;
+            $markInStock = true;
         }
 
         $returnId = $assetReturn->id;
@@ -49,8 +51,8 @@ class AssetReturnAdminCompletionService
 
         $note = $note !== null ? trim($note) : '';
 
-        AssetAuditContext::runWith('assets.return.complete', function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
-            DB::transaction(function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note): void {
+        AssetAuditContext::runWith('assets.return.complete', function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note, $markInStock): void {
+            DB::transaction(function () use ($assetReturn, $asset, $adminUserId, $resolution, $newOwnerUserId, $location, $returnId, $formerHolderUserId, $note, $markInStock): void {
                 $now = now();
                 $assetReturn->update([
                     'recipient_user_id' => $adminUserId,
@@ -68,7 +70,7 @@ class AssetReturnAdminCompletionService
 
                 match ($resolution) {
                     self::ResolutionNewOwner => $this->applyNewOwner($asset, $assetReturn, $adminUserId, $newOwnerUserId, $baseMeta, $note),
-                    self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note),
+                    self::ResolutionSetLocation => $this->applySetLocation($asset, $assetReturn, $adminUserId, $location, $baseMeta, $note, $markInStock),
                     default => throw new \InvalidArgumentException('Unbekannte Auflösung.'),
                 };
             });
@@ -105,7 +107,7 @@ class AssetReturnAdminCompletionService
     /**
      * @param  array<string, mixed>  $baseMeta
      */
-    private function applySetLocation(Asset $asset, AssetReturn $assetReturn, int $adminUserId, ?string $location, array $baseMeta, string $note): void
+    private function applySetLocation(Asset $asset, AssetReturn $assetReturn, int $adminUserId, ?string $location, array $baseMeta, string $note, bool $markInStock): void
     {
         $location = $location !== null ? trim($location) : '';
         if ($location === '') {
@@ -118,12 +120,14 @@ class AssetReturnAdminCompletionService
             'location' => $location,
             'is_missing' => false,
             'is_clarification' => false,
-            'is_in_stock' => true,
+            'is_in_stock' => $markInStock,
         ]);
 
         $defaultReason = ($baseMeta['is_loan'] ?? false)
             ? 'Leihe-Rückgabe: Empfang bestätigt, Asset wieder Auf Lager mit Standort.'
-            : 'Rückgabe: Empfang bestätigt, Besitzer entfernt, Standort gesetzt.';
+            : ($markInStock
+                ? 'Rückgabe: Empfang bestätigt, Besitzer entfernt, Standort gesetzt.'
+                : 'Rückgabe: Empfang bestätigt, Besitzer entfernt, als Gemeinschaftsgerät mit Standort gesetzt.');
 
         $asset->historyEntries()->create([
             'event' => AssetHistory::EventReturnCompletedByAdmin,
@@ -132,6 +136,7 @@ class AssetReturnAdminCompletionService
             'meta' => array_merge($baseMeta, [
                 'initiated_by_user_id' => $assetReturn->initiated_by_user_id,
                 'location' => $location,
+                'mark_in_stock' => $markInStock,
             ]),
         ]);
     }

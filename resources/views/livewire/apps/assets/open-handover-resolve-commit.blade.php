@@ -50,6 +50,8 @@ new #[Layout('components.layouts.app')] #[Title('Offene Übergabe speichern')] c
                 (string) $pending['resolution'],
                 isset($pending['new_owner_user_id']) ? (int) $pending['new_owner_user_id'] : null,
                 isset($pending['location']) ? (string) $pending['location'] : null,
+                null,
+                (bool) ($pending['mark_in_stock'] ?? true),
             );
         } catch (\InvalidArgumentException $e) {
             session()->flash('error', $e->getMessage());

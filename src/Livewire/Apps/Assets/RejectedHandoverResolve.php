@@ -6,7 +6,9 @@ use App\Models\User;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -25,6 +27,8 @@ class RejectedHandoverResolve extends Component
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = '';
 
     public function mount(Handover $handover): void
     {
@@ -50,6 +54,10 @@ class RejectedHandoverResolve extends Component
         $handover->setRelation('asset', $asset);
 
         $this->handover = $handover;
+        $this->deviceType = AssetUnownedDeviceType::defaultForAsset(
+            $asset?->user_id,
+            (bool) ($asset?->is_in_stock),
+        );
     }
 
     public function submit(): void
@@ -66,6 +74,7 @@ class RejectedHandoverResolve extends Component
         }
         if ($this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
 
         $this->validate($rules);
@@ -79,6 +88,9 @@ class RejectedHandoverResolve extends Component
             'resolution' => $this->resolution,
             'new_owner_user_id' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionNewOwner ? $newOwnerId : null,
             'location' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+            'mark_in_stock' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation
+                ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                : true,
         ]);
 
         $this->redirect(route('apps.assets.admin.rejected-handover.resolve-commit', $this->handover), navigate: false);

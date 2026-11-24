@@ -10,11 +10,13 @@ use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Support\AssetTableSort;
 use Hwkdo\IntranetAppAssets\Services\HandoverRejectionAdminResolutionService;
 use Hwkdo\IntranetAppAssets\Services\OpenHandoverAdminResolutionService;
+use Hwkdo\IntranetAppAssets\Support\AssetUnownedDeviceType;
 use Hwkdo\IntranetAppAssets\Support\BulkAdminWorkflowSession;
 use Hwkdo\IntranetAppAssets\Support\BulkSelectionUi;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -68,6 +70,8 @@ class AdminHandoversOverview extends Component
     public ?string $newOwnerUserId = null;
 
     public string $location = '';
+
+    public string $deviceType = AssetUnownedDeviceType::Pool;
 
     public string $bulkReason = '';
 
@@ -169,6 +173,7 @@ class AdminHandoversOverview extends Component
         }
         if ($this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
         $this->validate($rules);
 
@@ -179,6 +184,9 @@ class AdminHandoversOverview extends Component
                 'resolution' => $this->resolution,
                 'new_owner_user_id' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionNewOwner ? (int) $this->newOwnerUserId : null,
                 'location' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+                'mark_in_stock' => $this->resolution === OpenHandoverAdminResolutionService::ResolutionSetLocation
+                    ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                    : true,
                 'bulk_reason' => trim($this->bulkReason),
             ],
         );
@@ -199,6 +207,7 @@ class AdminHandoversOverview extends Component
         }
         if ($this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation) {
             $rules['location'] = ['required', 'string', 'min:1', 'max:255'];
+            $rules['deviceType'] = ['required', 'string', Rule::in(AssetUnownedDeviceType::values())];
         }
         $this->validate($rules);
 
@@ -209,6 +218,9 @@ class AdminHandoversOverview extends Component
                 'resolution' => $this->resolution,
                 'new_owner_user_id' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionNewOwner ? (int) $this->newOwnerUserId : null,
                 'location' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation ? trim($this->location) : null,
+                'mark_in_stock' => $this->resolution === HandoverRejectionAdminResolutionService::ResolutionSetLocation
+                    ? AssetUnownedDeviceType::toIsInStock($this->deviceType)
+                    : true,
                 'bulk_reason' => trim($this->bulkReason),
             ],
         );

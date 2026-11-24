@@ -6,7 +6,7 @@
         heading="Abgelehnte Übergabe bearbeiten"
         subheading="{{ $handover->asset?->display_name ?? 'Asset' }}"
     >
-        <div class="mx-auto max-w-2xl space-y-6">
+        <div class="space-y-4">
             <x-intranet-app-assets::handover-asset-summary :handover="$handover" />
 
             <section class="glass-card overflow-hidden space-y-3 text-sm">
@@ -39,7 +39,7 @@
             @endif
 
             <form wire:submit="submit" class="hwk-fields glass-card space-y-6 p-5 sm:p-6" style="overflow: visible">
-                <section class="glass-card overflow-hidden space-y-4">
+                <div class="space-y-4">
                     <flux:checkbox
                         wire:model="acknowledgeNotWithUser"
                         label="Ich bestätige, dass das Asset physisch nicht beim genannten Benutzer liegt."
@@ -56,8 +56,8 @@
                         />
                         <flux:radio
                             value="{{ HandoverRejectionAdminResolutionService::ResolutionSetLocation }}"
-                            label="Besitzer entfernen und Standort setzen (Auf Lager)"
-                            description="Besitzer wird entfernt; abgelehnte Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort ist Pflicht. Asset wird als Auf Lager markiert."
+                            label="Besitzer entfernen und Standort setzen"
+                            description="Besitzer wird entfernt; abgelehnte Übergabe wird als ersetzt markiert und bleibt in der Historie. Standort und Gerätetyp (Lager oder Gemeinschaftsgerät) sind Pflicht."
                         />
                         <flux:radio
                             value="{{ HandoverRejectionAdminResolutionService::ResolutionMarkMissing }}"
@@ -92,8 +92,13 @@
                         @error('location')
                             <flux:text class="text-sm text-red-600">{{ $message }}</flux:text>
                         @enderror
+                        <x-intranet-app-assets::unowned-device-type-select
+                            class="mt-4"
+                            wire-model="deviceType"
+                            error-name="deviceType"
+                        />
                     @endif
-                </section>
+                </div>
 
                 <flux:text class="text-sm text-slate-600 dark:text-white/70">
                     Beim Speichern werden Sie zur Bestätigung mit Ihrem LDAP-/Windows-Passwort weitergeleitet.
