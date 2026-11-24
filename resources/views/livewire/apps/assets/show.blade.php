@@ -686,7 +686,7 @@ new #[Layout('components.layouts.app')] #[Title('Asset Details')] class extends 
             </form>
         </x-intranet-app-assets::hwk-card>
 
-        <x-intranet-app-assets::hwk-card title="Verlauf" icon="clock" description="Änderungen, Übergaben, Notizen und Anhänge.">
+        <x-intranet-app-assets::hwk-card title="Verlauf" icon="clock" description="Änderungen, Übergaben, Notizen und Anhänge." padded>
 
             @if($this->history->isEmpty())
                 <x-intranet-app-assets::hwk-empty bare icon="inbox" title="Noch keine Ereignisse vorhanden." />

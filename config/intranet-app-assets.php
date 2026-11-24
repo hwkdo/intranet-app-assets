@@ -46,10 +46,14 @@ return [
     'formwerk_handover_url' => env('INTRANET_APP_ASSETS_FORMWERK_HANDOVER_URL', ''),
 
     /*
-     * Erwarteter Belegtyp-ZB in D3 für gültige Rechnungen (Property 82).
-     * Nur Zahlungsbelege mit diesem Belegtyp werden als valide Rechnungsnummer akzeptiert.
+     * Erlaubte Belegtyp-ZB-Werte in D3 (Property 82).
+     * Eine Rechnungsnummer gilt nur, wenn der Zahlungsbeleg einen dieser Typen hat.
+     * Env: kommagetrennte Liste, z. B. "Rechnung,Abbuchung,Barauszahlung".
      */
-    'd3_invoice_belegtyp' => env('INTRANET_APP_ASSETS_D3_INVOICE_BELEGTYP', 'Rechnung'),
+    'd3_invoice_belegtypen' => array_values(array_filter(array_map(
+        trim(...),
+        explode(',', (string) env('INTRANET_APP_ASSETS_D3_INVOICE_BELEGTYPEN', 'Rechnung,Abbuchung,Barauszahlung')),
+    ))),
 
     /*
      * D3-Rechnungsanalyse via OCR/Vision:

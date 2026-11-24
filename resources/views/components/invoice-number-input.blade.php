@@ -20,7 +20,7 @@
         @if(filled($requirementHint))
             {{ $requirementHint }}{{ ' ' }}
         @endif
-        Format: T gefolgt von Ziffern (z. B. T12345). Wird in D3 geprüft (Zahlungsbeleg Typ Rechnung).
+        Format: T gefolgt von Ziffern (z. B. T12345). Wird in D3 geprüft (Zahlungsbeleg, Belegtyp {{ \Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService::allowedBelegtypenLabel() }}).
     </flux:description>
     <flux:error :name="$name" />
 </flux:field>

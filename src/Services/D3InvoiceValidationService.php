@@ -21,7 +21,51 @@ class D3InvoiceValidationService
     }
 
     /**
-     * Prüft, ob die Rechnungsnummer in D3 existiert und ein Zahlungsbeleg mit Belegtyp "Rechnung" ist.
+     * Erlaubte Werte für Belegtyp_ZB (Property 82).
+     *
+     * @return list<string>
+     */
+    public static function allowedBelegtypen(): array
+    {
+        $configured = config('intranet-app-assets.d3_invoice_belegtypen', ['Rechnung', 'Abbuchung', 'Barauszahlung']);
+
+        if (is_string($configured)) {
+            $configured = explode(',', $configured);
+        }
+
+        if (! is_array($configured)) {
+            return ['Rechnung', 'Abbuchung', 'Barauszahlung'];
+        }
+
+        $types = [];
+        foreach ($configured as $type) {
+            if (! is_string($type)) {
+                continue;
+            }
+            $type = trim($type);
+            if ($type !== '') {
+                $types[] = $type;
+            }
+        }
+
+        return $types;
+    }
+
+    public static function allowedBelegtypenLabel(): string
+    {
+        $types = self::allowedBelegtypen();
+
+        if (count($types) <= 1) {
+            return $types[0] ?? 'Rechnung';
+        }
+
+        $last = array_pop($types);
+
+        return implode(', ', $types).' oder '.$last;
+    }
+
+    /**
+     * Prüft, ob die Rechnungsnummer in D3 existiert und ein Zahlungsbeleg mit erlaubtem Belegtyp ist.
      * Bei ungültigem Format wird D3 nicht aufgerufen.
      */
     public function isValidInvoiceNumber(string $number): bool
@@ -56,12 +100,13 @@ class D3InvoiceValidationService
                 $docRaw = $client->getDoc($docId, true);
                 $rechnungsnummer = $this->getDisplayProperty($docRaw, '60');
                 $belegtyp = $this->getDisplayProperty($docRaw, '82');
-                $expectedBelegtyp = config('intranet-app-assets.d3_invoice_belegtyp', 'Rechnung');
-                if ($rechnungsnummer !== null && trim((string) $rechnungsnummer) === $number
-                    && $belegtyp !== null && trim((string) $belegtyp) === $expectedBelegtyp) {
+                if (! $this->belegtypIsAllowed($belegtyp)) {
+                    continue;
+                }
+                if ($rechnungsnummer !== null && trim((string) $rechnungsnummer) === $number) {
                     return true;
                 }
-                if ($docId === $number && $belegtyp !== null && trim((string) $belegtyp) === $expectedBelegtyp) {
+                if ($docId === $number) {
                     return true;
                 }
             }
@@ -88,10 +133,19 @@ class D3InvoiceValidationService
         }
 
         if (! $this->isValidInvoiceNumber($number)) {
-            return 'Die Rechnungsnummer existiert nicht in D3 oder ist kein Zahlungsbeleg vom Typ Rechnung.';
+            return 'Die Rechnungsnummer existiert nicht in D3 oder ist kein Zahlungsbeleg vom Typ '.self::allowedBelegtypenLabel().'.';
         }
 
         return null;
+    }
+
+    private function belegtypIsAllowed(?string $belegtyp): bool
+    {
+        if ($belegtyp === null) {
+            return false;
+        }
+
+        return in_array(trim($belegtyp), self::allowedBelegtypen(), true);
     }
 
     private function getDisplayProperty(array $data, string $propertyId): ?string
