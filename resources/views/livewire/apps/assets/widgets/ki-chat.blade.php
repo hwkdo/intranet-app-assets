@@ -50,12 +50,6 @@ new class extends Component
 
 <div class="flex h-full min-h-0 flex-col">
     @if ($this->hasApiKey)
-        <div class="mb-2 flex shrink-0 items-center justify-between gap-2">
-            <flux:heading size="sm">KI-Chat</flux:heading>
-            <flux:button variant="ghost" size="sm" :href="route('apps.assets.chat')" wire:navigate>
-                Vollansicht
-            </flux:button>
-        </div>
         <div class="min-h-0 flex-1">
             @livewire('prism-chat', [
                 'appIdentifier' => 'assets',
@@ -64,6 +58,8 @@ new class extends Component
                 'baseUrl' => $this->baseUrl,
                 'useMcpTools' => true,
                 'embedded' => true,
+                'embeddedTitle' => 'Assets Chat',
+                'fullscreenUrl' => route('apps.assets.chat'),
                 'suggestions' => [
                     'Welche Assets sind mir aktuell zugeordnet?',
                     'Suche alle Notebooks von Hersteller Lenovo.',
@@ -73,18 +69,18 @@ new class extends Component
             ], key('assets-dashboard-ki-chat'))
         </div>
     @else
-        <x-intranet-app-base::dashboard.widget-card
-            title="KI-Chat"
-            description="OpenWebUI API-Token in den globalen Einstellungen hinterlegen."
-        >
-            <x-intranet-app-assets::hwk-empty bare icon="key" title="API-Token fehlt">
-                Ohne Token ist der KI-Chat nicht nutzbar.
-                <div class="mt-4">
-                    <flux:button variant="primary" href="{{ route('settings.all') }}">
-                        Zu den Einstellungen
-                    </flux:button>
-                </div>
-            </x-intranet-app-assets::hwk-empty>
-        </x-intranet-app-base::dashboard.widget-card>
+        <section class="glass-card flex h-full min-h-0 flex-col overflow-hidden p-0">
+            <x-intranet-app-base::dashboard.chat-widget-header title="Assets Chat" :href="route('apps.assets.chat')" />
+            <div class="flex flex-1 items-center justify-center">
+                <x-intranet-app-assets::hwk-empty bare icon="key" title="API-Token fehlt">
+                    Ohne Token ist der KI-Chat nicht nutzbar.
+                    <div class="mt-4">
+                        <flux:button variant="primary" href="{{ route('settings.all') }}">
+                            Zu den Einstellungen
+                        </flux:button>
+                    </div>
+                </x-intranet-app-assets::hwk-empty>
+            </div>
+        </section>
     @endif
 </div>

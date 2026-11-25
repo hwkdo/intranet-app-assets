@@ -107,7 +107,7 @@ class AssetsDashboardWidgetProvider implements DashboardWidgetProviderInterface
             ),
             new DashboardWidgetDefinition(
                 key: 'ki-chat',
-                title: 'Assets KI-Chat',
+                title: 'Assets Chat',
                 description: 'Assets-KI-Chat mit MCP-Tools (gleiche Konfiguration wie die Chat-Seite)',
                 component: 'intranet-app-assets::apps.assets.widgets.ki-chat',
                 permission: 'allow_ai_usage',
