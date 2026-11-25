@@ -7,3 +7,7 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('assets-zentrale-channel', function ($user): bool {
     return $user->can('see-app-assets-zentrale');
 });
+
+Broadcast::channel('assets-dashboard-channel', function ($user): bool {
+    return $user->can('manage-app-assets');
+});

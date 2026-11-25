@@ -6,6 +6,27 @@ use Livewire\Component;
 
 new class extends Component
 {
+    /**
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        $userId = auth()->id();
+
+        if ($userId === null) {
+            return [];
+        }
+
+        return [
+            "echo-private:App.Models.User.{$userId},.asset-handover.changed" => 'refreshFromBroadcast',
+        ];
+    }
+
+    public function refreshFromBroadcast(): void
+    {
+        unset($this->handovers, $this->hasMore, $this->totalCount);
+    }
+
     private function itemLimit(): int
     {
         $value = auth()->user()?->settings->app->assets->dashboard['widgetItemCounts']['unbestaetigte-uebergaben']

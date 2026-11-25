@@ -26,12 +26,16 @@ use Hwkdo\IntranetAppAssets\Listeners\UpdateCachedItexiaActualRoom;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
 use Hwkdo\IntranetAppAssets\Models\AssetNote;
+use Hwkdo\IntranetAppAssets\Models\AssetReturn;
+use Hwkdo\IntranetAppAssets\Models\Handover;
 use Hwkdo\IntranetAppAssets\Models\IntranetAppAssetsSettings;
 use Hwkdo\IntranetAppAssets\Observers\AssetHistoryObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetNoteObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetOwnerHandoverObserver;
 use Hwkdo\IntranetAppAssets\Observers\AssetOwnerLocationObserver;
+use Hwkdo\IntranetAppAssets\Observers\AssetReturnDashboardBroadcastObserver;
+use Hwkdo\IntranetAppAssets\Observers\HandoverDashboardBroadcastObserver;
 use Hwkdo\IntranetAppAssets\Services\CombinedOrderNumberValidationService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionAnalysisService;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceVisionLlmClientFactory;
@@ -166,6 +170,8 @@ class IntranetAppAssetsServiceProvider extends PackageServiceProvider
         Asset::observe(AssetOwnerLocationObserver::class);
         AssetHistory::observe(AssetHistoryObserver::class);
         AssetNote::observe(AssetNoteObserver::class);
+        Handover::observe(HandoverDashboardBroadcastObserver::class);
+        AssetReturn::observe(AssetReturnDashboardBroadcastObserver::class);
 
         Event::listen(ItexiaAssetActualRoomUpdated::class, UpdateCachedItexiaActualRoom::class);
 

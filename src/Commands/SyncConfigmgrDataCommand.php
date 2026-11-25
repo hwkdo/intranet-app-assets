@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets\Commands;
 
 use Hwkdo\ConfigmgrLaravel\ConfigmgrLaravel;
+use Hwkdo\IntranetAppAssets\Events\AssetsDashboardChanged;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetType;
 use Illuminate\Console\Command;
@@ -98,6 +99,10 @@ class SyncConfigmgrDataCommand extends Command
         }
 
         $this->info("  → {$updated} Assets verarbeitet, {$skipped} übersprungen.");
+
+        if ($updated > 0) {
+            AssetsDashboardChanged::dispatch();
+        }
 
         return self::SUCCESS;
     }

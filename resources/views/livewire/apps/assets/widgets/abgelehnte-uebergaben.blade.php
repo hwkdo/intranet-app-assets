@@ -1,11 +1,14 @@
 <?php
 
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\RefreshesOnAssetsDashboardBroadcast;
 use Hwkdo\IntranetAppAssets\Models\Handover;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component
 {
+    use RefreshesOnAssetsDashboardBroadcast;
+
     private function itemLimit(): int
     {
         $value = auth()->user()?->settings->app->assets->dashboard['widgetItemCounts']['abgelehnte-uebergaben']

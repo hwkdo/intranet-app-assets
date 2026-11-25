@@ -3,6 +3,7 @@
 namespace Hwkdo\IntranetAppAssets\Commands;
 
 use Hwkdo\IntranetAppAssets\Enums\AssetItexiaInventoryNoticeKind;
+use Hwkdo\IntranetAppAssets\Events\AssetsDashboardChanged;
 use Hwkdo\IntranetAppAssets\Jobs\NotifyAssetItexiaInventoryJob;
 use Hwkdo\IntranetAppAssets\Models\Asset;
 use Hwkdo\IntranetAppAssets\Models\AssetHistory;
@@ -202,6 +203,10 @@ class ItexiaUuidSyncCommand extends Command
         Log::info('intranet-app-assets:itexia-uuid-sync beendet', $summary);
 
         $this->info("  → {$updated} Asset(s) mit itexia_uuid aktualisiert.");
+
+        if ($updated > 0) {
+            AssetsDashboardChanged::dispatch();
+        }
         if ($skippedError > 0 || $skippedNotFound > 0 || $skippedNoUuid > 0) {
             $this->line('  Übersprungen: '.$skippedNotFound.' nicht gefunden, '.$skippedError.' Fehler, '.$skippedNoUuid.' ohne UUID, '.$skippedEmpty.' leer.');
         }

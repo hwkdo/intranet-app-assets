@@ -1,6 +1,7 @@
 <?php
 
 use Hwkdo\IntranetAppAssets\Enums\ReturnScheduleType;
+use Hwkdo\IntranetAppAssets\Livewire\Concerns\RefreshesOnAssetsDashboardBroadcast;
 use Hwkdo\IntranetAppAssets\Models\AssetReturn;
 use Hwkdo\IntranetAppAssets\Support\AssetReturnSchedulePresenter;
 use Livewire\Attributes\Computed;
@@ -8,6 +9,8 @@ use Livewire\Component;
 
 new class extends Component
 {
+    use RefreshesOnAssetsDashboardBroadcast;
+
     private function itemLimit(): int
     {
         $value = auth()->user()?->settings->app->assets->dashboard['widgetItemCounts']['offene-rueckgaben']

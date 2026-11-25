@@ -12,6 +12,7 @@ use Hwkdo\IntranetAppAssets\Services\AssetItexiaInventoryNoticeDispatcher;
 use Hwkdo\IntranetAppAssets\Services\D3InvoiceValidationService;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditContext;
 use Hwkdo\IntranetAppAssets\Support\AssetAuditDiffBuilder;
+use Hwkdo\IntranetAppAssets\Support\AssetDashboardBroadcaster;
 use Illuminate\Support\Facades\Log;
 
 class AssetObserver
@@ -57,6 +58,7 @@ class AssetObserver
     {
         $this->syncItexiaIdToLdapIfNeeded($asset);
         $this->inventoryNotices->dispatchIfNeeded($asset, created: true);
+        app(AssetDashboardBroadcaster::class)->assetSaved($asset);
     }
 
     public function updated(Asset $asset): void
@@ -87,6 +89,8 @@ class AssetObserver
                 'changes' => $diff,
             ],
         ]);
+
+        app(AssetDashboardBroadcaster::class)->assetSaved($asset);
     }
 
     public function saved(Asset $asset): void
